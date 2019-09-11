@@ -1,0 +1,98 @@
+installation on windows
+
+#### if any step fails, please consult me; the installation process is very error prone ######
+
+1) get python anaconda
+https://www.anaconda.com/distribution/#download-section
+select installation only for your user
+make sure to select "Add Anaconda to my PATH environmental variable"
+
+update packages to the latest verisons:
+go to a terminal and enter
+conda update conda
+
+2) install further python packages 
+
+2.1) particle image velocimetry packages
+get Microsoft Visual C++ build tools
+download the installer
+https://visualstudio.microsoft.com/de/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16
+execute the installer
+select C++ build tools and install
+(requires reboot)
+
+then install the python packages by opening a terminal and typing
+pip install openpiv==0.20.8
+
+# finite elements analysis
+pip install solidspy
+
+# my python package
+
+go to the tracktion_force_microscopy folder in the file I send you. 
+copy it somewhere on your computer
+open a terminal and enter:
+pip install -e path_to_the_tracktion_force_microscopy_folder
+# linux: sudo python -m pip install -e path_to_folder
+
+
+3) get  clickpoints
+for general instructions and a documentation on clickpoints go to 
+https://clickpoints.readthedocs.io/en/latest/installation.html#windows-installer
+open a terminal and enter
+pip install clickpoints
+then
+clickpoints register
+
+(if you get an error here try 
+conda update conda to fix it)
+check if clickpoints by right clicking on any image file and opening it with clickpoints
+
+
+4) ad my clickpoints addon
+copy the folder TFM_addon that I send you into the addons folder of clickpoints. For me
+the folder is located at C:\Users\Kerbe\Anaconda3\Lib\site-packages\clickpoints\addons
+
+5) starting the programm
+Maybe I show you the rest via skype ???....
+
+## what the programm currently does:
+calcualtes Deformation, Traction forces (btw you should use the hight correction version). You can draw in boundaries of cells. 
+These boundaries can be used to calculate contractile force,contractile energy and intra cellular stresses. Contractile force adn energy
+are saved to an out.txt file
+####
+
+go to the example folder I send you. As you can see you need 3 images (2 images of the beads and one of the membrane, or a bright field image...)
+with a number at the beginning. You need to execute the script from build_data_base.py within the folder of the images(!) to arange   your images into a suitable data base. 
+
+You can activate an addon by clicking on the button in the middle right. Then activate TFM_addon, then you have to open the addon window by clicking on the button 
+that just appeared. Images ar sorted into layers and frames. Change frames by left and right arrows and change layers by the "image up/down key".
+Newly calculated plots might not appear if you don't go to settings and disable "Thread image load" and "Thread image display". Also you might need to change 
+layers for a new image to appear (might fix this soon).
+To draw boundaries press F2 and use the tools in the upper right corner.
+
+
+
+
+
+older:
+# get pip (a tool for instalations of python packages)
+see https://www.liquidweb.com/kb/install-pip-windows/ for instructions
+download (by right click, then download) this python script
+https://bootstrap.pypa.io/get-pip.py
+open a terminal "as Adminstrator"(!!) and enter
+python Donwloads\get-pip.py 
+
+1.1) make python command usable for the cmd console
+(check if this is not the case already by openeing a console and typing python)
+open an explore-> right click on "This PC"--> properties -->advanced system settings
+--> environment Variables --> (in the first box) select Path --> press edit--> press new
+--> enter the path to the folder containing the python.exe file, this is 
+"C:\ProgramData\Anaconda3" for me--> ok.
+confirm this is working
+
+
+
+
+
+
