@@ -599,6 +599,7 @@ def contractility(tx,ty,pixelsize,mask):
 
 
 def contractile_energy(u,v,tx,ty,pixelsize1,pixelsize2,mask):
+    mask = mask.astype(bool)
     pixelsize2*=10**-6 # conversion to m
     pixelsize1*=10**-6
     energy_points = 0.5 * (pixelsize2 ** 2) * (np.sqrt((tx  * u * pixelsize1) ** 2 + (

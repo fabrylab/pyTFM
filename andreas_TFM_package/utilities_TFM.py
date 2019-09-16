@@ -91,13 +91,24 @@ def convert_to_int(a):
     '''
 
     try:
-        int(a[0])  # checks if minus signe is present
+        n=int(a[0])  # checks if minus signe is present
     except ValueError:
         n = -int(a[1:])
         return n
-    n = int(a)  # if no error converts to int normally
     return n
 
+
+
+
+def createFolder(directory):
+    '''
+    function to create directories if they dont already exist
+    '''
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        print('Error: Creating directory. ' + directory)
 
 
 
@@ -205,6 +216,15 @@ def try_float_convert(s):
         return float(s)
     except ValueError:
         return s
+def unpack_list(li):
+    if not (isinstance(li,list) or isinstance(li,np.ndarray)):
+        return li,""
+    elif len(li)==1:
+        return li[0],""
+    else:
+        return li[0],li[1]
+
+
 
 
 

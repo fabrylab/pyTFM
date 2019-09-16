@@ -42,12 +42,17 @@ units={	"avarage line stress":"N/m",
 	"std cell force":"N",
 	"std cell pressure":"N/m",
 	"std cell shear":"N/m",
-"conractility":"N",
+"contractility":"N",
 "contractile energy":"J",
-"conractility per cell":"N",
+"contractility per cell":"N",
 "contractile energy per cell":"J",
+"contractility per area":"N/m2",
+"contractile energy per area":"J/m2",
 "avarage normal stress":"N/m",
-"avarage shear stress":"N/m"
+"avarage shear stress":"N/m",
+"area":"m2",
+"sum deformations":"pixels",
+"sum traction forces":"N/m2"
 }
 
 
@@ -75,7 +80,7 @@ class Mask_Error(Exception):
 def write_output_file_with_nice_prefix(values,value_type, file_path):
 
     if value_type=="parameters":
-        with open(file_path, "a+") as f:
+        with open(file_path, "w+") as f:
             f.write("analysis_paramters\n")
             for parameter, value in values.items():
                 f.write(parameter + "\t" + str(value)+ "\n")
@@ -96,7 +101,7 @@ def write_output_file_with_nice_prefix(values,value_type, file_path):
 def write_output_file(values,value_type, file_path):
 
     if value_type=="parameters":
-        with open(file_path, "a+") as f:
+        with open(file_path, "w+") as f:
             f.write("analysis_paramters\n")
             for parameter, value in values.items():
                 f.write(parameter + "\t" + str(value)+ "\n")
@@ -105,11 +110,14 @@ def write_output_file(values,value_type, file_path):
         frames=list(values.keys())
         frames.sort(key=lambda x:int(x))
 
-        with open(file_path, "a+") as f:
+        with open(file_path, "w+") as f:
             for frame in frames:
                 res_part=values[frame]
                 for name,res in res_part.items():
-                    f.write(frame+"\t"+name+"\t"+str(round_flexible(res))+"\t"+units[name]+"\n")
+                    res_unpack,warn=unpack_list(res)
+                    warn_empty=(warn=="")
+                    f.write(frame+"\t"+name+"\t"+str(round_flexible(res_unpack))+"\t"+units[name]+"\t"*warn_empty+warn+"\n")
+
 
 
 def except_error(func, error, **kwargs):  # take functio and qkwarks
@@ -194,10 +202,13 @@ def check_small_mask(mask, warn_thresh=300):
     warns when mask is very small and raises error if amsk is too small
     '''
     mask_sum=np.sum(mask)
-    if mask_sum<warn_thresh:
-        warnings.warn("mask is very small, consider increasing the resoultion of deformation and traction field")
     if mask_sum==0:
         raise Mask_Error("mask empty after filtering/interpolation")
+        return "error"
+    if mask_sum<warn_thresh:
+        warnings.warn("mask is very small, consider increasing the resoultion of deformation and traction field")
+        return "mask for cellcolny is very small"
+    return ""
 
 def setup_database_for_tfm(folder, name, return_db=False):
 
@@ -313,6 +324,7 @@ def deformation(frame, parameter_dict,res_dict, db, frames_ref_dict=None, file_o
                                                        parameter_dict["window_size"]
                                                        , parameter_dict["overlapp"],
                                                        std_factor=parameter_dict["std_factor"])
+    res_dict[frame]["sum deformations"] = np.sum(np.sqrt(u ** 2 + v** 2))
     # plotting
     plt.ioff()
     dpi = 200
@@ -332,11 +344,29 @@ def deformation(frame, parameter_dict,res_dict, db, frames_ref_dict=None, file_o
     np.save(os.path.join(path, frame + "v.npy"), v)
     return None, frame
 
+def plot_deformations(folder):
+    files=os.listdir(folder)
+    files_dict=defaultdict(dict)
+    for f in files:
+        if f[2]=="u":
+            files_dict[f[:2]]["u"]=f
+        if f[2] == "v":
+            files_dict[f[:2]]["v"]=f
+    for frame, files in files_dict.items():
+        u=np.load(os.path.join(folder,files["u"]))
+        v = np.load(os.path.join(folder,files["v"]))
+        dpi = 200
+        fig1 = show_quiver_clickpoints(u, v, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
+                                       headwidth=3, headlength=3, width=0.002,
+                                       figsize=(2022 / dpi, 2011 / dpi),
+                                       cbar_str="deformation\n[pixel]")
+        fig1.savefig(os.path.join(folder, frame + "deformation.png"), dpi=200)
+
 
 
 
 def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,frames_ref_dict=None, path=None,
-                                         single=True,per_cell=True,**kwargs):
+                                         single=True,per_cell=True,per_area=True,**kwargs):
 
     if single:
         frames, file_order,frames_ref_dict = get_file_order_and_frames(db)
@@ -352,22 +382,27 @@ def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,fram
 
     # filling holes
     mask=binary_fill_holes(mask)
+    warn="selected area is very small" if np.sum(mask) < 1000 else "" # set a warning written in the outputfile
 
+    ps_new = parameter_dict["pixelsize_beads_image"] * np.mean(  # should be equivalent to "pixelsize_def_image"
+        np.array(mask.shape) / np.array(t_x.shape))
     # interpolation to size of traction force array
     mask_int = interpolation(mask, t_x.shape)
-    ps_new = parameter_dict["pixelsize_beads_image"] * np.mean(  # should be equivalent to "pixelsize_def_image"
-        np.array(mask.shape) / np.array(mask_int.shape))
+
 
     contractile_force, proj_x, proj_y,center=contractility(t_x, t_y, ps_new, mask_int)
     # calculate contractile energy if deformations are provided
     if isinstance(u,np.ndarray):
-        contr_energy=contractile_energy(u,v,t_x,t_y,parameter_dict["pixelsize_beads_image"],parameter_dict["pixelsize_def_image"],mask_int)
+        contr_energy=contractile_energy(u,v,t_x,t_y,parameter_dict["pixelsize_beads_image"], ps_new,mask_int)
     else:
         contr_energy=None
 
     # writing results to dictionray
-    res_dict[frame]["conractility"]=contractile_force
-    res_dict[frame]["contractile energy"]= contr_energy
+
+    res_dict[frame]["contractility"]=[contractile_force,warn]
+    res_dict[frame]["contractile energy"]= [contr_energy,warn]
+
+
 
     # normalize with number of cells, these are exactly the cells recognized in FEM analysis
     # could be problematic for large pixelsize of deformation image
@@ -377,11 +412,17 @@ def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,fram
         mask_membrane = remove_small_holes(mask_membrane, 100)
         mask_membrane = remove_small_objects(label(mask_membrane), 1000) > 0  # removing other small bits
         mask_int_mem = interpolation(mask_membrane, t_x.shape)
-        mask_area, mask_boundaries, borders = prepare_mask(mask_int_mem)
+        mask_area, mask_boundaries, borders = prepare_mask(mask_int_mem,min_cell_size=5)
         n_cells=len(borders.cell_ids)
-        res_dict[frame]["conractility per cell"] = contractile_force/n_cells
-        res_dict[frame]["contractile energy per cell"] = contr_energy/n_cells
-
+        res_dict[frame]["contractility per cell"] = [contractile_force/n_cells,warn]
+        res_dict[frame]["contractile energy per cell"] = [contr_energy/n_cells,warn]
+    if per_area:
+        mask_membrane = try_to_load_mask(db, frames_ref_dict[frame], mtype="membrane")
+        mask_membrane = binary_fill_holes(mask_membrane)
+        area=np.sum(mask_membrane)*((ps_new*10**-6)**2)
+        res_dict[frame]["contractility per area"] = [contractile_force / area,warn]
+        res_dict[frame]["contractile energy per area"] = [contr_energy / area,warn]
+        res_dict[frame]["area"] =  area
     return (contractile_force, contr_energy), frame
 
 
@@ -401,10 +442,12 @@ def tracktion_force(frame, parameter_dict,res_dict, db, path=None, frames_ref_di
 
     # trying to laod deformation
     u,v=try_to_load_deformation(path, frame, warn=False)
+    ps_new = parameter_dict["pixelsize_beads_image"] * np.mean(  # should be equivalent to "pixelsize_def_image"
+        np.array(u.shape) / np.array(u.shape))  # pixelsize of fem grid in µm
     # using tfm with or without finite thikness correction
     if parameter_dict["TFM_mode"] == "finite_thikness":
         tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=parameter_dict["pixelsize_beads_image"],
-                                                     pixelsize2=parameter_dict["pixelsize_def_image"],
+                                                     pixelsize2=ps_new,
                                                      h=parameter_dict["h"], young=parameter_dict["young"],
                                                      sigma=parameter_dict["sigma"],
                                                      filter="gaussian")
@@ -414,10 +457,11 @@ def tracktion_force(frame, parameter_dict,res_dict, db, path=None, frames_ref_di
             parameter_dict["TFM_mode"] = "infinite_thikness"
     if parameter_dict["TFM_mode"] == "infinite_thikness":
         tx, ty = ffttc_traction(u, v, pixelsize1=parameter_dict["pixelsize_beads_image"],
-                                                 pixelsize2=parameter_dict["pixelsize_def_image"],
+                                                 pixelsize2=ps_new,
                                                  young=parameter_dict["young"],
                                                  sigma=parameter_dict["sigma"],
                                                  filter="gaussian")
+    res_dict[frame]["sum traction forces"]=np.sum(np.sqrt(tx**2+ty**2))
     # plotting
     plt.ioff()
     dpi = 200
@@ -460,7 +504,7 @@ def FEM_analysis(frame,parameter_dict,res_dict,db,path=None, frames_ref_dict=Non
     mask = remove_small_objects(label(mask), 1000) > 0  # removing other small bits
     # interpolation to size of traction force array
     mask_int = interpolation(mask, t_x.shape)
-    check_small_mask(mask_int)  ## imprve to get full error catching when mask is e.g. dicontinous
+    warn=check_small_mask(mask_int)  ## imprve to get full error catching when mask is e.g. dicontinous
     # further preparation of mask data
     mask_area, mask_boundaries, borders = prepare_mask(mask_int, min_cell_size=5) # min_cell_size at least 2 or none
     # plt.figure();plt.imshow(mask_area)
@@ -503,8 +547,8 @@ def FEM_analysis(frame,parameter_dict,res_dict,db,path=None, frames_ref_dict=Non
 
 
 
-    res_dict[frame]["avarage normal stress"] = avg_normal_stress
-    res_dict[frame]["avarage shear stress"] = avg_shear
+    res_dict[frame]["avarage normal stress"] = [avg_normal_stress,warn]
+    res_dict[frame]["avarage shear stress"] = [avg_shear,warn]
     ### other possible stress measures, just for a nice picture
     #sigma_max, sigma_min, tau_max, phi_n, phi_shear, sigma_avg = all_stress_measures(S_nodes, nodes,
      #                                                                                dims=mask_area.shape)
@@ -526,10 +570,10 @@ def FEM_analysis(frame,parameter_dict,res_dict,db,path=None, frames_ref_dict=Non
     avg_cell_pressure=mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="tn")
     avg_cell_shear=mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="ts")
 
-    res_dict[frame]["avarage line stress"]=avg_line_stress[1]
-    res_dict[frame]["avarage cell force"] =avg_cell_force[1]
-    res_dict[frame]["avarage cell pressure"] =avg_cell_pressure[1]
-    res_dict[frame]["avarage cell shear"] =avg_cell_shear[1]
+    res_dict[frame]["avarage line stress"]=[avg_line_stress[1],warn]
+    res_dict[frame]["avarage cell force"] =[avg_cell_force[1],warn]
+    res_dict[frame]["avarage cell pressure"] =[avg_cell_pressure[1],warn]
+    res_dict[frame]["avarage cell shear"] =[avg_cell_shear[1],warn]
     res_dict[frame]["std line stress"] = avg_line_stress[2]
     res_dict[frame]["std cell force"] = avg_cell_force[2]
     res_dict[frame]["std cell pressure"] = avg_cell_pressure[2]
@@ -601,12 +645,13 @@ def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_
 
 if __name__=="__main__":
     ## setting upnecessary paramteres
-    db=clickpoints.DataFile("/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images/KOshift/database3.cdb","r")
+    db=clickpoints.DataFile("/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/KOshift/database3.cdb","r")
     parameter_dict = default_parameters()
     analysis_function=FEM_analysis
     res_dict=defaultdict(dict)
     db_info, all_frames = get_db_info_for_analysis(db)
-    apply_to_frames(db, parameter_dict, FEM_analysis, res_dict, frames="07")
+    apply_to_frames(db, parameter_dict, get_contractility_contractile_energy,res_dict, frames=all_frames)
+    write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
     # calculating the deformation field and adding to data base
 '''
 def add_deforamtion_and_traction_force(db, parameter_dict):

@@ -254,6 +254,7 @@ def calculate_mean_stress_measure(mask_area,stress_tensor,pixelsize):
     :param pixelsize: pixels isze of the FEM grid in µm
     :return: avg_shear,avg_normal_stress in N/m
     '''
+    mask_area=mask_area.astype(bool)
     avg_shear=np.mean(stress_tensor[mask_area,0,1]) #mean shear
     avg_shear=avg_shear*pixelsize*10**6 # conversion to N/m
     avg_normal_stress=np.mean((stress_tensor[mask_area,0,0]+stress_tensor[mask_area,1,1])/2) # average mean normal stress
