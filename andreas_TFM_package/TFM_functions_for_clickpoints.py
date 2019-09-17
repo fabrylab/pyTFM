@@ -22,17 +22,15 @@ layer_name_dict["tracktion_force"]="traction_plots"
 layer_name_dict["FEM_analysis"]="FEM_output"
 
 # some message to be printed
+calculation_messages=defaultdict(lambda:"%s")
+calculation_messages["deformation"]="calculating deformation on frames %s"
+calculation_messages["tracktion_force"]="calculating tracktion_forces on frames %s"
+calculation_messages["FEM_analysis"]="FEM_analysis on frames %s"
+calculation_messages["get_contractility_contractile_energy"]="contractility/contractile energy on frames %s"
+calculation_messages["general_properites"]="getting colony properties on frames %s"
 
-calculation_messages_multiple={"deformation":"calculating deformation on frames %s",
-                    "tracktion_force":"calculating tracktion_forces on frames %s",
-                    "FEM_analysis":"FEM_analysis on frames %s",
-                    "get_contractility_contractile_energy": "contractility/contractile energy on frames %s"
-                                    }
-calculation_messages_single={"deformation":"calculating deformation on current frame",
-                    "tracktion_force":"calculating tracktion_forces on current frame",
-                    "FEM_analysis":"FEM_analysis on current frame",
-                     "get_contractility_contractile_energy": "contractility/contractile energy on current frame"
-                                      }
+
+
 # units of the returned stress and energy measures:
 units={	"avarage line stress":"N/m",
 	"avarage cell force":"N",
@@ -44,13 +42,10 @@ units={	"avarage line stress":"N/m",
 	"std cell shear":"N/m",
 "contractility":"N",
 "contractile energy":"J",
-"contractility per cell":"N",
-"contractile energy per cell":"J",
-"contractility per area":"N/m2",
-"contractile energy per area":"J/m2",
 "avarage normal stress":"N/m",
 "avarage shear stress":"N/m",
 "area":"m2",
+"n_cells":"",
 "sum deformations":"pixels",
 "sum traction forces":"N/m2"
 }
@@ -66,9 +61,12 @@ def default_parameters():
     std_factor = 15
     #pixelsize2 = pixelsize * (window_size - overlapp)  # pixelsize of the deformation image
     h = 300
+    TFM_mode="finite_thikness"
     parameter_dict = make_paramters_dict_tfm(sigma=sigma, young=young, pixelsize=pixelsize, window_size=window_size,
                                              overlapp=overlapp,
-                                             std_factor=std_factor, h=h, pixel_factor=window_size - overlapp)
+                                             std_factor=std_factor, h=h, pixel_factor=window_size - overlapp,TFM_mode=TFM_mode)
+
+
     return parameter_dict
 
 class Mask_Error(Exception):
@@ -247,15 +245,6 @@ def setup_database_for_tfm(folder, name, return_db=False):
         return frames
 
 
-def assert_and_set_default_TFM_mode(parameter_dict):
-    valid_values = ["finite_thikness", "infinite_thikness"]
-    if not "TFM_mode" in parameter_dict.keys(): # setting default value for tfm mode
-        parameter_dict["tfm_mode"]="finite_thikness"
-        print("using finite thikness TFM")
-    else:
-        v_v=["'%s'"%s for s in valid_values]
-        separator=" or " if len(valid_values)==2 else ", "
-        assert (parameter_dict["TFM_mode"] in valid_values), "invalid choice for TFM mode. Use "+separator.join(v_v)
 
 def create_layers_on_demand(db, layer_list):
 
@@ -314,7 +303,7 @@ def deformation(frame, parameter_dict,res_dict, db, frames_ref_dict=None, file_o
         path = db.getPath(id=1).path
         layer_list = ["def_plots"]
         create_layers_on_demand(db, layer_list)
-        print(calculation_messages_single["deformation"])
+        print(calculation_messages["deformation"]%frame)
 
 
     # deformation for 1 frame
@@ -366,14 +355,14 @@ def plot_deformations(folder):
 
 
 def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,frames_ref_dict=None, path=None,
-                                         single=True,per_cell=True,per_area=True,**kwargs):
+                                         single=True,**kwargs):
 
     if single:
         frames, file_order,frames_ref_dict = get_file_order_and_frames(db)
         path = db.getPath(id=1).path
         layer_list = ["FEM_output"]
         create_layers_on_demand(db, layer_list)
-        print(calculation_messages_single["get_contractility_contractile_energy"])
+        print(calculation_messages["get_contractility_contractile_energy"]%frame)
 
     mask=try_to_load_mask(db,frames_ref_dict[frame],mtype="contractility_select")
 
@@ -402,28 +391,41 @@ def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,fram
     res_dict[frame]["contractility"]=[contractile_force,warn]
     res_dict[frame]["contractile energy"]= [contr_energy,warn]
 
-
-
-    # normalize with number of cells, these are exactly the cells recognized in FEM analysis
-    # could be problematic for large pixelsize of deformation image
-    # maybe improve this a bit
-    if per_cell:
-        mask_membrane = try_to_load_mask(db, frames_ref_dict[frame], mtype="membrane")
-        mask_membrane = remove_small_holes(mask_membrane, 100)
-        mask_membrane = remove_small_objects(label(mask_membrane), 1000) > 0  # removing other small bits
-        mask_int_mem = interpolation(mask_membrane, t_x.shape)
-        mask_area, mask_boundaries, borders = prepare_mask(mask_int_mem,min_cell_size=5)
-        n_cells=len(borders.cell_ids)
-        res_dict[frame]["contractility per cell"] = [contractile_force/n_cells,warn]
-        res_dict[frame]["contractile energy per cell"] = [contr_energy/n_cells,warn]
-    if per_area:
-        mask_membrane = try_to_load_mask(db, frames_ref_dict[frame], mtype="membrane")
-        mask_membrane = binary_fill_holes(mask_membrane)
-        area=np.sum(mask_membrane)*((ps_new*10**-6)**2)
-        res_dict[frame]["contractility per area"] = [contractile_force / area,warn]
-        res_dict[frame]["contractile energy per area"] = [contr_energy / area,warn]
-        res_dict[frame]["area"] =  area
     return (contractile_force, contr_energy), frame
+
+
+
+def general_properites(frame, parameter_dict,res_dict, db,frames_ref_dict=None, path=None,
+                                         single=True,**kwarg):
+    '''
+    Number of cells, area of the cell colony...
+    :param frame:
+    :param parameter_dict:
+    :param res_dict:
+    :param db:
+    :return:
+    '''
+    if single:
+        frames, file_order, frames_ref_dict = get_file_order_and_frames(db)
+        path = db.getPath(id=1).path
+        layer_list = ["FEM_output"]
+        create_layers_on_demand(db, layer_list)
+        print(calculation_messages["get_contractility_contractile_energy"]%frame)
+
+    t_x, t_y = try_to_load_traction(path, frame, warn=False) # just to get correct shape
+    mask_membrane = try_to_load_mask(db, frames_ref_dict[frame], mtype="membrane")
+
+    warn = "selected area is very small" if np.sum(binary_fill_holes(mask_membrane)) < 1000 else ""  # set a warning written in the outputfile
+    area = np.sum(binary_fill_holes(mask_membrane)) * ((parameter_dict["pixelsize_beads_image"] * 10 ** -6) ** 2)
+
+    mask_membrane = remove_small_holes(mask_membrane.astype(bool), 100)
+    mask_membrane = remove_small_objects(label(mask_membrane), 1000) > 0  # removing other small bits
+    mask_int_mem = interpolation(mask_membrane, t_x.shape)
+    mask_area, mask_boundaries, borders = prepare_mask(mask_int_mem,min_cell_size=5)
+    n_cells=len(borders.cell_ids)
+    res_dict[frame]["area"]=[area,warn]
+    res_dict[frame]["n_cells"]=[n_cells,warn]
+
 
 
 
@@ -431,14 +433,13 @@ def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,fram
 
 def tracktion_force(frame, parameter_dict,res_dict, db, path=None, frames_ref_dict=None, single=True,im_shape=0,**kwargs):
 
-    assert_and_set_default_TFM_mode(parameter_dict)
     if single:
         frames, file_order,frames_ref_dict = get_file_order_and_frames(db)
         im_shape=db.getImage(0).data.shape
         path = db.getPath(id=1).path
         layer_list = ["traction_plots"]
         create_layers_on_demand(db, layer_list)
-        print(calculation_messages_single["tracktion_force"])
+        print(calculation_messages["tracktion_force"]%frame)
 
     # trying to laod deformation
     u,v=try_to_load_deformation(path, frame, warn=False)
@@ -491,7 +492,7 @@ def FEM_analysis(frame,parameter_dict,res_dict,db,path=None, frames_ref_dict=Non
         path = db.getPath(id=1).path
         layer_list = ["FEM_output"]
         create_layers_on_demand(db, layer_list)
-        print(calculation_messages_single["FEM_analysis"])
+        print(calculation_messages["FEM_analysis"]%frame)
 
 
     # trying to load mask, skip if not found
@@ -500,7 +501,7 @@ def FEM_analysis(frame,parameter_dict,res_dict,db,path=None, frames_ref_dict=Non
     # trying to traction forces, skip if not found
     t_x, t_y = try_to_load_traction(path, frame, warn=False)
     # some pre clean up of the mask
-    mask = remove_small_holes(mask, 100)
+    mask = remove_small_holes(mask.astype(bool), 100)
     mask = remove_small_objects(label(mask), 1000) > 0  # removing other small bits
     # interpolation to size of traction force array
     mask_int = interpolation(mask, t_x.shape)
@@ -634,7 +635,7 @@ def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_
     if not isinstance(db_info,dict):
         db_info, all_frames=get_db_info_for_analysis(db)
     frames=make_iterable(frames) # if only one frame as string
-    print(calculation_messages_multiple[analysis_function.__name__] % str(frames))
+    print(calculation_messages[analysis_function.__name__] % str(frames))
     create_layers_on_demand(db, layer_name_dict[analysis_function.__name__])
     for frame in tqdm(frames,total=len(frames)):
         try:
