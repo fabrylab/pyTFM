@@ -10,26 +10,6 @@ def make_iterable(value):
     else:
         return value
 
-def make_paramters_dict_tfm(**kwargs):
-    '''
-    adding default values and "pixelsize2"
-    :param kwargs:
-    :return:
-    '''
-    paramter_dict=copy.deepcopy(kwargs)
-    if "pixelsize" in paramter_dict.keys():
-        paramter_dict["pixelsize_beads_image"]=paramter_dict["pixelsize"]
-        del paramter_dict["pixelsize"]
-
-
-
-    if not "pixelsize_def_image" in kwargs.keys():
-        paramter_dict["pixelsize_def_image"]=paramter_dict["pixelsize_beads_image"]*(paramter_dict["window_size"]-paramter_dict["overlapp"])
-
-    if not "std_factor" in paramter_dict.keys():
-        paramter_dict["std_factor"]=15
-
-    return paramter_dict
 
 def convert_axis_tick_unit(ax,factor):
     plt.draw()
@@ -62,9 +42,12 @@ def round_flexible(n):
     :param n: float
     :return:
     '''
-
-    rounding_decimal=-int(np.floor(np.log10(np.abs(n)))) + 2
+    if not (isinstance(n,float) or isinstance(n,int)):
+        return n
+    else:
+        rounding_decimal=-int(np.floor(np.log10(np.abs(n)))) + 2
     return np.round(n,rounding_decimal)
+
 def find_prefix(n):
     '''
     finds an apropriate prefix (nano, giga, milli..) and returns the rounded number

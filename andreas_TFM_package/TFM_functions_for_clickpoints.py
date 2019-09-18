@@ -15,6 +15,61 @@ import warnings
 from tqdm import tqdm
 
 
+# default parameters for calculation
+default_parameters={"sigma":0.49, # poison ratio
+"young":49000, # youngs modulus
+"pixelsize":0.201, #pixelsize of the image with beads in  µm/pixel
+"window_size":20,  # in µm
+"overlapp":100, # set bigger then window_size/2
+"std_factor":85,  # additional filter for extreme values in deformation field
+"h":300, # hight of the substrate in µm
+"TFM_mode":"finite_thikness",  # mode of traction force microscopy ("finite_thikness" or "infinite_thikness")
+}
+
+default_fig_parameters={
+"cbar_str": {"deformation":"deformation\n[pixel]","tracktion":"tracktion\n[Pa]","FEM":"line stress\n[N/µm]"},  # label of the colorbar
+"cmap": "rainbow",  # colormap for displaying magnitudes
+"vmin": {"deformation":None,"tracktion":None,"FEM":None},  # minimal value displayed in the colormap
+"vmax": {"deformation":None,"tracktion":None,"FEM":None},  # maximal value displayed in the colormap
+"cbar_width": "2%",  # width of the color bar in % of the main image. Must be string with % at the end.
+"cbar_height": "50%",  # height of the color bar in % of the main image. Must be string with % at the end.
+"cbar_borderpad": 4,  # distance between the edge of the image and the colorbar (in pixels???)
+"scale_ratio": 0.2,  # scale arrows so that the longest arrow is "maximum image dimension"*"scale ratio" long
+"headwidth": 3,  # width of the arrow heads in pixels?
+"headlength": 3,  # length of the arrow heads in pixels?
+"width": 0.002,  # width of the arrow shaft /what unit?
+"plot_t_vecs":{"FEM":False}, # plotting the stress vectors on the cell borders
+"plot_n_arrows":{"FEM":False}, # plotting normal vectors on cell borders
+"linewidth":{"FEM":4}, # linewidth when plotting the cell border stresses
+"cm_cmap":{"FEM":cm.jet}, # color map for plotting the cell border stresses. Needs a color maps object
+"border_arrow_filter":{"FEM":1}, #plot only every n'th arrow for  border stresses
+#"filter":[0,4],
+#"figsize":(10,10),
+}
+
+# default parameters for plotting
+def set_fig_parameters(shape, fig_shape,dpi, default_fig_parameters,figtype):
+    fig_parameters = {
+        # filtering: 1.minimal length of arrow, 2. draw only every n'th arrow (in x and y direction)
+        "filter": [0, int(np.ceil(shape[0] / 50))],
+        # figsize, so that saving the figure with dpi=dpi, gives an image of the shape fig_shape[0]
+        # used to match the other images in the database
+        "figsize": (fig_shape[1] / dpi, fig_shape[0] / dpi),
+    }
+    for key,value in default_fig_parameters.items(): #adding, or potentially overwriting other paramters
+        if isinstance(value,dict): # check if values for multiple plot types exist
+            if figtype in value.keys():
+                fig_parameters[key] = value[figtype]
+        else:
+            fig_parameters[key]=value
+
+
+    return fig_parameters
+
+
+
+
+
 # preset names of layers
 layer_name_dict=defaultdict(list)
 layer_name_dict["deformation"]="def_plots"
@@ -28,7 +83,6 @@ calculation_messages["tracktion_force"]="calculating tracktion_forces on frames 
 calculation_messages["FEM_analysis"]="FEM_analysis on frames %s"
 calculation_messages["get_contractility_contractile_energy"]="contractility/contractile energy on frames %s"
 calculation_messages["general_properites"]="getting colony properties on frames %s"
-
 
 
 # units of the returned stress and energy measures:
@@ -47,56 +101,22 @@ units={	"avarage line stress":"N/m",
 "area":"m2",
 "n_cells":"",
 "sum deformations":"pixels",
-"sum traction forces":"N/m2"
+"sum traction forces":"N/m2",
+"sum deformations on cell colony":"pixels"
 }
 
 
 
-def default_parameters():
-    sigma = 0.49  # poison ratio
-    young = 49000  # youngsmodulus
-    pixelsize = 0.201  # µm/pixel
-    window_size = 100  # in pixel , keep at 10 µm
-    overlapp = 85  # window_size/2
-    std_factor = 15
-    #pixelsize2 = pixelsize * (window_size - overlapp)  # pixelsize of the deformation image
-    h = 300
-    TFM_mode="finite_thikness"
-    parameter_dict = make_paramters_dict_tfm(sigma=sigma, young=young, pixelsize=pixelsize, window_size=window_size,
-                                             overlapp=overlapp,
-                                             std_factor=std_factor, h=h, pixel_factor=window_size - overlapp,TFM_mode=TFM_mode)
 
 
-    return parameter_dict
+
+
 
 class Mask_Error(Exception):
     pass
 
 
-
-
-def write_output_file_with_nice_prefix(values,value_type, file_path):
-
-    if value_type=="parameters":
-        with open(file_path, "w+") as f:
-            f.write("analysis_paramters\n")
-            for parameter, value in values.items():
-                f.write(parameter + "\t" + str(value)+ "\n")
-
-    if value_type == "results":
-        # list of available frames sorted
-        frames=list(values.keys())
-        frames.sort(key=lambda x:int(x))
-
-        with open(file_path, "a+") as f:
-            for frame in frames:
-                res_part=values[frame]
-                for name,res in res_part.items():
-                    res_round,pref=find_prefix(res)
-                    f.write(frame+"\t"+name+"\t"+str(res_round)+" "+pref+units[name]+"\n")
-
-
-def write_output_file(values,value_type, file_path):
+def write_output_file(values,value_type, file_path,with_prefix=False):
 
     if value_type=="parameters":
         with open(file_path, "w+") as f:
@@ -112,13 +132,15 @@ def write_output_file(values,value_type, file_path):
             for frame in frames:
                 res_part=values[frame]
                 for name,res in res_part.items():
-                    res_unpack,warn=unpack_list(res)
-                    warn_empty=(warn=="")
-                    f.write(frame+"\t"+name+"\t"+str(round_flexible(res_unpack))+"\t"+units[name]+"\t"*warn_empty+warn+"\n")
+                    res_unpack, warn = unpack_list(res)
+                    warn_empty = (warn == "")
+                    f.write(frame + "\t" + name + "\t" + str(round_flexible(res_unpack)) + "\t" + units[
+                        name] + "\t" * warn_empty + warn + "\n")
 
 
 
-def except_error(func, error, **kwargs):  # take functio and qkwarks
+
+def except_error(func, error, **kwargs):  # take functino and qkwarks
     '''
     wraper to handle errors and return false if the exception is encountered
     :param func:
@@ -136,25 +158,43 @@ def except_error(func, error, **kwargs):  # take functio and qkwarks
     return values
 
 
-def try_to_load_mask(db,frame,mtype="membrane"):
+def try_to_load_mask(db,frame,mtype="cell colony",warn_thresh=300):
+    '''
+    loading the mask from clickpoints and checking if the size is reasonable. Returns warnings or errors.
 
+    :param db:
+    :param frame:
+    :param mtype:
+    :return:
+    '''
+    # trying to load the mask from clickpoints
     try:
         mask = db.getMask(frame=frame,layer=1).data
         # extract only one type of mask
-        if mtype=="membrane": #
+        if mtype=="cell colony": #
             mask=mask==1
-        if mtype=="contractility_select":
+        if mtype=="contractility selection":
             mask = mask == 2
-    except AttributeError: # checks if mask object exists
+    # raising error if no mask object in clickpoints exist
+    except AttributeError:
         raise Mask_Error("no mask of the cell membrane found for frame " + str(frame))
 
-    if np.sum(mask)==0: # checks if mask is empty
-        raise Mask_Error("no mask of the cell membrane found for frame " + str(frame))
-    else:
-        return mask
+    # checking if mask is empty
+    if np.sum(mask)==0:
+        raise Mask_Error("mask_empty for frame " + str(frame))
+    # checking if mask is susiciously small
+    elif np.sum(binary_fill_holes(mask))<warn_thresh:
+        print("mask for %s is very small"%mtype)
+        warn= "selected area is very small"
+    # if everything is alright warn is empty string
+    else: warn=""
+
+    return mask, warn
+
 
 def try_to_load_deformation(path, frame, warn=False):
-    '''loading the deformations fro a given frame. If deformations are not found either raises an error
+    '''
+    loading the deformations fro a given frame. If deformations are not found either raises an error
     or a warning (warn=True) and returns None for u and v
 
     :param path:
@@ -174,8 +214,11 @@ def try_to_load_deformation(path, frame, warn=False):
     return (u, v)
 
 
+
+
 def try_to_load_traction(path, frame, warn=False):
-    '''loading the tractions from a given frame. If tractions are not found either raises an error
+    '''
+    loading the tracktions from a given frame. If tracktions are not found either raises an error
     or a warning (warn=True) and returns None for u and v
 
     :param path:
@@ -195,22 +238,10 @@ def try_to_load_traction(path, frame, warn=False):
     return (t_x, t_y)
 
 
-def check_small_mask(mask, warn_thresh=300):
-    '''
-    warns when mask is very small and raises error if amsk is too small
-    '''
-    mask_sum=np.sum(mask)
-    if mask_sum==0:
-        raise Mask_Error("mask empty after filtering/interpolation")
-        return "error"
-    if mask_sum<warn_thresh:
-        warnings.warn("mask is very small, consider increasing the resoultion of deformation and traction field")
-        return "mask for cellcolny is very small"
-    return ""
 
 def setup_database_for_tfm(folder, name, return_db=False):
 
-    db = clickpoints.DataFile(os.path.join(folder, "database3.cdb"), "w")
+    db = clickpoints.DataFile(os.path.join(folder,name), "w")
     images = [x for x in os.listdir(folder) if ".tif" in x]
     frames = [get_group(re.search('(\d{1,4})', x), 0) for x in images]
     sort_id_list=make_rank_list(frames,dtype=int)# list of sort indexes (frames) of images in the database
@@ -264,7 +295,7 @@ def create_layers_on_demand(db, layer_list):
 
 def get_file_order_and_frames(db):
 
-    # string to search for frame: max for numbers at the beginning
+    # string to search for frame: allows max 4 numbers at the beginning
     s_frame='^(\d{1,4})'  
     #string to search for sort index (frame in the cdb database)
     # max for numbers after__ 
@@ -281,6 +312,20 @@ def get_file_order_and_frames(db):
     
     return unique_frames, file_order,frames_ref_dict
 
+def get_db_info_for_analysis(db,unpack=False):
+
+    all_frames, file_order, frames_ref_dict = get_file_order_and_frames(db)
+    path = db.getPath(id=1).path
+    im_shape = db.getImage(0).data.shape
+    db_info = {"file_order": file_order,
+               "frames_ref_dict": frames_ref_dict,
+               "path": path,
+               "im_shape": im_shape
+               }
+
+    return db_info,all_frames
+
+
 def get_frame_from_annotation(db,cdb_frame):
     '''
 
@@ -296,95 +341,107 @@ def get_frame_from_annotation(db,cdb_frame):
 
 
 
-
-def deformation(frame, parameter_dict,res_dict, db, frames_ref_dict=None, file_order=None, path=None,single=True,**kwargs):
+def general_properties(frame, parameter_dict,res_dict, db,db_info=None,
+                                         single=True,**kwargs):
+    '''
+    Number of cells, area of the cell colony...
+    :param frame:
+    :param parameter_dict:
+    :param res_dict:
+    :param db:
+    :return:
+    '''
     if single:
-        frames, file_order,frames_ref_dict = get_file_order_and_frames(db)
-        path = db.getPath(id=1).path
-        layer_list = ["def_plots"]
-        create_layers_on_demand(db, layer_list)
+        db_info, all_frames = get_db_info_for_analysis(db)
+        print(calculation_messages["general_properites"]%frame)
+
+    t_x, t_y = try_to_load_traction(db_info["path"], frame, warn=False) # just to get correct shape
+    ps_new = parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"]) / np.array(t_x.shape))
+
+    mask_membrane, warn = try_to_load_mask(db, db_info["frames_ref_dict"][frame], mtype="cell colony",
+                                           warn_thresh=1500/(ps_new/parameter_dict["pixelsize"]))
+    area = np.sum(binary_fill_holes(mask_membrane)) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
+    mask_int_mem = interpolation(mask_membrane, t_x.shape, min_cell_size=100)
+    mask_area, mask_boundaries, borders = prepare_mask(mask_int_mem,min_cell_size=5)
+    n_cells=len(borders.cell_ids)
+    res_dict[frame]["area"]=[area,warn]
+    res_dict[frame]["n_cells"]=[n_cells,warn]
+
+
+
+
+
+def deformation(frame, parameter_dict,res_dict, db,db_info=None,single=True,**kwargs):
+
+    if single:
+        db_info,all_frames=get_db_info_for_analysis()
+        create_layers_on_demand(db, ["def_plots"])
         print(calculation_messages["deformation"]%frame)
 
 
     # deformation for 1 frame
-    im1 = db.getImage(id=file_order[frame + "after"]).data  ## thats very slow though
-    im2 = db.getImage(id=file_order[frame + "before"]).data
+    im1 = db.getImage(id=db_info["file_order"][frame + "after"]).data  ## thats very slow though
+    im2 = db.getImage(id=db_info["file_order"][frame + "before"]).data
     u, v, x, y, mask, mask_std = calculate_deformation(im1.astype(np.int32), im2.astype(np.int32),
                                                        parameter_dict["window_size"]
                                                        , parameter_dict["overlapp"],
                                                        std_factor=parameter_dict["std_factor"])
     res_dict[frame]["sum deformations"] = np.sum(np.sqrt(u ** 2 + v** 2))
+
+
     # plotting
     plt.ioff()
     dpi = 200
-    fig1 = show_quiver_clickpoints(u, v, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
-                                   headwidth=3, headlength=3, width=0.002,
-                                   figsize=(im1.shape[1] / dpi, im1.shape[0] / dpi), cbar_str="deformation\n[pixel]")
+
+    fig_parameters = set_fig_parameters(u.shape, db_info["im_shape"], dpi,default_fig_parameters,figtype="deformation")
+    fig1 = show_quiver_clickpoints(u, v,**fig_parameters)
     # saving plots
-    fig1.savefig(os.path.join(path, frame + "deformation.png"), dpi=200)
+    fig1.savefig(os.path.join(db_info["path"], frame + "deformation.png"), dpi=200)
     # closing figure objects
     plt.close(fig1)
     # adding plots to data base
     # if entry already exist dont change anything (image is overwritten, but database entry stays the same)
     except_error(db.setImage, IntegrityError, filename=frame + "deformation.png", layer="def_plots", path=1,
-                 sort_index=frames_ref_dict[frame])
+                 sort_index=db_info["frames_ref_dict"][frame])
     # saving raw files
-    np.save(os.path.join(path, frame + "u.npy"), u)
-    np.save(os.path.join(path, frame + "v.npy"), v)
+    np.save(os.path.join(db_info["path"], frame + "u.npy"), u)
+    np.save(os.path.join(db_info["path"], frame + "v.npy"), v)
+
+    # sum of deformations on the cellcolony area
+    ps_new = parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"]) / np.array(u.shape))
+    mask_membrane, warn = try_to_load_mask(db, db_info["frames_ref_dict"][frame], mtype="cell colony",
+                                           warn_thresh=1500 / (ps_new / parameter_dict["pixelsize"]))
+    mask_int = interpolation(binary_fill_holes(mask_membrane), dims=u.shape, min_cell_size=100)
+    res_dict[frame]["sum deformations on cell colony"] = np.sum(np.sqrt(u[mask_int] ** 2 + v[mask_int] ** 2))
     return None, frame
 
-def plot_deformations(folder):
-    files=os.listdir(folder)
-    files_dict=defaultdict(dict)
-    for f in files:
-        if f[2]=="u":
-            files_dict[f[:2]]["u"]=f
-        if f[2] == "v":
-            files_dict[f[:2]]["v"]=f
-    for frame, files in files_dict.items():
-        u=np.load(os.path.join(folder,files["u"]))
-        v = np.load(os.path.join(folder,files["v"]))
-        dpi = 200
-        fig1 = show_quiver_clickpoints(u, v, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
-                                       headwidth=3, headlength=3, width=0.002,
-                                       figsize=(2022 / dpi, 2011 / dpi),
-                                       cbar_str="deformation\n[pixel]")
-        fig1.savefig(os.path.join(folder, frame + "deformation.png"), dpi=200)
 
 
 
 
-def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,frames_ref_dict=None, path=None,
+def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,db_info=None,
                                          single=True,**kwargs):
 
     if single:
-        frames, file_order,frames_ref_dict = get_file_order_and_frames(db)
-        path = db.getPath(id=1).path
-        layer_list = ["FEM_output"]
-        create_layers_on_demand(db, layer_list)
+        db_info, all_frames = get_db_info_for_analysis(db)
         print(calculation_messages["get_contractility_contractile_energy"]%frame)
 
-    mask=try_to_load_mask(db,frames_ref_dict[frame],mtype="contractility_select")
-
-    u,v=try_to_load_deformation(path, frame, warn=True)
-    t_x,t_y=try_to_load_traction(path, frame, warn=False)
+    mask,warn=try_to_load_mask(db,db_info["frames_ref_dict"][frame],mtype="contractility selection",warn_thresh=1000)
+    u,v=try_to_load_deformation(db_info["path"], frame, warn=True)
+    t_x,t_y=try_to_load_traction(db_info["path"], frame, warn=False)
 
     # filling holes
     mask=binary_fill_holes(mask)
-    warn="selected area is very small" if np.sum(mask) < 1000 else "" # set a warning written in the outputfile
-
-    ps_new = parameter_dict["pixelsize_beads_image"] * np.mean(  # should be equivalent to "pixelsize_def_image"
-        np.array(mask.shape) / np.array(t_x.shape))
+    ps_new = parameter_dict["pixelsize"] * np.mean(np.array(mask.shape) / np.array(t_x.shape))
     # interpolation to size of traction force array
     mask_int = interpolation(mask, t_x.shape)
-
-
     contractile_force, proj_x, proj_y,center=contractility(t_x, t_y, ps_new, mask_int)
     # calculate contractile energy if deformations are provided
     if isinstance(u,np.ndarray):
-        contr_energy=contractile_energy(u,v,t_x,t_y,parameter_dict["pixelsize_beads_image"], ps_new,mask_int)
+        contr_energy=contractile_energy(u,v,t_x,t_y,parameter_dict["pixelsize"], ps_new,mask_int)
     else:
         contr_energy=None
+    print("contractile energy=",round_flexible(contr_energy),"contractillity=",round_flexible(contractile_force))
 
     # writing results to dictionray
 
@@ -395,59 +452,21 @@ def get_contractility_contractile_energy(frame, parameter_dict,res_dict, db,fram
 
 
 
-def general_properites(frame, parameter_dict,res_dict, db,frames_ref_dict=None, path=None,
-                                         single=True,**kwarg):
-    '''
-    Number of cells, area of the cell colony...
-    :param frame:
-    :param parameter_dict:
-    :param res_dict:
-    :param db:
-    :return:
-    '''
-    if single:
-        frames, file_order, frames_ref_dict = get_file_order_and_frames(db)
-        path = db.getPath(id=1).path
-        layer_list = ["FEM_output"]
-        create_layers_on_demand(db, layer_list)
-        print(calculation_messages["get_contractility_contractile_energy"]%frame)
 
-    t_x, t_y = try_to_load_traction(path, frame, warn=False) # just to get correct shape
-    mask_membrane = try_to_load_mask(db, frames_ref_dict[frame], mtype="membrane")
-
-    warn = "selected area is very small" if np.sum(binary_fill_holes(mask_membrane)) < 1000 else ""  # set a warning written in the outputfile
-    area = np.sum(binary_fill_holes(mask_membrane)) * ((parameter_dict["pixelsize_beads_image"] * 10 ** -6) ** 2)
-
-    mask_membrane = remove_small_holes(mask_membrane.astype(bool), 100)
-    mask_membrane = remove_small_objects(label(mask_membrane), 1000) > 0  # removing other small bits
-    mask_int_mem = interpolation(mask_membrane, t_x.shape)
-    mask_area, mask_boundaries, borders = prepare_mask(mask_int_mem,min_cell_size=5)
-    n_cells=len(borders.cell_ids)
-    res_dict[frame]["area"]=[area,warn]
-    res_dict[frame]["n_cells"]=[n_cells,warn]
-
-
-
-
-
-
-def tracktion_force(frame, parameter_dict,res_dict, db, path=None, frames_ref_dict=None, single=True,im_shape=0,**kwargs):
+def tracktion_force(frame, parameter_dict,res_dict, db, db_info=None, single=True,**kwargs):
 
     if single:
-        frames, file_order,frames_ref_dict = get_file_order_and_frames(db)
-        im_shape=db.getImage(0).data.shape
-        path = db.getPath(id=1).path
-        layer_list = ["traction_plots"]
-        create_layers_on_demand(db, layer_list)
+        db_info, all_frames = get_db_info_for_analysis(db)
+        create_layers_on_demand(db, ["traction_plots"])
         print(calculation_messages["tracktion_force"]%frame)
 
     # trying to laod deformation
-    u,v=try_to_load_deformation(path, frame, warn=False)
-    ps_new = parameter_dict["pixelsize_beads_image"] * np.mean(  # should be equivalent to "pixelsize_def_image"
+    u,v=try_to_load_deformation(db_info["path"], frame, warn=False)
+    ps_new = parameter_dict["pixelsize"] * np.mean(  # should be equivalent to "pixelsize_def_image"
         np.array(u.shape) / np.array(u.shape))  # pixelsize of fem grid in µm
     # using tfm with or without finite thikness correction
     if parameter_dict["TFM_mode"] == "finite_thikness":
-        tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=parameter_dict["pixelsize_beads_image"],
+        tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=parameter_dict["pixelsize"],
                                                      pixelsize2=ps_new,
                                                      h=parameter_dict["h"], young=parameter_dict["young"],
                                                      sigma=parameter_dict["sigma"],
@@ -457,7 +476,7 @@ def tracktion_force(frame, parameter_dict,res_dict, db, path=None, frames_ref_di
             warnings.warn("falling back to inifinte thikness assumption due to nummerical issues")
             parameter_dict["TFM_mode"] = "infinite_thikness"
     if parameter_dict["TFM_mode"] == "infinite_thikness":
-        tx, ty = ffttc_traction(u, v, pixelsize1=parameter_dict["pixelsize_beads_image"],
+        tx, ty = ffttc_traction(u, v, pixelsize1=parameter_dict["pixelsize"],
                                                  pixelsize2=ps_new,
                                                  young=parameter_dict["young"],
                                                  sigma=parameter_dict["sigma"],
@@ -466,51 +485,45 @@ def tracktion_force(frame, parameter_dict,res_dict, db, path=None, frames_ref_di
     # plotting
     plt.ioff()
     dpi = 200
-    fig2 = show_quiver_clickpoints(tx, ty, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
-                                   headwidth=3, headlength=3, width=0.002,
-                                   figsize=(im_shape[1] / dpi, im_shape[0] / dpi), cbar_str="tracktion\n[Pa]")
+    fig_parameters = set_fig_parameters(u.shape, db_info["im_shape"], dpi,default_fig_parameters,figtype="tracktion")
+    fig2 = show_quiver_clickpoints(tx, ty, **fig_parameters)
     # saving plots
-    fig2.savefig(os.path.join(path, frame + "traction.png"), dpi=200)
-    # closing figure objects
-    plt.close(fig2)
+    fig2.savefig(os.path.join(db_info["path"], frame + "traction.png"), dpi=dpi)
+    plt.close(fig2) # closing figure objects
     # adding plots to data base
-    # if entry already exist dont change anything (image is overwritten, but database entry stays the same)
+    # if entry already exist don't change anything (image is overwritten, but database entry stays the same)
     except_error(db.setImage, IntegrityError, filename=frame + "traction.png", layer="traction_plots", path=1,
-                 sort_index=frames_ref_dict[frame])
+                 sort_index=db_info["frames_ref_dict"][frame])
     # saving raw files
-    np.save(os.path.join(path, frame + "tx.npy"), tx)
-    np.save(os.path.join(path, frame + "ty.npy"), ty)
+    np.save(os.path.join(db_info["path"], frame + "tx.npy"), tx)
+    np.save(os.path.join(db_info["path"], frame + "ty.npy"), ty)
     return None, frame
 
 
 
 
-def FEM_analysis(frame,parameter_dict,res_dict,db,path=None, frames_ref_dict=None,single=True,**kwargs):
+def FEM_analysis(frame,parameter_dict,res_dict,db,single=True,db_info=None,**kwargs):
+
     # performing MSM/finite elements analysis
     if single:
-        frames, file_order,frames_ref_dict = get_file_order_and_frames(db)
-        path = db.getPath(id=1).path
-        layer_list = ["FEM_output"]
-        create_layers_on_demand(db, layer_list)
+        db_info, all_frames = get_db_info_for_analysis(db)
+        create_layers_on_demand(db, ["FEM_output"])
         print(calculation_messages["FEM_analysis"]%frame)
 
+    # trying to traction forces, raise error if not found
+    t_x, t_y = try_to_load_traction(db_info["path"], frame, warn=False)
+    ps_new = parameter_dict["pixelsize"] * np.mean(
+        np.array(db_info["im_shape"]) / np.array(t_x.shape))  # pixelsize of fem grid in µm
+    # trying to load mask, raise error if not found
+    mask, warn = try_to_load_mask(db, db_info["frames_ref_dict"][frame], mtype="cell colony",
+                                           warn_thresh=1500 / (ps_new/parameter_dict["pixelsize"]))
 
-    # trying to load mask, skip if not found
-    mask = try_to_load_mask(db, frames_ref_dict[frame],mtype="membrane")
-    im_shape=mask.shape
-    # trying to traction forces, skip if not found
-    t_x, t_y = try_to_load_traction(path, frame, warn=False)
-    # some pre clean up of the mask
-    mask = remove_small_holes(mask.astype(bool), 100)
-    mask = remove_small_objects(label(mask), 1000) > 0  # removing other small bits
     # interpolation to size of traction force array
-    mask_int = interpolation(mask, t_x.shape)
-    warn=check_small_mask(mask_int)  ## imprve to get full error catching when mask is e.g. dicontinous
+    mask_int = interpolation(mask, t_x.shape,min_cell_size=100) # this cell size in pixels of beads image
+
     # further preparation of mask data
     mask_area, mask_boundaries, borders = prepare_mask(mask_int, min_cell_size=5) # min_cell_size at least 2 or none
     # plt.figure();plt.imshow(mask_area)
-    ps_new = parameter_dict["pixelsize_beads_image"] * np.mean(  # should be equivalent to "pixelsize_def_image"
-        np.array(mask.shape) / np.array(mask_area.shape))  # pixelsize of fem grid in µm (?? is this ok??)
 
     # preparing force mao
     f_x = t_x * ((ps_new * (10 ** -6)) ** 2)  # point force for each node from tractions
@@ -581,46 +594,32 @@ def FEM_analysis(frame,parameter_dict,res_dict,db,path=None, frames_ref_dict=Non
     res_dict[frame]["std cell shear"] = avg_cell_shear[2]
 
     #plot of line stresses to the database
+
+
     plt.ioff()
     dpi = 200
-
+    fig_parameters = set_fig_parameters(mask_area.shape, db_info["im_shape"], dpi,default_fig_parameters,figtype="FEM")
     fig=plot_continous_boundary_stresses(mask_area.shape, borders.edge_lines, lines_interpol, min_v,
-                                     max_v, figsize=(im_shape[1] / dpi, im_shape[0] / dpi),
-                                     cbar_str="line stress\n[N/µm]")
+                                     max_v,**fig_parameters)
 
     # saving the the plot
-    fig.savefig(os.path.join(path, frame + "border_stress_img.png"), dpi=200)
+    fig.savefig(os.path.join(db_info["path"], frame + "border_stress_img.png"), dpi=200)
     plt.close(fig)
     # adding figure to database
-    except_error(db.setImage, IntegrityError, filename=os.path.join(path, frame + "border_stress_img.png"),
-                 layer="FEM_output", path=1, sort_index=frames_ref_dict[frame])
+    except_error(db.setImage, IntegrityError, filename=os.path.join(db_info["path"], frame + "border_stress_img.png"),
+                 layer="FEM_output", path=1, sort_index=db_info["frames_ref_dict"][frame])
 
-    #saving the fem solution
-    np.save(os.path.join(path, frame + "MSM_sol_defo.npy"), UG_sol)
+    #saving the fem solution (deformations on the cell sheet)
+    np.save(os.path.join(db_info["path"], frame + "MSM_sol_defo.npy"), UG_sol)
 
     return None, frame
 
 
 
-
-
-def get_db_info_for_analysis(db):
-
-    all_frames, file_order, frames_ref_dict = get_file_order_and_frames(db)
-    path = db.getPath(id=1).path
-    im_shape = db.getImage(0).data.shape
-    db_info={ "file_order":file_order,
-            "frames_ref_dict":frames_ref_dict,
-            "path":path,
-            "im_shape":im_shape
-            }
-    return db_info,all_frames
-
-
 def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_info=None):
     '''
     wrapper to apply analysis function on all frames
-    :param db: clcikpoints database
+    :param db: clickpoints database
     :param parameter_dict: parameters for piv deforamtion calcualtion: (windowsize, overlapp), sigma and youngs modulus
     of the gel (or of the cell sheet when applying FEM), hight of the gel
     :param func: function that is analyzed
@@ -639,19 +638,20 @@ def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_
     create_layers_on_demand(db, layer_name_dict[analysis_function.__name__])
     for frame in tqdm(frames,total=len(frames)):
         try:
-            analysis_function(frame, parameter_dict,res_dict, db=db,**db_info, single=False)
+            analysis_function(frame, parameter_dict,res_dict, db=db,db_info=db_info, single=False)
         except (Mask_Error,FileNotFoundError,IndexError): ## IndexError is only supposed to be there for a short time!!!!!
             pass
     return res_dict
 
+
+### code to work on clickpoint outside of the addon
 if __name__=="__main__":
     ## setting upnecessary paramteres
-    db=clickpoints.DataFile("/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/KOshift/database3.cdb","r")
-    parameter_dict = default_parameters()
-    analysis_function=FEM_analysis
+    db=clickpoints.DataFile("/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/database3.cdb","r")
+    parameter_dict = default_parameters
     res_dict=defaultdict(dict)
     db_info, all_frames = get_db_info_for_analysis(db)
-    apply_to_frames(db, parameter_dict, get_contractility_contractile_energy,res_dict, frames=all_frames)
+    apply_to_frames(db, parameter_dict, FEM_analysis,res_dict, frames="01",db_info=db_info)
     write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
     # calculating the deformation field and adding to data base
 '''

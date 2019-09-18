@@ -36,14 +36,13 @@ def add_parameter_from_list(labels, dict_keys, default_parameters, layout,grid_l
     last_line = grid_line_start + i
     return params, param_labels, last_line
 
-def read_all_paramters(parameter_widgets):
-    paramter_dict={}
+def read_all_paramters(parameter_widgets,parameter_dict):
     for p_name,p_widget in parameter_widgets.items():
         if isinstance(p_widget,QtWidgets.QLineEdit):
-            paramter_dict[p_name]=float(p_widget.text())
+            parameter_dict[p_name]=float(p_widget.text())
         if isinstance(p_widget, QtWidgets.QComboBox):
-            paramter_dict[p_name] = p_widget.currentText()
-    return paramter_dict
+            parameter_dict[p_name] = p_widget.currentText()
+    return parameter_dict
 
 
 
@@ -98,11 +97,11 @@ class Addon(clickpoints.Addon):
 
 
         #### parameters
-        self.default_paramters = default_parameters()
+        self.parameter_dict = default_parameters
         self.parameter_list=["youngs modulus [Pa]","possion ratio","pixel size [µm]","piv overlapp [pixel]","piv window size [pixel]","gel hight [µm]"]
-        self.param_dict_keys=["young","sigma","pixelsize_beads_image","overlapp","window_size","h"]
+        self.param_dict_keys=["young","sigma","pixelsize","overlapp","window_size","h"]
         self.parameter_widgets,self.parameter_lables,last_line=add_parameter_from_list(self.parameter_list,
-                                                            self.param_dict_keys,self.default_paramters,self.layout
+                                                            self.param_dict_keys,self.parameter_dict,self.layout
                                                                                        ,5,self.parameters_changed)
         # drop down for choosing wether to use height correction
         self.use_h_correction = QtWidgets.QComboBox()
@@ -110,25 +109,24 @@ class Addon(clickpoints.Addon):
         self.use_h_correction.currentTextChanged.connect(self.parameters_changed) # update self.paramter_dict everytime smethong changed
         self.use_h_correction_descr = QtWidgets.QLabel()
         self.use_h_correction_descr.setText("enable height correction")
-        self.layout.addWidget(self.use_h_correction,  last_line+1, 1)#
-        self.layout.addWidget(self.use_h_correction_descr,   last_line+1, 0)
-        self.parameter_widgets["TFM_mode"]=self.use_h_correction #adding to paramters dict
-        self.parameter_lables["TFM_mode"] =  self.use_h_correction_descr  # adding to paramters dict
+        self.layout.addWidget(self.use_h_correction,  last_line+1, 1)
+        self.layout.addWidget(self.use_h_correction_descr,   last_line + 1, 0)
+        self.parameter_widgets["TFM_mode"]=self.use_h_correction # adding to parameters dict
+        self.parameter_lables["TFM_mode"] =  self.use_h_correction_descr  # adding to parameters dict
         # adding to layout
         self.setLayout(self.layout)
         self.parameters_changed() # initialize parameters dict
 
-
-
+    # reading paramteres and updating the dictionary
     def parameters_changed(self):
-        self.parameter_dict = read_all_paramters(self.parameter_widgets)  # reading parmateres
-        self.parameter_dict = make_paramters_dict_tfm( **self.parameter_dict)  ## adds pixelsize2 (pixelsize of the deformation image)
+        self.parameter_dict = read_all_paramters(self.parameter_widgets,self.parameter_dict)
+
        
         #write_output_file(self.parameter_dict, None, "parameters", self.outfile_path) # writes paramters to output file..
 
     # decorator functions to handle diffrent outputs and writing to text file
     def calculate_general_properties(self,frames):
-        apply_to_frames(self.db, self.parameter_dict, analysis_function=general_properites, res_dict=self.res_dict,
+        apply_to_frames(self.db, self.parameter_dict, analysis_function=general_properties, res_dict=self.res_dict,
                         frames=frames, db_info=self.db_info)  # calculation of colony area, number of cells in colony
     def calculate_deformation(self,frames):
             apply_to_frames(self.db, self.parameter_dict,analysis_function=deformation,res_dict=self.res_dict,
@@ -154,7 +152,7 @@ class Addon(clickpoints.Addon):
         self.frame = get_frame_from_annotation(self.db, cdb_frame) # current frame
 
 
-        print("parameters\n",self.parameter_dict)
+        print("parameters:\n",self.parameter_dict)
         self.mode=self.analysis_mode.currentText() # only current frame or all frames
         if self.mode == "current frame": # only current frame
             frames=self.frame

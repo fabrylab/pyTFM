@@ -18,7 +18,8 @@ from skimage.measure import regionprops
 
 from scipy.sparse.csr import csr_matrix
 from scipy.sparse.linalg import spsolve,lsqr
-
+import os
+from collections import defaultdict
 
 
 
@@ -96,14 +97,33 @@ def plot_line_stresses(mask,coords,n_stress,shear_stress):
 
 
 def plot_continous_boundary_stresses(shape,edge_lines,lines_interpol,min_v,max_v,mask_boundaries=None,plot_t_vecs=False,plot_n_arrows=False,figsize=(10,7),
-                                     scale_ratio=0.2,arrow_filter=1,cbar_str="line stress in N/µm"):
+                                     scale_ratio=0.2,border_arrow_filter=1,cbar_str="line stress in N/µm",vmin=None,vmax=None,
+                                    cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,linewidth=4,cm_cmap=cm.jet,**kwargs):
     '''
-    plotting the line stresses (total transmitted force of cell boundaries), colored by their absolute values
+        plotting the line stresses (total transmitted force of cell boundaries), colored by their absolute values
     as continous lines.
+    :param shape:
+    :param edge_lines:
+    :param lines_interpol:
+    :param min_v:
+    :param max_v:
     :param mask_boundaries:
-    :param lines_iterpol:
+    :param plot_t_vecs:
+    :param plot_n_arrows:
+    :param figsize:
+    :param scale_ratio:
+    :param arrow_filter:
+    :param cbar_str:
+    :param vmin:  overwrites max_v and min_v if provided
+    :param vmax:  overwrites max_v and min_v if provided
     :return:
     '''
+    if isinstance(vmin,(float,int)):
+        min_v=vmin
+    if isinstance(vmax,(float,int)):
+        max_v=vmax
+    print("plotting cell border stresses")
+
     fig = plt.figure(figsize=figsize)
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     fig.add_axes(ax)
@@ -111,15 +131,14 @@ def plot_continous_boundary_stresses(shape,edge_lines,lines_interpol,min_v,max_v
 
     if not isinstance(mask_boundaries,np.ndarray):
         mask_boundaries=np.zeros(shape)
-
     im = ax.imshow(mask_boundaries)
-    print("plotting cell border stresses")
 
     # finding global scaling factor for arrows
     all_t_vecs=np.vstack([subdict["t_vecs"] for subdict in lines_interpol.values()])
     if plot_t_vecs:
         scale = scale_for_quiver(all_t_vecs[:, 0], all_t_vecs[:, 1], dims=mask_boundaries.shape,
                                                       scale_ratio=scale_ratio,return_scale=True)
+
     for line_id,interp in tqdm(lines_interpol.items(),total=len(lines_interpol.values())):
         p_new=interp["points_new"]
         x_new=p_new[:,0]
@@ -128,29 +147,31 @@ def plot_continous_boundary_stresses(shape,edge_lines,lines_interpol,min_v,max_v
         t_vecs = interp["t_vecs"]
         n_vecs=interp ["n_vecs"]
         # plotting line segments
-        c = cm.jet((t_norm - min_v) / (max_v - min_v))  # normalization and creating a color range
-
+        c = cm_cmap((t_norm - min_v) / (max_v - min_v))  # normalization and creating a color range
+        ## see how well that works
         if line_id in edge_lines: # plot lines at the edge
             for i in range(len(x_new)-1):
-                plt.plot([x_new[i],x_new[i+1]],[y_new[i],y_new[i+1]],color="gray",linewidth=4)
+                plt.plot([x_new[i],x_new[i+1]],[y_new[i],y_new[i+1]],color="gray",linewidth=linewidth)
         else:
             for i in range(len(x_new) - 1):
-                plt.plot([x_new[i], x_new[i + 1]], [y_new[i], y_new[i + 1]], color=c[i], linewidth=4)
+                plt.plot([x_new[i], x_new[i + 1]], [y_new[i], y_new[i + 1]], color=c[i], linewidth=linewidth)
 
         # plotting stressvectors
         if plot_t_vecs:
             t_vecs_scale=t_vecs*scale
             for i,(xn,yn,t) in enumerate(zip(x_new,y_new,t_vecs_scale)):
-                if i % arrow_filter == 0:
-                    plt.arrow(xn,  yn,t[0], t[1],head_width=0.6)
+                if i % border_arrow_filter == 0:
+                    plt.arrow(xn,  yn,t[0], t[1],head_width=0.5)
         # plotting normal vectors
         if plot_n_arrows:
             for i in range(len(x_new) - 1):
-                if i % arrow_filter == 0:
+                if i % border_arrow_filter == 0:
                     plt.arrow(x_new[i],  y_new[i],n_vecs[i][0], n_vecs[i][1],head_width=0.5)
 
+
+
     norm = matplotlib.colors.Normalize(vmin=min_v, vmax=max_v)
-    cbaxes = inset_axes(ax, width="2%", height="50%", loc=5,borderpad=2.5)
+    cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5,borderpad=cbar_borderpad)
     cb1 = matplotlib.colorbar.ColorbarBase(cbaxes, cmap=matplotlib.cm.get_cmap("jet"),  # overrides previours colorbar
                                            norm=norm,
                                            orientation='vertical')
@@ -346,7 +367,8 @@ def show_quiver(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headlength=3,widt
     plt.colorbar(im)
     return fig
 
-def show_quiver_clickpoints(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,figsize=(6.4, 4.8),cbar_str=""):
+def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,figsize=(6.4, 4.8),cbar_str=""
+                            ,cmap="rainbow",vmin=None,vmax=None,scale=None,cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,**kwargs):
 
     fx=fx.astype("float64")
     fy=fy.astype("float64")
@@ -356,28 +378,19 @@ def show_quiver_clickpoints(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headl
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     fig.add_axes(ax)
     ax.set_axis_off()
-    im = ax.imshow(np.sqrt(fx ** 2 + fy ** 2))
+    im = ax.imshow(np.sqrt(fx ** 2 + fy ** 2),cmap=cmap,vmin=vmin,vmax=vmax)
 
+    # filtering out arrows
+    fx,fy,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1])
 
+    # scaling arrows to be reach a certain fraktion of the length of the longer image axis
+    if scale_ratio:
+        fx, fy=scale_for_quiver(fx,fy, dims, scale_ratio=scale_ratio)
+        scale=1
+    # plotting the arrows
+    plt.quiver(xs, ys, fx, fy, scale_units="xy",scale=1, angles="xy",headwidth=headwidth,headlength=headlength,width=width)
 
-    if isinstance(filter,list):
-        fx,fy,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1])
-        if scale_ratio:#
-            fx, fy=scale_for_quiver(fx,fy, dims, scale_ratio=scale_ratio)
-            plt.quiver(xs, ys, fx, fy, scale_units="xy",scale=1, angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-        else:
-            plt.quiver(xs, ys, fx, fy, scale_units="xy", angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-    #elif np.isnan(np.sum(fx)): ## fastest way to check if any nan in this array (or so they say)
-     #   ys,xs=np.where(~np.isnan(fx))
-    #    plt.quiver(xs, ys, fx[~np.isnan(fx)], fy[~np.isnan(fx)], scale_units="xy", angles="xy")
-    else:
-        if scale_ratio:  #
-            fx, fy = scale_for_quiver(fx, fy, dims, scale_ratio=scale_ratio)
-            plt.quiver(fx, fy, scale_units="xy",scale=1, angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-        else:
-            plt.quiver(fx, fy, scale_units="xy", angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-
-    cbaxes = inset_axes(ax, width="2%", height="50%", loc=5,borderpad=2.5)
+    cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5,borderpad=cbar_borderpad)
     cbaxes.set_title(cbar_str,color="white")
     cbaxes.tick_params(colors="white")
     plt.colorbar(im,cax=cbaxes)
@@ -1172,3 +1185,24 @@ def custom_solver(mat, rhs,mask_area,verbose=False):
         raise TypeError("Matrix should be numpy array or csr_matrix.")
 
     return u_sol,error
+
+
+
+
+def plot_deformations(folder):
+    files = os.listdir(folder)
+    files_dict = defaultdict(dict)
+    for f in files:
+        if f[2] == "u":
+            files_dict[f[:2]]["u"] = f
+        if f[2] == "v":
+            files_dict[f[:2]]["v"] = f
+    for frame, files in files_dict.items():
+        u = np.load(os.path.join(folder, files["u"]))
+        v = np.load(os.path.join(folder, files["v"]))
+        dpi = 200
+        fig1 = show_quiver_clickpoints(u, v, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
+                                       headwidth=3, headlength=3, width=0.002,
+                                       figsize=(2022 / dpi, 2011 / dpi),
+                                       cbar_str="deformation\n[pixel]")
+        fig1.savefig(os.path.join(folder, frame + "deformation.png"), dpi=200)
