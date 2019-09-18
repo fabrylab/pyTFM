@@ -605,11 +605,8 @@ def contractile_energy(u,v,tx,ty,pixelsize1,pixelsize2,mask):
     energy_points = 0.5 * (pixelsize2 ** 2) * (np.sqrt((tx  * u * pixelsize1) ** 2 + (
             ty  * v * pixelsize1) ** 2))
 
-
-
     bg = np.percentile(energy_points, 30)  # value of a background point
     energy = np.sum(energy_points[mask]) - bg * np.sum(mask) # unit is J
-    print(energy)
     return energy
 
 
