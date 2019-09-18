@@ -350,8 +350,8 @@ def prepare_mask(mask,min_cell_size=None):
         min_cell_size=mask.shape[0]*mask.shape[1]/1000 ## is this robust????
 
     min_cell_size=min_cell_size if min_cell_size>2 else 2  # force to be at least 2
-    mask = remove_small_holes(mask, min_cell_size)
-    mask = remove_small_objects(label(mask), min_cell_size*10) > 0  # removing other small bits
+    mask = remove_small_holes(mask.astype(bool), min_cell_size)
+    mask = remove_small_objects(mask.astype(bool), min_cell_size*10) > 0  # removing other small bits
     mask = skeletonize(mask)
 
     # converting mask to graph object
@@ -478,7 +478,12 @@ def prepare_mask_spread(mask,dil_factor=1.2):
     return mask_area, mask_boundaries,mask_dil, c_l
 
 
-def interpolation(mask, dims):
+def interpolation(mask, dims, min_cell_size=100):
+    #
+    # some pre clean up of the mask
+    mask = remove_small_holes(mask.astype(bool), min_cell_size)
+    mask = remove_small_objects(mask.astype(bool), 1000) # removing other small bits
+    # note: remove_small_objects labels automatically if mask is bool
     coords = np.array(np.where(mask)).astype(float)
     interpol_factors = np.array([dims[0] / np.shape(mask)[0], dims[1] / np.shape(mask)[1]])
     coords[0] = coords[0] * interpol_factors[0]  # interpolting x coordinates
