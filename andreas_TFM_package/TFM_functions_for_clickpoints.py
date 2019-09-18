@@ -20,8 +20,8 @@ default_parameters={"sigma":0.49, # poison ratio
 "young":49000, # youngs modulus
 "pixelsize":0.201, #pixelsize of the image with beads in  µm/pixel
 "window_size":20,  # in µm
-"overlapp":100, # set bigger then window_size/2
-"std_factor":85,  # additional filter for extreme values in deformation field
+"overlapp":17, # in µm set bigger then window_size/2
+"std_factor":15,  # additional filter for extreme values in deformation field
 "h":300, # hight of the substrate in µm
 "TFM_mode":"finite_thikness",  # mode of traction force microscopy ("finite_thikness" or "infinite_thikness")
 }
@@ -128,7 +128,7 @@ def write_output_file(values,value_type, file_path,with_prefix=False):
         frames=list(values.keys())
         frames.sort(key=lambda x:int(x))
 
-        with open(file_path, "w+") as f:
+        with open(file_path, "a+") as f:
             for frame in frames:
                 res_part=values[frame]
                 for name,res in res_part.items():
@@ -382,9 +382,12 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,single=True,**kw
     # deformation for 1 frame
     im1 = db.getImage(id=db_info["file_order"][frame + "after"]).data  ## thats very slow though
     im2 = db.getImage(id=db_info["file_order"][frame + "before"]).data
+
+    # overlapp and windowsize in pixels
+    window_size_pix=int(np.ceil(parameter_dict["window_size"] / parameter_dict["pixelsize"]))
+    overlapp_pix=int(np.ceil(parameter_dict["overlapp"] / parameter_dict["pixelsize"]))
     u, v, x, y, mask, mask_std = calculate_deformation(im1.astype(np.int32), im2.astype(np.int32),
-                                                       parameter_dict["window_size"]
-                                                       , parameter_dict["overlapp"],
+                                                      window_size_pix, overlapp_pix,
                                                        std_factor=parameter_dict["std_factor"])
     res_dict[frame]["sum deformations"] = np.sum(np.sqrt(u ** 2 + v** 2))
 

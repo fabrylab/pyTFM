@@ -98,7 +98,7 @@ class Addon(clickpoints.Addon):
 
         #### parameters
         self.parameter_dict = default_parameters
-        self.parameter_list=["youngs modulus [Pa]","possion ratio","pixel size [µm]","piv overlapp [pixel]","piv window size [pixel]","gel hight [µm]"]
+        self.parameter_list=["youngs modulus [Pa]","possion ratio","pixel size [µm]","piv overlapp [µm]","piv window size [µm]","gel hight [µm]"]
         self.param_dict_keys=["young","sigma","pixelsize","overlapp","window_size","h"]
         self.parameter_widgets,self.parameter_lables,last_line=add_parameter_from_list(self.parameter_list,
                                                             self.param_dict_keys,self.parameter_dict,self.layout
