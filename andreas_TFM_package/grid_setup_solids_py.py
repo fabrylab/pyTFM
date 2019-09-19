@@ -125,7 +125,6 @@ def arrange_lines_from_endpoints(cells_lines,lines_endpoints_com):
         # rearranging endpoints into an suitabel array: axis0: lines axis 1:[endpoint1, endpoint2], axis3: x,y coordinates
         eps=np.array([np.array([value[0],value[1]]) for value in local_endpoints.values()])
 
-
         new_line_ids=[] #newly_arranged line_ids
         p_ind1=0 # start ids
         p_ind2=0
@@ -133,7 +132,7 @@ def arrange_lines_from_endpoints(cells_lines,lines_endpoints_com):
         while not np.isnan(eps).all():
             point = copy.deepcopy(eps[p_ind1, p_ind2]) #extracting an endpoint
             eps[p_ind1, p_ind2] = np.nan # remove the point from array
-            # find second occurrence, by taking the norm of the dffrece between the current point and all other points
+            # find second occurrence, by taking the norm of the diffrece between the current point and all other points
             # this should be zero
             np_ind1,np_ind2=np.array(np.where(np.linalg.norm(eps - point,axis=2)==0)).T[0]
             new_line_ids.append(line_ids[np_ind1]) # note corresponding line_ids
@@ -170,6 +169,24 @@ def center_of_mass_cells(cells_points,points):
 
     return cells_com
 
+def remove_circular_line(lines_endpoints_com, lines_points, lines_endpoints):
+    '''
+    finds lines that are circular by checking if the first and second endpoint are identical. The lines are
+    delted from all input dictionaries
+    :param lines_endpoints_com:
+    :param lines_points:
+    :param lines_endpoints:
+    :return:
+    '''
+    # finding all lines where first and second endpoint is identical
+    circular = [l_id for l_id, endpoints in lines_endpoints_com.items() if
+                np.linalg.norm(endpoints[0] - endpoints[1]) == 0]
+    #print(circular)
+    # clearing these lines from the input dictionaries
+    for l_id in circular:
+        del lines_endpoints_com[l_id]
+        del lines_points[l_id]
+        del lines_endpoints[l_id]
 
 class Cells_and_Lines:
     # containter for cells and lines, assignement of points with them, and assignement with each other
@@ -192,11 +209,8 @@ class Cells_and_Lines:
         # dictionary with endpoints, needed to completely fill the gaps between all cell_lines
         self.lines_endpoints_com,self.lines_endpoints = find_exact_line_endpoints(self.lines_points, self.points, self.graph)
 
-
-
-
-
-
+        # removing all lines that are predicted to be circular. Mostly a problem for very short lines
+        remove_circular_line(self.lines_endpoints_com,self.lines_points,self.lines_endpoints)
 
         # cells as a dictinonray with key=cell id, values: ids of containing points (not ordered)
         self.cells_points, self.cells_area=identify_cells(mask_area, mask_boundaries, self.points)
@@ -237,7 +251,6 @@ class Cells_and_Lines:
         # dictinary with example points (where a normal vector originates) from spline interpolation
         self.lines_spline_points = defaultdict(list)
 
-
         for  line_ids, line_ps in self.lines_points.items():
             endpoints= self.lines_endpoints_com[line_ids]
             k = len(line_ps)+2 - 1 if len(line_ps) <= 3 else 3 # addapt spline order, according to number of points
@@ -261,6 +274,16 @@ class Cells_and_Lines:
         #self.lines_endpoints_com={line_id:value for line_id,value in self.lines_endpoints_com.items() if line_id not in single_endpoints}
         #self.lines_endpoints = {line_id: value for line_id, value in self.lines_endpoints.items() if line_id not in single_endpoints}
         #self.lines_points = {line_id: value for line_id, value in self.lines_points.items() if line_id not in single_endpoints}
+
+
+        plt.figure()
+        plt.imshow(self.mask_boundaries)
+        for l_id,points in self.lines_points.items():
+            for p in points:
+                plt.text(self.points[p][1],self.points[p][0],str(l_id))
+
+
+
 
     def return_n_array(self,fill_nan=True):
         '''

@@ -205,7 +205,7 @@ def plot_graph(graph,points,mask,number_nodes=False):
                plt.text(points[node][1], points[node][0],str(node))
 
 
-def find_neigbour_lines(graph, start_ps,own_points,end_points, visited=[],neighbours=[]):
+def find_neighbor_lines(graph, start_ps,other_endpoint,own_points,end_points, visited=[],neighbours=[]):
     '''
     recursive function to find neighbouring line. Explores the graph around the endpoint of a line. Notes the id of
     the line if it hits another line. Doesnt explore any points beyond the endpoints of lines.
@@ -226,25 +226,29 @@ def find_neigbour_lines(graph, start_ps,own_points,end_points, visited=[],neighb
     next_ps= [p for ps in next_ps for p in ps] # flatten
     next_ps=list(np.unique(next_ps)) # removing duplication
 
+    # avoid conecting the two endpoints on own line directly
+    # only true in first "iteration layer"
+    if other_endpoint in  next_ps and len(visited) == 1:
+        next_ps.remove(other_endpoint)
 
-    # remove if point is in visted list or in own line
-    for p in copy.deepcopy(next_ps):
-        if p in visited or p in own_points:  ##### change in the list whiel iterating is not a nice idea-->
+    # remove if point is in visited list or in own line
+    for p in copy.deepcopy(next_ps): ##### change in the list while iterating is not a nice idea-->
+        if p in visited or p in own_points:
             next_ps.remove(p)
 
 
-    # extract if point cna be found in other line
 
-    for p in copy.deepcopy(next_ps): ##### change in the list whiel iterating is not a nice idea--> make a copy
+    # extract if point can be found in other line
+    for p in copy.deepcopy(next_ps): ##### change in the list while iterating is not a nice idea--> make a copy
         if p in end_points:
             next_ps.remove(p)
             neighbours.append(p)
 
-    # use other points for next iterartion layer:
-    if len(next_ps)==0: # stop recusion if nomore next points are left
+    # use other points for next iteration layer:
+    if len(next_ps)==0: # stop recursion if no more next points are left
         return visited,neighbours
 
-    visited,neighbours = find_neigbour_lines(graph,  next_ps, own_points,end_points, visited=visited,neighbours=neighbours)
+    visited,neighbours = find_neighbor_lines(graph, next_ps, other_endpoint, own_points,end_points, visited=visited,neighbours=neighbours)
     # return when iteration is finished
     if visited:
         return visited,neighbours
@@ -269,10 +273,12 @@ def find_exact_line_endpoints(lines_points, points, graph):
     # finding all neighbouring edpoints for one endpoint of a line
     lines_endpoints = {}
     for line, l_points in lines_points.items():
+        # points on the line with out both endpoints, other wise the algorithm can connect two endpoints on the same line
+        l_points_core=l_points[1:-1]
         end1 = l_points[0]
         end2 = l_points[-1]
-        v, neighbours1 = find_neigbour_lines(graph, [end1], l_points, end_points, visited=[], neighbours=[])
-        v, neighbours2 = find_neigbour_lines(graph, [end2], l_points, end_points, visited=[], neighbours=[])
+        v, neighbours1 = find_neighbor_lines(graph, [end1], end2, l_points_core, end_points, visited=[], neighbours=[])
+        v, neighbours2 = find_neighbor_lines(graph, [end2], end1, l_points_core, end_points, visited=[], neighbours=[])
         lines_endpoints[line] = (neighbours1+[end1], neighbours2+[end2]) # also adding own endpoints here
         # note adding endpoints after find_neighbour_lines is easiest
     ## calcualte new endpoints:
