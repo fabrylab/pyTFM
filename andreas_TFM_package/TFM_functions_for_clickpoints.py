@@ -540,7 +540,7 @@ def FEM_analysis(frame,parameter_dict,res_dict,db,single=True,db_info=None,**kwa
     # get_torque1(f_y,f_x,mask_area)
 
     # setup of the grid
-    nodes, elements, loads, mats = grid_setup(mask_area, f_x_c2, f_y_c2, 1, sigma=0.5)
+    nodes, elements, loads, mats = grid_setup(mask_area, -f_x_c2, -f_y_c2, 1, sigma=0.5) # note the negative signe
     DME, IBC, neq = ass.DME(nodes, elements)  # boundary conditions asembly??
     print("Number of elements: {}".format(elements.shape[0]))
     print("Number of equations: {}".format(neq))
@@ -642,7 +642,7 @@ def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_
     for frame in tqdm(frames,total=len(frames)):
         try:
             analysis_function(frame, parameter_dict,res_dict, db=db,db_info=db_info, single=False)
-        except (Mask_Error,FileNotFoundError,IndexError): ## IndexError is only supposed to be there for a short time!!!!!
+        except (Mask_Error,FileNotFoundError):
             pass
     return res_dict
 
