@@ -52,6 +52,13 @@ pip install git+https://github.com/fabrylab/tracktion_force_microscopy.git
 To activate the clickpoints addon download or clone this repository. Copy and paste the folder TFM_addon to the clickpoints addons subdirectory.
 
 # Using the clickpoints addon. 
+![Analysis plot](images/opening_addon.png?raw=true "Optional Title")
+![Analysis plot](images/opening_addon2.png?raw=true "Optional Title")
+![Analysis plot](images/main_window.png?raw=true "Optional Title")
+![Analysis plot](images/mode1.png?raw=true "Optional Title")
+![Analysis plot](images/mode2.png?raw=true "Optional Title")
+
+
 
 
 
