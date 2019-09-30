@@ -33,3 +33,25 @@ Dhananjay T. Tambe, Ugo Croutelle, Xavier Trepat, Chan Young Park, Jae Hun Kim, 
 James P. Butler, Jeffrey J. Fredberg<br>
 [*PLOS ONE 8(2): e55172 (2013)*](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0055172)
 
+
+# Installation
+It is recomanded to use this package with anaconda. 
+If you are on windows you need the Microsoft Visual C++ build tools. Download and install them from [here] (https://visualstudio.microsoft.com/de/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16).
+Additionally you need to install clickpoints. See [here](https://clickpoints.readthedocs.io/en/latest/installation.html#windows-installer) for instructions.
+
+Next install the Tracktion force microsoft package. You can do so directly from git hub. First you need to install git.
+For windows you can use
+```
+conda install git
+```
+then install this package by
+```
+pip install git+https://github.com/fabrylab/tracktion_force_microscopy.git
+```
+
+To activate the clickpoints addon download or clone this repository. Copy and paste the folder TFM_addon to the clickpoints addons subdirectory.
+
+# Using the clickpoints addon. 
+
+
+
