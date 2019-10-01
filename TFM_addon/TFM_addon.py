@@ -59,9 +59,8 @@ class Addon(clickpoints.Addon):
         # guessing the curent analysis mode
         self.parameter_dict["FEM_mode"],undetermined=guess_TFM_mode(self.db_info,self.parameter_dict)
         self.colony_type_old_id =int(self.parameter_dict["FEM_mode"] == "cell layer")
-        print(self.parameter_dict["FEM_mode"],undetermined)
 
-        # conncetion between frames in the data base and numbering of images in their filename, list of all frames
+        # connection between frames in the data base and numbering of images in their filename, list of all frames
 
 
         """ GUI Widgets"""
