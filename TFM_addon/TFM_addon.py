@@ -1,17 +1,16 @@
 ﻿
 from __future__ import division, print_function
 from andreas_TFM_package.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
+from andreas_TFM_package.parameters_and_strings import tooltips,default_parameters
 #from TFM_functions_for_clickpoints import * local import
 
 #from utilities import  get_group,createFolder
 import os
 from qtpy import QtCore, QtGui, QtWidgets
-from clickpoints.includes.QtShortCuts import AddQLineEdit, AddQComboBox, QInputNumber
-from clickpoints.includes import QtShortCuts
 import qtawesome as qta
 import clickpoints
-import asyncio
 import threading
+import asyncio
 
 import warnings
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
@@ -26,6 +25,7 @@ def add_parameter_from_list(labels, dict_keys, default_parameters, layout,grid_l
         p = QtWidgets.QLineEdit()  # box to enter number
         p.setFixedWidth(120)
         p.setText(str(default_parameters[dict_key]))
+        p.setToolTip(tooltips[dict_key])
         p.textChanged.connect(con_func)
         p_l = QtWidgets.QLabel()  # text
         p_l.setText(label)
@@ -55,6 +55,12 @@ class Addon(clickpoints.Addon):
         self.frame_number=self.db.getImageCount()
         self.db_info, self.all_frames = get_db_info_for_analysis(self.db) # information about the path, image dimensions
         self.res_dict=defaultdict(dict) # dictionary that catches all results
+        self.parameter_dict = default_parameters # loading default parameters
+        # guessing the curent analysis mode
+        self.parameter_dict["FEM_mode"],undetermined=guess_TFM_mode(self.db_info,self.parameter_dict)
+        self.colony_type_old_id =int(self.parameter_dict["FEM_mode"] == "cell layer")
+        print(self.parameter_dict["FEM_mode"],undetermined)
+
         # conncetion between frames in the data base and numbering of images in their filename, list of all frames
 
 
@@ -71,41 +77,78 @@ class Addon(clickpoints.Addon):
         # button to start calculation
         self.button_start = QtWidgets.QPushButton("start")
         self.button_start.clicked.connect(self.start_thread)
+        self.button_start.setToolTip(tooltips["button_start"])
         self.layout.addWidget(self.button_start,0,0)
+
+
+        # choosing type of cell system
+
+        self.colony_type = QtWidgets.QComboBox()
+        self.colony_type.addItems(["colony", "cell layer"])
+        self.colony_type.setToolTip(tooltips["colony_type"])
+        self.colony_type.setCurrentIndex(self.colony_type_old_id)
+        self.colony_type.activated.connect(self.switch_colony_type_mode)  # activated when user changes the the selected text
+
+
+
+
+        self.sub_layout=QtWidgets.QHBoxLayout()
+        self.sub_layout.addWidget(self.colony_type)
+        self.sub_layout.addStretch()
+        self.layout.addLayout(self.sub_layout, 2, 0)
+
+        # filling areas for cell patches
+        self.fill_patches_button = QtWidgets.QPushButton("fill cell area")
+        self.fill_patches_button.setToolTip(tooltips["fill_patches_button"])
+        self.fill_patches_button.clicked.connect(self.fill_patches)
+
+        self.sub_layout2 = QtWidgets.QHBoxLayout()
+        self.sub_layout2.addWidget(self.fill_patches_button)
+        self.sub_layout2.addStretch()
+        self.layout.addLayout(self.sub_layout2, 3, 0)
+        self.fill_patches_button.setVisible(self.colony_type_old_id) # ide button for now
+
+        if not undetermined:
+            self.switch_colony_type_mode(first=True) # initializing masks according to the first value of "FEM_mode"
+
 
          # check_boxes
         self.check_box_def =QtWidgets.QCheckBox("deformation")
-        self.check_box_tra = QtWidgets.QCheckBox("tracktion forces")
+        self.check_box_tra = QtWidgets.QCheckBox("traction forces")
         self.check_box_FEM = QtWidgets.QCheckBox("FEM analysis")
-        self.check_box_contract = QtWidgets.QCheckBox("contractility_measures")
+        self.check_box_contract = QtWidgets.QCheckBox("contractillity_measures")
+
+        self.check_box_def.setToolTip(tooltips["check_box_def"])
+        self.check_box_tra.setToolTip(tooltips["check_box_tra"])
+        self.check_box_FEM.setToolTip(tooltips["check_box_FEM"])
+        self.check_box_contract.setToolTip(tooltips["check_box_contract"])
+
         self.layout.addWidget(self.check_box_def, 0, 1)
         self.layout.addWidget(self.check_box_tra, 1, 1)
         self.layout.addWidget(self.check_box_FEM, 2, 1)
         self.layout.addWidget(self.check_box_contract, 3, 1)
 
 
-        #
-
         # # choosing single or all frames
         self.analysis_mode=QtWidgets.QComboBox()
         self.analysis_mode.addItems(["current frame", "all frames"])
+        self.analysis_mode.setToolTip(tooltips["apply to"])
         self.layout.addWidget(self.analysis_mode, 4, 1)
         self.analysis_mode_descript = QtWidgets.QLabel()
-        self.analysis_mode_descript.setText("analysis mode")
+        self.analysis_mode_descript.setText("apply to")
         self.layout.addWidget(self.analysis_mode_descript, 4, 0)
 
 
 
         #### parameters
-        self.parameter_dict = default_parameters
-        self.parameter_list=["youngs modulus [Pa]","possion ratio","pixel size [µm]","piv overlapp [µm]","piv window size [µm]","gel hight [µm]"]
+        self.parameter_labels=["youngs modulus [Pa]","possion ratio","pixel size [µm]","piv overlapp [µm]","piv window size [µm]","gel hight [µm]"]
         self.param_dict_keys=["young","sigma","pixelsize","overlapp","window_size","h"]
-        self.parameter_widgets,self.parameter_lables,last_line=add_parameter_from_list(self.parameter_list,
+        self.parameter_widgets,self.parameter_lables,last_line=add_parameter_from_list(self.parameter_labels,
                                                             self.param_dict_keys,self.parameter_dict,self.layout
                                                                                        ,5,self.parameters_changed)
         # drop down for choosing wether to use height correction
         self.use_h_correction = QtWidgets.QComboBox()
-        self.use_h_correction.addItems(["finite_thikness", "infinite_thikness"])
+        self.use_h_correction.addItems(["finite_thickness", "infinite_thickness"])
         self.use_h_correction.currentTextChanged.connect(self.parameters_changed) # update self.paramter_dict everytime smethong changed
         self.use_h_correction_descr = QtWidgets.QLabel()
         self.use_h_correction_descr.setText("enable height correction")
@@ -132,19 +175,50 @@ class Addon(clickpoints.Addon):
             apply_to_frames(self.db, self.parameter_dict,analysis_function=deformation,res_dict=self.res_dict,
                                 frames=frames,db_info=self.db_info)  # calculation of deformations
 
-    def calculate_tracktion(self,frames):
-            apply_to_frames(self.db, self.parameter_dict,analysis_function=tracktion_force,res_dict=self.res_dict,
-                                frames=frames,db_info=self.db_info)  # calculation of tracktion forces
+    def calculate_traction(self,frames):
+            apply_to_frames(self.db, self.parameter_dict,analysis_function=traction_force,res_dict=self.res_dict,
+                                frames=frames,db_info=self.db_info)  # calculation of traction forces
 
     def calculate_FEM_analysis(self,frames):
-            apply_to_frames(self.db, self.parameter_dict, analysis_function=FEM_analysis,res_dict=self.res_dict,
+            apply_to_frames(self.db, self.parameter_dict, analysis_function=FEM_full_analysis,res_dict=self.res_dict,
                             frames=frames,db_info=self.db_info)  # calculation of various stress measures
 
     def calculate_contractile_measures(self,frames):
-            apply_to_frames(self.db, self.parameter_dict,analysis_function=get_contractility_contractile_energy,
+            apply_to_frames(self.db, self.parameter_dict,analysis_function=get_contractillity_contractile_energy,
                  res_dict=self.res_dict,frames=frames,db_info=self.db_info)  # calculation of contractility and contractile energy
 
+    # switching the type of cell colony
+    def switch_colony_type_mode(self,first=False):
+        if not first:
+            choice = QtWidgets.QMessageBox.question(self, 'continue',
+                                                "This will delete all previous mask. Do you want to coninue?",
+                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        else:
+            choice=QtWidgets.QMessageBox.Yes
 
+        if choice == QtWidgets.QMessageBox.Yes:
+            # new mask types
+            self.parameter_dict["FEM_mode"] =self.colony_type.currentText()
+            self.colony_type_old_id=self.colony_type.currentIndex()
+            if self.colony_type.currentText()=="cell layer":
+                setup_masks(self.db,self.db_info, self.parameter_dict) # deletes and add masktyes
+                self.fill_patches_button.setVisible(True)
+            if self.colony_type.currentText()=="colony":
+                setup_masks(self.db,self.db_info, self.parameter_dict)
+                self.fill_patches_button.setVisible(False)
+            self.cp.reloadMaskTypes()  # reloading mask to display in clickpoints window
+        else:
+            self.colony_type.setCurrentIndex(self.colony_type_old_id) #reverting to old index
+
+
+    def fill_patches(self):
+
+
+        apply_to_frames(self.db, self.parameter_dict, analysis_function=fill_patches_for_cell_layer,
+                        res_dict=self.res_dict, frames=self.all_frames, db_info=self.db_info)
+
+        self.cp.reloadMask()
+        self.cp.save()
 
 
     def start(self): # perform all checked calculations
@@ -166,7 +240,7 @@ class Addon(clickpoints.Addon):
         if self.check_box_def.isChecked():     
             self.calculate_deformation(frames)
         if self.check_box_tra.isChecked():
-            self.calculate_tracktion(frames)
+            self.calculate_traction(frames)
         if self.check_box_FEM.isChecked():
             self.calculate_FEM_analysis(frames)
         if self.check_box_contract.isChecked():

@@ -192,20 +192,48 @@ def warn_incorrect_files(frames):
 
 
 
-def setup_masks(db,parameters_dict):
+def setup_masks(db,db_info,parameter_dict):
    #mask_type=[m.name for m in db.getMaskTypes()]
-    if parameters_dict["FEM_mode"]=="colony":
+    if parameter_dict["FEM_mode"]=="colony":
         db.deleteMaskTypes("cell type1")
         db.deleteMaskTypes("cell type2")
-        db.setMaskType("membrane", color="#99EA44",index=1)
-        db.setMaskType("contractillity_colony", color="#ff0000",index=2)
-    if parameters_dict["FEM_mode"] == "cell layer":
+        if "membrane" not in db_info["mask_types"]:
+            db.setMaskType("membrane", color="#99EA44",index=1)
+        if "contractillity_colony" not in db_info["mask_types"]:
+            db.setMaskType("contractillity_colony", color="#ff0000",index=2)
+    if parameter_dict["FEM_mode"] == "cell layer":
         db.deleteMaskTypes("membrane", color="#99EA44", index=1)
         db.deleteMaskTypes("contractillity_colony", color="#ff0000", index=2)
-        db.setMaskType("cell type1", color="#1322ff", index=1)
+        if "cell type1"  not in db_info["mask_types"]:
+            db.setMaskType("cell type1", color="#1322ff", index=1)
+        if "cell type2" not in db_info["mask_types"]:
+            db.setMaskType("cell type2",color="#ebff05",index=2)
 
+def guess_TFM_mode(db_info,parameter_dict):
 
+    cl_cond1= len(db_info["mask_types"])==2 and  "cell type1" in db_info["mask_types"] and  "cell type2" in db_info["mask_types"]
+    cl_cond2= len(db_info["mask_types"])==1 and  ("cell type1" in db_info["mask_types"] or  "cell type2" in db_info["mask_types"])
 
+    co_cond1 = len(db_info["mask_types"]) == 2 and "membrane" in db_info["mask_types"] and "contractillity_colony" in db_info[
+        "mask_types"]
+    co_cond2 = len(db_info["mask_types"]) == 1 and (
+                "membrane" in db_info["mask_types"] or "contractillity_colony" in db_info["mask_types"])
+
+    cond_empty=len(db_info["mask_types"]) == 0
+
+    undertermined=False
+    if cl_cond1 or cl_cond2:
+        mode = "cell layer"
+    elif co_cond1 or  co_cond2:
+        mode = "colony"
+    elif cond_empty:
+        mode=parameter_dict["FEM_mode"]
+    else:
+        warnings.warn("failed to guess analysis mode. Try to select it manually")
+        mode=parameter_dict["FEM_mode"]
+        undertermined=True
+
+    return mode,undertermined
 
 
 
@@ -220,7 +248,7 @@ def setup_database_for_tfm(folder, name, return_db=False):
     database is closed
     :return:
     '''
-    
+
     # creating a new cdb database, will override an existing one.
     db = clickpoints.DataFile(os.path.join(folder,name), "w")
     # regex patterns to sort files into layers. If any of these matches, the file will  be sorted into a layer.
@@ -877,7 +905,7 @@ if __name__=="__main__":
     ## setting upnecessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/KOshift/database3.cdb", "r")
+        "/home/user/Desktop/Monolayers_new_images/monolayers_new_images/images_from24_09_2019_with_deformation/database.cdb", "r")
 
     parameter_dict = default_parameters
     res_dict=defaultdict(dict)

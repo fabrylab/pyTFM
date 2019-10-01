@@ -18,7 +18,7 @@ from scipy.ndimage.interpolation import shift
 import os
 import re
 from correcting_frame_shift_gifs import *
-from correcting_frame_shift_single_pictures import *
+from correcting_frame_shift import *
 
 import imageio
 
