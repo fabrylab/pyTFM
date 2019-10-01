@@ -4,7 +4,7 @@ from setuptools import setup
 setup(
     name='andreas_TFM_package',
     packages=['andreas_TFM_package'],
-    version='',
+    version='0.1',
     description='traction force microscopy and FEM analysis of cell sheets',
     url='',
     download_url = '',
