@@ -74,19 +74,26 @@ changing layers in your frame. During the analysis several measures (area of cel
 The field "apply to" allows you to run the anlysis on just the current frame or all frames at once. Note that the output file is only generated if you analyze all frames. If another outputfile exists already, it will be overwritten.
 To start your analysis bress the start button on the top left.
 
-
-You can choose between two diffrent analysis modes: "cell layer" and "colony". "Cell layer" assumes that the whole field of view is coverd in cells. Finite Elements analysis is performed with nodes at the edge of the field of view fixed, so that they can't move orthogonal to the image edge. You are supposed to marke two diffrent areas ("cell type1" and "cell type2"). On these areas you can calculate average stesses and average contractile energy. When you select "cell layer" an new button "fill cell area"
-
-
-
-
-
-
-
-has to masks for two cell types.  
 ![Analysis plot](images/main_window.png?raw=true "Optional Title")
+
+
+
+You can choose between two diffrent analysis modes: "cell layer" and "colony". "Cell layer" assumes that the whole field of view is coverd in cells. Finite Elements analysis is performed with nodes at the edge of the field of view fixed, so that they can't move orthogonal to the image edge. You are supposed to marke two diffrent areas ("cell type1" and "cell type2"). On these areas you average stesses and average contractile energy are calcualted. "contractility_measures" will add a map of the contractile energy to the database.
+A fixed area close to the image edges (10% of the image axis length) is excluded for the calcualtion of al measured. When you select "cell layer" a new button "fill cell area"
+appears. This area helps you by trying to fill all areas encircled with the mask for cell type1 on all frames. Alternatively clickpoints also provides a tool to fill areas individually.
+has to masks for two cell types.  
+
 ![Analysis plot](images/mode1.png?raw=true "Optional Title")
+
+
+In the "colony" mode you can analyze an isolated cell colony. The finite elements analysis will not fix any node (provided you don't mark an area at the image edge). Instead the equilibrium of the system is guaranteed by correcting nodal loads for unbalanced Forces and torque. You are supposed to mark the colony edges and internal cell cell borders within the colony. 
+Additionally you can circle an area around the colony to calculate contractility and contractile energy. "FEM analysis" in this mode will produce stress mesasures along the cell borders and on the wohle colony area. It will also add an image of the cell border stresses to the database. Note that the cell borders are only accurately drawn if you have a high resolution in deformation and tracktion field. This can be achieved by choosing the "piv overlapp" close to the "piv window size" for example overlapp: 19 µm and windowsize: 20 µm. Unfortunately this will increase your calcualtion time. 
+
 ![Analysis plot](images/mode2.png?raw=true "Optional Title")
+
+
+
+
 
 
 
