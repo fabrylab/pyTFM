@@ -210,6 +210,7 @@ def setup_masks(db,parameters_dict):
 
 
 def setup_database_for_tfm(folder, name, return_db=False):
+
     '''
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
     the file name.
@@ -219,6 +220,7 @@ def setup_database_for_tfm(folder, name, return_db=False):
     database is closed
     :return:
     '''
+    
     # creating a new cdb database, will override an existing one.
     db = clickpoints.DataFile(os.path.join(folder,name), "w")
     # regex patterns to sort files into layers. If any of these matches, the file will  be sorted into a layer.
