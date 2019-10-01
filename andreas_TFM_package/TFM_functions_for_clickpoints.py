@@ -15,6 +15,7 @@ import os
 import re
 import warnings
 from tqdm import tqdm
+import itertools
 
 
 
@@ -209,34 +210,59 @@ def setup_masks(db,parameters_dict):
 
 
 def setup_database_for_tfm(folder, name, return_db=False):
-
+    '''
+    Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
+    the file name.
+    :param folder: Folder where images are searched.
+    :param name: Name of the database. Needs to end with .cdb.
+    :param return_db: Choose weather function returns the database object, or weather the connection to the
+    database is closed
+    :return:
+    '''
+    # creating a new cdb database, will override an existing one.
     db = clickpoints.DataFile(os.path.join(folder,name), "w")
-    images = [x for x in os.listdir(folder) if ".tif" in x]
-    frames = [get_group(re.search('(\d{1,4})', x), 0) for x in images]
+    # regex patterns to sort files into layers. If any of these matches, the file will  be sorted into a layer.
+    # keys: name of the layer, values: list of regex patterns
+    file_endings = "(png|jpg|tif|swg)" # all allowed file endings
+    layer_search = {"images_after": [re.compile("\d{1,4}after.*" + file_endings)],
+                    "images_before": [re.compile("\d{1,4}before.*" + file_endings)],
+                    "membranes": [re.compile("\d{1,4}mebrane.*" + file_endings),
+                                          re.compile("\d{1,4}bf_before.*" + file_endings)]
+                            }
+    # filtering all files in the folder
+    all_patterns=list(itertools.chain(*layer_search.values()))
+    images = [x for x in os.listdir(folder) if any([pat.match(x) for pat in all_patterns])]
+    # identifying frames by evaluating the leading number.
+    frames = [get_group(re.search('(\d{1,4})', x), 0) for x in images] # extracting frame
+    # generating a list of sort_ids for the clickpoints database (allows you to miss some frames)
     sort_id_list=make_rank_list(frames,dtype=int)# list of sort indexes (frames) of images in the database
-    warn_incorrect_files(frames)
+    warn_incorrect_files(frames) # checking if there where more or less then three images per frame
 
-    layer_list = ["images_after", "images_before","membranes","def_plots","traction_plots","FEM_output"]
+    # initializing layer in the database
+    layer_list = ["images_after", "images_before","membranes","def_plots","traction_plots","FEM_output"]  # change this..
     base_layer = db.getLayer(layer_list[0], create=True, id=0)
     for l in layer_list[1:]:
         db.getLayer(l, base_layer=base_layer, create=True)
-    path = db.setPath(folder, 1)  # for setting the path to the images
+    path = db.setPath(folder, 1)  # setting the path to the images
 
+    # sorting images into layers
     for id, (sort_index_id,frame, im) in enumerate(zip(sort_id_list,frames, images)):
-        if "after" in im:
+        if any([pat.match(im) for pat in layer_search["images_after"]]):
             db.setImage(id=id, filename=im, sort_index=sort_index_id
                         , layer="images_after", path=1)
             db.setAnnotation(filename=im, comment=frame + "after__"+str(sort_index_id)+"sid")
             # setting new layer and sorting in at the same time
-        if "before" in im and not "bf_" in im:
+        if any([pat.match(im) for pat in layer_search["images_before"]]):
             db.setImage(id=id, filename=im
                         , sort_index=sort_index_id, layer="images_before", path=1)
             db.setAnnotation(filename=im, comment=frame + "before__"+str(sort_index_id)+"sid")
-        if "bf_before" in im:  # change names
+        if any([pat.match(im) for pat in layer_search["membranes"]]):
             db.setImage(id=id, filename=im, sort_index=sort_index_id,
                         layer="membranes", path=1)
             db.setAnnotation(filename=im, comment=frame+"bf__"+str(sort_index_id)+"sid")
     # delete_empty_layers(db) # not necessary
+
+    # return database connection or close
     if return_db:
         return frames, db
     else:
