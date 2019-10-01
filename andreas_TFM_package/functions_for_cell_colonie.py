@@ -397,6 +397,24 @@ def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headl
     return fig
 
 
+
+def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str=""
+                            ,cmap="rainbow",vmin=None,vmax=None,cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,**kwargs):
+
+    values=values.astype("float64")
+    dims=values.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
+    fig=plt.figure(figsize=figsize)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    fig.add_axes(ax)
+    ax.set_axis_off()
+    im = ax.imshow(values,cmap=cmap,vmin=vmin,vmax=vmax)
+    cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5,borderpad=cbar_borderpad)
+    cbaxes.set_title(cbar_str,color="white")
+    cbaxes.tick_params(colors="white")
+    plt.colorbar(im,cax=cbaxes)
+    return fig
+
+
 def show_quiver_ax(ax,fx,fy,vmin,vmax,filter=False,scale_ratio=0.2):
     '''
     like show quiver but returns manioulates and returns  a pyplot axes object
@@ -1130,7 +1148,11 @@ def scale_for_quiver(ar1,ar2,dims,scale_ratio=0.2,return_scale=False):
     return ar1*scale,ar2*scale
 
 
-def custom_solver(mat, rhs,mask_area,verbose=False):
+def custom_solver(mat, rhs, mask_area,verbose=False):
+    #IBC is "internal boundary condition" contains information about which nodes are fixed and
+    # where the unfixed nodes can be found in the rhs vector
+
+
     """Solve a static problem [mat]{u_sol} = {rhs}
 
     Parameters
@@ -1169,8 +1191,11 @@ def custom_solver(mat, rhs,mask_area,verbose=False):
     zero_torque[::2] = r[:, :, 1][mask_area]  # -r2 factor
     zero_torque[1::2] = r[:, :, 0][mask_area]  # +r1 factor
     add_matrix=np.vstack([zero_disp_x,zero_disp_y,zero_torque])
-    # adding zero conditions for force vector
+
+    # adding zero conditions for force vector and torque
     rhs=np.append(rhs,np.zeros(3))
+
+
     if type(mat) is csr_matrix:
         import scipy.sparse
          # convert additional conditions to sparse matrix

@@ -8,7 +8,8 @@ from scipy.signal import convolve2d
 from scipy.interpolate import splprep, splev
 from itertools import chain
 from collections import Counter
-
+class FindingBorderError(Exception):
+    pass
 def show_points(ps,mask):
     plt.figure()
     plt.imshow(mask)
@@ -276,11 +277,11 @@ class Cells_and_Lines:
         #self.lines_points = {line_id: value for line_id, value in self.lines_points.items() if line_id not in single_endpoints}
 
 
-        plt.figure()
-        plt.imshow(self.mask_boundaries)
-        for l_id,points in self.lines_points.items():
-            for p in points:
-                plt.text(self.points[p][1],self.points[p][0],str(l_id))
+        #plt.figure()
+        #plt.imshow(self.mask_boundaries)
+        #for l_id,points in self.lines_points.items():
+            #for p in points:
+                #plt.text(self.points[p][1],self.points[p][0],str(l_id))
 
 
 
@@ -375,7 +376,7 @@ def prepare_mask(mask,min_cell_size=None):
     min_cell_size=min_cell_size if min_cell_size>2 else 2  # force to be at least 2
     mask = remove_small_holes(mask.astype(bool), min_cell_size)
     mask = remove_small_objects(mask.astype(bool), min_cell_size*10) > 0  # removing other small bits
-    mask = skeletonize(mask)
+    mask = skeletonize(mask.astype(int))
 
     # converting mask to graph object
     graph,points = mask_to_graph(mask)
@@ -408,8 +409,12 @@ def prepare_mask(mask,min_cell_size=None):
 
     # updating the garph (coul be done more efficinetly, but this is pretty fast anyway
     graph,points=mask_to_graph(mask_boundaries)
-
-    c_l=Cells_and_Lines(mask_area,mask_boundaries)
+    try :
+        c_l=Cells_and_Lines(mask_area,mask_boundaries)
+    except RecursionError as e:
+        print("original error: ", e)
+        raise FindingBorderError("Error while trying to find cell borders. Try increasing the resolution of "
+                                 "deformation and traction field")
 
     #c_l.vizualize_lines_and_cells(sample_factor=0.5,plot_n_vectors=True)
 
@@ -507,15 +512,19 @@ def interpolation(mask, dims, min_cell_size=100):
     mask = remove_small_holes(mask.astype(bool), min_cell_size)
     mask = remove_small_objects(mask.astype(bool), 1000) # removing other small bits
     # note: remove_small_objects labels automatically if mask is bool
-    coords = np.array(np.where(mask)).astype(float)
-    interpol_factors = np.array([dims[0] / np.shape(mask)[0], dims[1] / np.shape(mask)[1]])
+    coords = np.array(np.where(mask)).astype(float) # coordinates of all points
+    interpol_factors = np.array([dims[0] / mask.shape[0], dims[1] / mask.shape[1]])
     coords[0] = coords[0] * interpol_factors[0]  # interpolting x coordinates
     coords[1] = coords[1] * interpol_factors[1]  # interpolating xy coordinates
     coords = np.round(coords).astype(int)
-    # test if coorect
+
+    coords[0,coords[0]>=dims[0]]=dims[0]-1 # fixing issue when interpolated object is just at the image border
+    coords[1, coords[1] >= dims[1]] = dims[1]-1
+
     mask_int = np.zeros(dims)
     mask_int[coords[0], coords[1]] = 1
     mask_int = mask_int.astype(int)
+    #filling gaps if we interpolate upwards
     if dims[0]*dims[1]>=mask.shape[0]*mask.shape[1]:
         iter=int(np.ceil(np.max([mask.shape[0]/dims[0],mask.shape[0]/dims[0]]))*5) # times 5 is safety factor
         mask_int=binary_clo(mask_int,iterations=10)
@@ -576,8 +585,18 @@ def grid_setup(mask_area, f_x, f_y, E, sigma):
     nodes[:, 0] = np.arange(coords.shape[1])
     nodes[:, 1] = coords[1]  # x coordinate
     nodes[:, 2] = coords[0]  # y coordinate
+
+    # fix all nodes that are exactely at the edge of the image in the movment direction perpendicular to the edge
+
+    edge_nodes_horizontal = np.hstack([ids[:, 0], ids[:, -1]]).astype(int) # upper and lower image edge
+    edge_nodes_vertical = np.hstack([ids[0, :], ids[-1, :]]).astype(int) # left and right image edge
+    edge_nodes_horizontal = edge_nodes_horizontal[edge_nodes_horizontal >= 0]
+    edge_nodes_vertical = edge_nodes_vertical[edge_nodes_vertical >= 0]
+
+    nodes[edge_nodes_vertical, 3] = -1  # fixed in x direction
+    nodes[edge_nodes_horizontal, 4] = -1  # fixed in y direction
     nodes = nodes.astype(int)
-    # no constraints for any node here
+
 
 
 
@@ -619,7 +638,7 @@ def grid_setup(mask_area, f_x, f_y, E, sigma):
     loads[:, 0] = np.arange(len(nodes))
     loads[:, 1] = f_x[coords[0], coords[1]]
     loads[:, 2] = f_y[coords[0], coords[1]]
-
+    #loads=loads[not edge_nodes,:] ## check if this works/ is necessary
 
 
     # filtering all nodes that are not in elemnte(e.g some singel points at the edge) using sets

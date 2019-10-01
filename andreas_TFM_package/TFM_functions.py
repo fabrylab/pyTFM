@@ -315,7 +315,6 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
         tx_filter = uniform_filter(tx_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
         ty_filter = uniform_filter(ty_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
     if filter == "gaussian":
-        print("new")
         tx_filter = gaussian_filter(tx_cut, sigma=int(np.max((ax1_length,ax2_length)))/50)
         ty_filter = gaussian_filter(ty_cut, sigma=int(np.max((ax1_length,ax2_length)))/50)
     if filter == "median":
@@ -535,7 +534,7 @@ def plotting_traction(tx, ty):
 
 
 
-def contractility(tx,ty,pixelsize,mask):
+def contractillity(tx,ty,pixelsize,mask):
     '''
     Calculation of contractile force and force epicenter.Contractile force is the sum of all projection of traction
     forces (in N) towards the force epicenter. The force epicenter is the point that maximizes the contractile force.
