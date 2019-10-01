@@ -51,21 +51,39 @@ pip install git+https://github.com/fabrylab/tracktion_force_microscopy.git
 
 To activate the clickpoints addon download or clone this repository. Copy and paste the folder TFM_addon to the clickpoints addons subdirectory.
 
-# Using the clickpoints addon. 
-Prior to using the addon, you need to generate a clickpoints data base from images. Use the script build_cdb_database_TFM.py. It will use images in its current directory and sort them into frames and layers. A frame is identified by a number at the beginning of the filename (see the example folder). For each frame you need to provide two images of beads befor and after removing the cells. And another image showing the cells e.g. as a bright field image or with membrane staining. The images of the beads must start with a number, followed by eiher "before" or "after". The third image must start with a number followed by either "membrane" or "bf_before". For more details and to change the way images are sorted check   
+# Performing traction force microscopy with clickpoints. 
+
+## Generating a clickpoints database from images
+
+Prior to using the addon, you need to generate a clickpoints data base from images. Use the script build_cdb_database_TFM.py. It will use images in its current directory and sort them into frames and layers. A frame is identified by a number at the beginning of the filename (see the example folder). For each frame you need to provide two images of beads befor and after removing the cells. And another image showing the cells e.g. as a bright field image or with membrane staining. The images of the beads must start with a number, followed by eiher "before" or "after". The third image must start with a number followed by either "membrane" or "bf_before". For more details and to change the way images are sorted check the function TFM_functions_for_clickpoints.setup_database_for_tfm.
+Note that the images of beads should idealy already be corrected for drift and rotation. You cna use the script function correcting_frame_shift.py for drift correction.
 
 
+## Using the clickpoints addon
 
-
-
-
-
-
-
-
+Open the clickpoints database. Addons can be activated by pressing on the central right most button. A window listing all available addons will open. Select "TFM_addon" and press activate. Youw should get a massage that the addon has beeen succesfully activated. Note that you can also activate other usefull addons here. One example is the "Measure Tool", used to measure distances.
 
 ![Analysis plot](images/opening_addon.png?raw=true "Optional Title")
+
+After you have activated the Addon a new but appears on the right. Press this button to open the addon window.
+
 ![Analysis plot](images/opening_addon2.png?raw=true "Optional Title")
+
+In this window you can set most paramters for your analysis. In the top right you can tick wich part of analysis you want to run. The raw output from these anlysis, such as the deformation field, is stored as an array in the same folder. That way it can be accesed later by other analysis steps. "Deformation", "traction force", and depending on the analysis mode "FEM analysis" or the "contractility analysis" will produce an image and added it to the clickpoints database. You can view the images by simply 
+changing layers in your frame. During the analysis several measures (area of cells, contractile energy ...) are calculated. They are all stored in an text file called out.txt.
+The field "apply to" allows you to run the anlysis on just the current frame or all frames at once. Note that the output file is only generated if you analyze all frames. If another outputfile exists already, it will be overwritten.
+To start your analysis bress the start button on the top left.
+
+
+You can choose between two diffrent analysis modes: "cell layer" and "colony". "Cell layer" assumes that the whole field of view is coverd in cells. Finite Elements analysis is performed with nodes at the edge of the field of view fixed, so that they can't move orthogonal to the image edge. You are supposed to marke two diffrent areas ("cell type1" and "cell type2"). On these areas you can calculate average stesses and average contractile energy. When you select "cell layer" an new button "fill cell area"
+
+
+
+
+
+
+
+has to masks for two cell types.  
 ![Analysis plot](images/main_window.png?raw=true "Optional Title")
 ![Analysis plot](images/mode1.png?raw=true "Optional Title")
 ![Analysis plot](images/mode2.png?raw=true "Optional Title")
