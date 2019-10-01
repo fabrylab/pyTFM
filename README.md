@@ -52,7 +52,17 @@ pip install git+https://github.com/fabrylab/tracktion_force_microscopy.git
 To activate the clickpoints addon download or clone this repository. Copy and paste the folder TFM_addon to the clickpoints addons subdirectory.
 
 # Using the clickpoints addon. 
-Prior to using the addon, you need to generate a clickpoints data base from images. Use the script build_cdb_database_TFM.py. It will use images in its current directory and sort them into frames and layers. A frame identified by a number at the beginning of the filename (see the example folder). For each frame you need to provide two images of beads befor and after removing the cells.  %dbefore.tif
+Prior to using the addon, you need to generate a clickpoints data base from images. Use the script build_cdb_database_TFM.py. It will use images in its current directory and sort them into frames and layers. A frame is identified by a number at the beginning of the filename (see the example folder). For each frame you need to provide two images of beads befor and after removing the cells. And another image showing the cells e.g. as a bright field image or with membrane staining. The images of the beads must start with a number, followed by eiher "before" or "after". The third image must start with a number followed by either "membrane" or "bf_before". For more details and to change the way images are sorted check   
+
+
+
+
+
+
+
+
+
+
 
 ![Analysis plot](images/opening_addon.png?raw=true "Optional Title")
 ![Analysis plot](images/opening_addon2.png?raw=true "Optional Title")
