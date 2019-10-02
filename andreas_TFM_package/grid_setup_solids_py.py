@@ -426,7 +426,8 @@ def prepare_mask(mask,shape,min_cell_size=None):
 
     # interpolating the area to the size of future FEM-grd
     mask_int = interpolation(binary_fill_holes(mask) , shape)
-    mask_int=mask_int.astype(bool)
+    mask_int=binary_fill_holes(mask_int).astype(bool) # sometime first binary fill holes is not enough
+
     # removing unsuitable pixels for grid later --> a pixel must be connected to at least more then 2 others
     m=convolve2d(mask_int.astype(int),np.array([[0,1,0],[1,0,1],[0,1,0]]),mode="same",boundary="fill",  fillvalue=0) # convoultion will produce 1 if only one direct (distance 1) neighbour exists
     p=np.where(np.logical_and(m==1,mask_int)) # problematic coordinates
