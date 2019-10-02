@@ -35,7 +35,14 @@ It is recomanded to use this package with anaconda.
 If you are on windows you need the Microsoft Visual C++ build tools. Download and install them from [here] (https://visualstudio.microsoft.com/de/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16).
 Additionally you need to install clickpoints. See [here](https://clickpoints.readthedocs.io/en/latest/installation.html#windows-installer) for instructions.
 
-Next install the traction force microsoft package. You can do so directly from git hub. First you need to install git.
+Next install the traction force microscopy package. I recommand to make an editable installation with pip.
+Simply download or clone the repository. Unizp the files, then open a terminal and navigate to the folder tracktion_force_mircoscopy folder. Now perform a local installation with the command
+
+```
+pip install -e
+```
+
+You can also install this package directly from git hub. First you need to install git.
 For windows you can use
 ```
 conda install git
@@ -104,8 +111,9 @@ You can find a minimal example of a completed analysis in the example_analysis f
 Note that I change the path entry in the database so that they work immediately when you download this folder. 
 
 
+## Changing plotting options and default parameters
 
-
+Default parameters and plotting options can be found in the [file parameters_and_string] (/andreas_TFM_package/parameters_and_strings.py). Go to this file for more details. The parameters are mostly stored in dictionaries. You can freely change entries in these dictionaries, if you installed your package as editable. Note that currently reinstalling the package will overwrite changes you make there.
 
 # Common problems and things to look out for
 
