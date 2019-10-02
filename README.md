@@ -1,6 +1,5 @@
 ## Traction Force Microscopy
-Many cellular functions dependent on the mechanical interactions of cells with their substrate. Traction force microscopy measures the forces that cells exert on their substrate. Additionally the menachnical properties of whole cell colonies, in particular the distribution of stresses accros the colony surface, as well as the forces transmitted accros cell-cell contacts, can be analyzed using a Finite Elements approach (Monolayer Stress Microscopy). Here both methods are implemented in a clickpoints addon, making it easy to
-analyzed whole datasets.
+Many cellular functions dependent on the mechanical interactions of cells with their substrate. Traction force microscopy measures the forces that cells exert on their substrate. Additionally the menachnical properties of whole cell colonies, in particular the distribution of stresses accros the colony surface, as well as the forces transmitted accros cell-cell contacts, can be analyzed using a Finite Elements approach (Monolayer Stress Microscopy). Here both methods are implemented in a clickpoints addon, making it easy to analyzed whole datasets.
 
 In traction force microscopy cells are seeded on a linearly elastic substrated and allowed to adhere to its surface. The substrate, e.g. Polyacrylamide Gel, is filled with micrometer sized flourescent beads. When the cell exerts forces on its substrate it cause deformations. These deformations can be trackt by imaging the beads. First an image of the beads is taken. Then the cells are detached from their substrated, e.g. by trypsinization. Lastly another image of the beads is taken. The two images of the beads are used to calculate a deformation field using Particle Image Velocimetry. The traction forces i.e. forces applied from the cells to the substrate surface are then calculated using Fourrier Transform Traction Force Microscopy (FTTC). Earlier implementations of FTTC relied on asuming inifinte substrate thikness. Here a correction for finite substrate thikness is included.
 Forces that are exerted from a cell to its substrate must be belanced by the cell internally or at contact points to other cells. The internal stress state of a cell patch are calculate by Monolayer Stress Microscopy. In brief the cell sheat is modeled as a 2D surfaces. The traction forces calculated from FTTC are applied to this cell sheet. Internal streses are the recoverd by using standard 2D Finite Elements approache. The user can mark cell borders,along wich line stresses i.e. the force transmitted per line segment, are calculated. Additionally stress measures accros the whole colony area, such as the average shear and normal stress are calculated. 
@@ -100,7 +99,10 @@ the frame, name of the quantity, it's value, a unit and an additional wrning mes
 
 This package provdies some functions to read the output file, perform statistical test comapring two output files and plotting these results.
 Check out the analysis in [output_data_analysis](/analysis_and_testing/output_data_analysis.py) for a detailed example on how to
-compare the analysis results results for two cell types 
+compare the analysis results results for two cell types.
+You can find a minimal example of a completed analysis in the example_analysis folder. It comapres the forces exerted by cell colonys of wild type and plektin knock out cells. 
+Note that I change the path entry in the database so that they work immediately when you download this folder. 
+
 
 
 
@@ -110,10 +112,10 @@ compare the analysis results results for two cell types
 Make sure you draw closed circles around the cell colony and the area selected for contractillity. The programm tries to fill the encircled areas, but will fail if there is a gap. If you get a warning, that your mask is tool small, this could be the reason.
 Also any cell border in the cell colony mask that is not connected at both ends with another border is removed.
 
-If there is a problem with the finite elements analysis, try increses the resolution of deformation and traction field. 
+If there is a problem with the finite elements analysis, try incresing the resolution of deformation and traction field. 
 
 The images in your are linked to the database with an absolute path. If you move an image or change the name of the 
-folder the images are in, they will no longer be displayed. You can of course eddit the path object of the database.
+folder the images are in, they will no longer be displayed. You can of cause eddit the path entry of the database.
 
 
 
