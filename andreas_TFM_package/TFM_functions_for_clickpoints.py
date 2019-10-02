@@ -49,14 +49,14 @@ def write_output_file(values,value_type, file_path,with_prefix=False):
                 res_part=values[frame]
                 for name,res in res_part.items():
                     res_unpack, warn = unpack_list(res)
-                    warn_empty = (warn == "")
+                    warn_empty = (warn != "")
                     f.write(frame + "\t" + name + "\t" + str(round_flexible(res_unpack)) + "\t" + units[
                         name] + "\t" * warn_empty + warn + "\n")
 
 
 
 
-def except_error(func, error, **kwargs):  # take functino and qkwarks
+def except_error(func, error,print_error=True, **kwargs):  # take functino and qkwarks
     '''
     wraper to handle errors and return false if the exception is encountered
     :param func:
@@ -69,7 +69,8 @@ def except_error(func, error, **kwargs):  # take functino and qkwarks
     try:
         values = func(**kwargs)
     except error as e:
-        print(e)
+        if print_error:
+            print(e)
         return False
     return values
 
@@ -441,7 +442,7 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,
     '''
     if single:
         db_info, all_frames = get_db_info_for_analysis(db)
-        print(calculation_messages["general_properites"]%frame)
+        print(calculation_messages["general_properties"]%frame)
 
     mtypes = [m for m in ["cell type1", "cell type2"] if m in parameter_dict["area masks"] and m in db_info["mask_types"]]
     sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, label="area", sumtype="area")
@@ -455,7 +456,7 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,
                                            warn_thresh=1500/(ps_new/parameter_dict["pixelsize"]))
 
     area = np.sum(binary_fill_holes(mask_membrane)) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
-    res_dict[frame]["area on colony"] = [area, warn]
+    res_dict[frame]["area of colony"] = [area, warn]
 
     mask_area, borders = prepare_mask(mask_membrane,u.shape,min_cell_size=500)
     n_cells=len(borders.cell_ids)
@@ -516,7 +517,7 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,single=True,**kw
     plt.close(fig1)
     # adding plots to data base
     # if entry already exist dont change anything (image is overwritten, but database entry stays the same)
-    except_error(db.setImage, IntegrityError, filename=frame + "deformation.png", layer="def_plots", path=1,
+    except_error(db.setImage, IntegrityError, print_error=False, filename=frame + "deformation.png", layer="def_plots", path=1,
                  sort_index=db_info["frames_ref_dict"][frame])
     # saving raw files
     np.save(os.path.join(db_info["path"], frame + "u.npy"), u)
@@ -549,7 +550,7 @@ def make_contractile_energy_plot(u,v,t_x,t_y,frame, parameter_dict,res_dict, db,
     fig.savefig(os.path.join(db_info["path"], frame + "energy_distribution.png"), dpi=200)
     plt.close(fig)
     # adding figure to database
-    except_error(db.setImage, IntegrityError,
+    except_error(db.setImage, IntegrityError, print_error=False,
                  filename=os.path.join(db_info["path"], frame + "energy_distribution.png"),
                  layer="FEM_output", path=1, sort_index=db_info["frames_ref_dict"][frame])
 
@@ -600,11 +601,11 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
         # calculate contractillity only in "colony" mode
         if mtype=="contractillity_colony":
             contractile_force, proj_x, proj_y,center=contractillity(t_x, t_y, ps_new, mask_int)
-            res_dict[frame]["contractillity on " + default_parameters["mask_labels"][mtype]] = [contractile_force, warn]
+            res_dict[frame]["contractillity on" + default_parameters["mask_labels"][mtype]] = [contractile_force, warn]
         # calculate contractile energy if deformations are provided
         if isinstance(u,np.ndarray):
             contr_energy=contractile_energy(u,v,t_x,t_y,parameter_dict["pixelsize"], ps_new,mask_int)
-            res_dict[frame]["contractile energy on " + default_parameters["mask_labels"][mtype]] = [contr_energy, warn]
+            res_dict[frame]["contractile energy on" + default_parameters["mask_labels"][mtype]] = [contr_energy, warn]
         print("contractile energy=",round_flexible(contr_energy),"contractillity=",round_flexible(contractile_force))
 
 
@@ -653,7 +654,7 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None, single=True
     plt.close(fig2) # closing figure objects
     # adding plots to data base
     # if entry already exist don't change anything (image is overwritten, but database entry stays the same)
-    except_error(db.setImage, IntegrityError, filename=frame + "traction.png", layer="traction_plots", path=1,
+    except_error(db.setImage, IntegrityError, print_error=False, filename=frame + "traction.png", layer="traction_plots", path=1,
                  sort_index=db_info["frames_ref_dict"][frame])
     # saving raw files
     np.save(os.path.join(db_info["path"], frame + "tx.npy"), tx)
@@ -832,7 +833,7 @@ def FEM_analysis_borders(frame, res_dict, db,db_info, stress_tensor, ps_new, war
     fig.savefig(os.path.join(db_info["path"], frame + "border_stress_img.png"), dpi=200)
     plt.close(fig)
     # adding figure to database
-    except_error(db.setImage, IntegrityError, filename=os.path.join(db_info["path"], frame + "border_stress_img.png"),
+    except_error(db.setImage, IntegrityError, print_error=False, filename=os.path.join(db_info["path"], frame + "border_stress_img.png"),
                  layer="FEM_output", path=1, sort_index=db_info["frames_ref_dict"][frame])
 
     return None, frame
@@ -842,12 +843,9 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, single=True, db_info=N
     if single:
         db_info, all_frames = get_db_info_for_analysis(db)
         create_layers_on_demand(db, ["FEM_output"])
-        print(calculation_messages["FEM_analysis"] % frame)
+        print(calculation_messages["FEM_full_analysis"] % frame)
 
     #wrapper to flexibly perform FEM analysis
-
-
-
 
     if parameter_dict["FEM_mode"]=="colony":
         nodes, elements, loads, mats, mask_area, ps_new, warn, borders = FEM_setup_colony(frame, parameter_dict, db,
@@ -907,10 +905,10 @@ def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_
 
 ### code to work on clickpoint outside of the addon
 if __name__=="__main__":
-    ## setting upnecessary paramteres
+    ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/KOshift/database3.cdb", "r")
+        "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/database3.cdb", "r")
 
     parameter_dict = default_parameters
     res_dict=defaultdict(dict)
@@ -919,52 +917,11 @@ if __name__=="__main__":
     parameter_dict["FEM_mode"] = "colony"
     #apply_to_frames(db, parameter_dict, deformation, res_dict, frames=all_frames, db_info=db_info)
     #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames=all_frames, db_info=db_info)
-    apply_to_frames(db, parameter_dict, deformation,res_dict, frames="01",db_info=db_info)
-    apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="01", db_info=db_info)
+    #apply_to_frames(db, parameter_dict, deformation,res_dict, frames="04",db_info=db_info)
+    #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="04", db_info=db_info)
+    #apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="04", db_info=db_info)
+    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="04", db_info=db_info)
+    #apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="04", db_info=db_info)
 
     write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
     # calculating the deformation field and adding to data base
-'''
-def add_deforamtion_and_traction_force(db, parameter_dict):
-    layer_list = ["def_plots", "traction_plots", "test_layer"]
-    # check if layer already exist and create otherwise
-
-    # correct ordering of files from image anotations
-
-    # plotting
-    dpi = 200
-    fig1 = show_quiver_clickpoints(u, v, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
-                                   headwidth=3, headlength=3, width=0.002,
-                                   figsize=(im1.shape[1] / dpi, im1.shape[0] / dpi), cbar_str="deformation\n[pixel]")
-    fig2 = show_quiver_clickpoints(tx_h, ty_h, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
-                                   headwidth=3, headlength=3, width=0.002,
-                                   figsize=(im1.shape[1] / dpi, im1.shape[0] / dpi), cbar_str="traction\n[Pa]")
-    fig3 = show_quiver_clickpoints(tx, ty, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
-                                   headwidth=3, headlength=3, width=0.002,
-                                   figsize=(im1.shape[1] / dpi, im1.shape[0] / dpi), cbar_str="traction\n[Pa]")
-    # saving plots
-    fig1.savefig(os.path.join(path, frame + "deformation.png"), dpi=200)
-    fig2.savefig(os.path.join(path, frame + "traction.png"), dpi=200)
-    fig3.savefig(os.path.join(path, frame + "traction_test.png"), dpi=200)
-    # closing figure objects
-    plt.close(fig1)
-    plt.close(fig2)
-    plt.close(fig3)
-    # adding plots to data base
-    # if entry already exist dont change anything (image is overwritten, but database entry stays the same)
-    except_error(db.setImage, IntegrityError, filename=frame + "deformation.png", layer="def_plots", path=1,
-                 sort_index=int(frame) - 1)
-    except_error(db.setImage, IntegrityError, filename=frame + "traction.png", layer="traction_plots", path=1,
-                 sort_index=int(frame) - 1)
-    except_error(db.setImage, IntegrityError, filename=frame + "traction_test.png", layer="test_layer", path=1,
-                 sort_index=int(frame) - 1)
-
-    # saving raw files
-    np.save(os.path.join(path, frame + "u.npy"), u)
-    np.save(os.path.join(path, frame + "v.npy"), v)
-    np.save(os.path.join(path, frame + "tx_h.npy"), tx_h)
-    np.save(os.path.join(path, frame + "ty_h.npy"), ty_h)
-'''

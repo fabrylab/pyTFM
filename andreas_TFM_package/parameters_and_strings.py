@@ -104,9 +104,9 @@ tooltips["h"]="set the height of the substrate your cells are growing on"
 calculation_messages=defaultdict(lambda:"%s")
 calculation_messages["deformation"]="calculating deformation on frames %s"
 calculation_messages["traction_force"]="calculating traction_forces on frames %s"
-calculation_messages["FEM_analysis"]="FEM_analysis on frames %s"
-calculation_messages["get_contractility_contractile_energy"]="contractility/contractile energy on frames %s"
-calculation_messages["general_properites"]="getting colony properties on frames %s"
+calculation_messages["FEM_full_analysis"]="FEM_analysis on frames %s"
+calculation_messages["get_contractillity_contractile_energy"]="contractility/contractile energy on frames %s"
+calculation_messages["general_properties"]="getting colony properties on frames %s"
 
 
 # units of the returned stress and energy measures:
@@ -124,7 +124,7 @@ units["contractile energy"]="J"
 units["avarage normal stress"]="N/m"
 units["avarage shear stress"]="N/m"
 units["area"]="m2"
-units["n_cells"]="",
+units["n_cells"]=""
 units["sum deformations"]="pixels"
 units["sum traction forces"]="N/m2"
 units["sum deformations on cell colony"]="pixels"
