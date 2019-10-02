@@ -6,6 +6,11 @@ from collections import deque, namedtuple
 import copy
 import matplotlib.pyplot as plt
 
+
+
+class FindingBorderError(Exception):
+    pass
+
 def graph_to_mask(graph,points,dims):
     m=np.zeros(dims)
     ps=np.array([y for x in list(graph.values()) for y in x]) #flattening list of point ids
@@ -105,7 +110,8 @@ def identify_line_segments(graph,points): ## could be  abit improved , sometimes
     n=0 # counter in while loop
     all_points=list(range(len(points)))
     intersect_ps=[key for key,values in graph.items() if len(values)>2] # fining intersection points
-
+    if len(intersect_ps) == 0:
+        raise FindingBorderError("Can't I dentify cell borders.")
     remaining=set(all_points)-set(intersect_ps) # remaining point ids
     while len(remaining)>0: # stop when all points are assigned to intersect or line segment
         start=next(iter(remaining)) # first point of remaining points
@@ -117,7 +123,7 @@ def identify_line_segments(graph,points): ## could be  abit improved , sometimes
             n=n+1
 
         if n>20000:  # expectation if loop should get suck
-            raise Exception("found more than 20000 cell borders; something went wrong")
+            raise FindingBorderError("found more than 20000 cell borders; something went wrong")
 
 
     # plot to confirm correct lines

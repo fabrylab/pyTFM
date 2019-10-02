@@ -190,6 +190,14 @@ def warn_incorrect_files(frames):
             warn+="Found %s files for frame %s. " %(counts[p_id],unique_frames[p_id])
         warnings.warn(warn+"Excpeted only three files per frame.")
 
+def warn_small_FEM_area(mask_area,threshold):
+    warn=""
+    area=np.sum(mask_area)
+    if area<threshold:
+        warnings.warn("FEM grid is very small (%d pixel). Consider increasing resolution of deformation and traction field."%area)
+        warn="small FEM grid"
+    return warn
+
 
 
 def setup_masks(db,db_info,parameter_dict):
@@ -435,7 +443,7 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,
         db_info, all_frames = get_db_info_for_analysis(db)
         print(calculation_messages["general_properites"]%frame)
 
-    mtypes = [m for m in ["cell type1", "cell type2"] if m in parameter_dict["area masks"]]
+    mtypes = [m for m in ["cell type1", "cell type2"] if m in parameter_dict["area masks"] and m in db_info["mask_types"]]
     sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, label="area", sumtype="area")
 
     u, v = try_to_load_deformation(db_info["path"], frame, warn=False)  # just to get correct shape
@@ -447,10 +455,10 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,
                                            warn_thresh=1500/(ps_new/parameter_dict["pixelsize"]))
 
     area = np.sum(binary_fill_holes(mask_membrane)) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
-    mask_int_mem = interpolation(mask_membrane, u.shape, min_cell_size=100)
-    mask_area, mask_boundaries, borders = prepare_mask(mask_int_mem,min_cell_size=5)
+    res_dict[frame]["area on colony"] = [area, warn]
+
+    mask_area, borders = prepare_mask(mask_membrane,u.shape,min_cell_size=500)
     n_cells=len(borders.cell_ids)
-    res_dict[frame]["colony area"]=[area,warn]
     res_dict[frame]["colony n_cells"]=[n_cells,warn]
 
 
@@ -705,12 +713,9 @@ def FEM_setup_colony(frame,parameter_dict,db,db_info=None,**kwargs):
     mask, warn = try_to_load_mask(db, db_info["frames_ref_dict"][frame],raise_error=True, mtype="membrane",
                                            warn_thresh=1500 / (ps_new/parameter_dict["pixelsize"]))
 
-
-    # interpolation to size of traction force array
-    mask_int = interpolation(mask, t_x.shape,min_cell_size=100) # this cell size in pixels of beads image
-
-    # further preparation of mask data
-    mask_area, mask_boundaries, borders = prepare_mask(mask_int, min_cell_size=5) # min_cell_size at least 2 or none
+    # preparation of mask data
+    mask_area, borders = prepare_mask(mask,t_x.shape, min_cell_size=500) # min_cell_size at least 2 or none
+    warn=warn_small_FEM_area(mask_area,threshold=1000)
 
    # coorecting force for torque and net force
     f_x[~mask_area] = np.nan  # setting all values outside of maske area to zero
@@ -723,7 +728,7 @@ def FEM_setup_colony(frame,parameter_dict,db,db_info=None,**kwargs):
     # setup of the grid
     nodes, elements, loads, mats = grid_setup(mask_area, -f_x_c2, -f_y_c2, 1, sigma=0.5) # note the negative signe
 
-    return nodes, elements, loads, mats,mask_area, ps_new, warn, borders
+    return nodes, elements, loads, mats, mask_area, ps_new, warn, borders
 
 def FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,**kwargs):
 
@@ -738,7 +743,7 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,**kwa
     # System solution with custom conditions
     if parameter_dict["FEM_mode"]=="colony":
         # solver with constraints to zero translation and zero rotation
-        UG_sol, rx = custom_solver(KG, RHSG, mask_area, verbose=True)
+        UG_sol, rx = custom_solver(KG, RHSG, mask_area, verbose=False)
 
     # System solution with default solver
     if parameter_dict["FEM_mode"] == "cell layer":
@@ -798,10 +803,10 @@ def FEM_analysis_borders(frame, res_dict, db,db_info, stress_tensor, ps_new, war
 
     lines_splines = borders.lines_splines
     lines_points = borders.lines_points
-    # plot linestresses over border as continous curves:
+    # plot lines tresses over border as continous curves:
     lines_interpol, min_v, max_v = interpolation_for_stress_and_normal_vector(lines_splines, lines_points,
                                                                               stress_tensor, pixel_length=ps_new,
-                                                                              interpol_factor=6)
+                                                                              interpol_factor=1)
     avg_line_stress=mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_vecs")
     avg_cell_force=mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="t_vecs")
     avg_cell_pressure=mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="tn")
@@ -892,7 +897,7 @@ def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_
         try:
             analysis_function(frame, parameter_dict,res_dict, db=db,db_info=db_info, single=False,**kwargs)
         except Exception as e:
-            if type(e) in (Mask_Error,FileNotFoundError):
+            if type(e) in (Mask_Error,FileNotFoundError,FindingBorderError):
                 print(e)
             else:
                 raise(e)
@@ -905,7 +910,7 @@ if __name__=="__main__":
     ## setting upnecessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Desktop/Monolayers_new_images/monolayers_new_images/images_from24_09_2019_with_deformation/database.cdb", "r")
+        "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/KOshift/database3.cdb", "r")
 
     parameter_dict = default_parameters
     res_dict=defaultdict(dict)
@@ -914,7 +919,11 @@ if __name__=="__main__":
     parameter_dict["FEM_mode"] = "colony"
     #apply_to_frames(db, parameter_dict, deformation, res_dict, frames=all_frames, db_info=db_info)
     #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames=all_frames, db_info=db_info)
-    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy,res_dict, frames="01",db_info=db_info)
+    apply_to_frames(db, parameter_dict, deformation,res_dict, frames="01",db_info=db_info)
+    apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="01", db_info=db_info)
+    apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="01", db_info=db_info)
+    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
+    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="01", db_info=db_info)
 
     write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
     # calculating the deformation field and adding to data base

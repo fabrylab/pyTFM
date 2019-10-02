@@ -42,7 +42,7 @@ def round_flexible(n):
     :param n: float
     :return:
     '''
-    if not (isinstance(n,float) or isinstance(n,int)) or n==0:
+    if not (isinstance(n,float) or isinstance(n,int)) or n==0 or np.isnan(n):
         return n
     else:
         rounding_decimal=-int(np.floor(np.log10(np.abs(n)))) + 2

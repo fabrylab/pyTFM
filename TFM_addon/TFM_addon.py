@@ -9,8 +9,9 @@ import os
 from qtpy import QtCore, QtGui, QtWidgets
 import qtawesome as qta
 import clickpoints
-import threading
 import asyncio
+import threading
+
 
 import warnings
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
@@ -235,11 +236,12 @@ class Addon(clickpoints.Addon):
             print("analyzing frames = ", frames)
             write_output_file(self.parameter_dict, "parameters", self.outfile_path)
 
-        self.calculate_general_properties(frames)
+
         if self.check_box_def.isChecked():     
             self.calculate_deformation(frames)
         if self.check_box_tra.isChecked():
             self.calculate_traction(frames)
+        self.calculate_general_properties(frames)
         if self.check_box_FEM.isChecked():
             self.calculate_FEM_analysis(frames)
         if self.check_box_contract.isChecked():

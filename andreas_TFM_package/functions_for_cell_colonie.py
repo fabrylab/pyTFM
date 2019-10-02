@@ -1188,8 +1188,8 @@ def custom_solver(mat, rhs, mask_area,verbose=False):
     zero_disp_x[::2] = 1
     zero_disp_y[1::2] = 1
     # torque=sum(r1*f2-r2*f1)
-    zero_torque[::2] = r[:, :, 1][mask_area]  # -r2 factor
-    zero_torque[1::2] = r[:, :, 0][mask_area]  # +r1 factor
+    zero_torque[::2] = r[:, :, 1][mask_area.astype(bool)]  # -r2 factor
+    zero_torque[1::2] = r[:, :, 0][mask_area.astype(bool)]  # +r1 factor
     add_matrix=np.vstack([zero_disp_x,zero_disp_y,zero_torque])
 
     # adding zero conditions for force vector and torque
