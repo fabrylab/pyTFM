@@ -9,7 +9,7 @@ import numpy as np
 # matplotlib.use("Agg")  # uncomment if you want to avoid plots showing up while you are working
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind as scipy_ttest_ind
-
+import warnings
 
 def read_output_file(file_path):
     """
@@ -72,24 +72,46 @@ def prepare_values(res_dict, exclude=[]):
     return n_frames, values_dict, frames
 
 
-def add_per_area_cell(values_dict, add="cell", dict_type="values"):
+def normalize_values(values_dict, norm, add_name, exclude=["area","cells"]):
     """
-    Either normalizing by the area of the cell colony or the number of cells, or generating new units.
+    Normalize all quantities in "values_dict" by the quantity "norm". Norm must be a key in "values_dict".
+    The normalized quantities are added to the old dictionary with a new key as "old key" +"add_name".
+    Quantities whos name contains any string in exclude are not normalized. Also quantities that start with
+    "std " are ignored.
+    :param values_dict:
+    :param add:
+    :param dict_type:
+    :return:
+    """
 
-    if dict_type =="values" and ad=="area":
-    Adds for each existing quantity (except "area" and "n_cells") another quantity with " per area" added to the
-    original name. Then calculates the values of this new quantity by dividing the original values by the area
-    of the cell colony.
-    if dict_type =="values" and ad=="cell":
-    Adds for each existing quantity (except "area" and "n_cells") another quantity with " per cell" added to the
-    original name. Then calculates the values of this new quantity by dividing the original values by the number of
-    cells in the cell colony. Caution the number of cells in the colony can be a little lower then what you have
-    drawn, especially if you use low resolution deformation fields.
-    if dict_type =="units" and ad=="area"
-    Adds an entry to the units dictionary with " per area" added to the original name and "/m2" added to the original
-    value.
-    if dict_type =="units" and ad=="cell"
-    Adds an entry to the units dictionary with " per cell" added to the original name but keeps the value as it was.
+    new_values=defaultdict(str)
+    for key, value in values_dict.items():
+        new_values[key]=value # copying to new dict
+        if not key.startswith("std ") and not any([e in key for e in exclude]) and not key==norm:
+            new_values[key + add_name] = value / values_dict[norm] # adding normalization to new dict
+
+    return new_values
+
+
+def filter_nans(values_dict1,values_dict2,name):
+    '''
+    filters nans and warns
+    :return:
+    '''
+    v1 = values_dict1[name]
+    v2 = values_dict2[name]
+    # warning if nans are encountered. This should usually not be the case.
+    if np.isnan(np.concatenate([v1, v2])).any():
+        warnings.warn("nans encounterd in %s. There could be something wrong with the calcualtion." % name)
+    # filtering out nans
+    v1 = v1[~np.isnan(v1)]
+    v2 = v2[~np.isnan(v2)]
+    return v1,v2
+
+def add_to_units(units_dict, add_name, add_unit, exclude=["area","cells"]):
+    """
+    Adds add_name to any key and add_unit to their value except for keys that contain the strings in exclude.
+    Also keys with "std " are ignored.
 
     :param values_dict:
     :param add:
@@ -97,30 +119,12 @@ def add_per_area_cell(values_dict, add="cell", dict_type="values"):
     :return:
     """
 
-    assert add in ["cell", "area"]  # checking for correct input
-    assert dict_type in ["values", "units"]
-
-    add_strings = [" per cell", " per area"]
-    if add == "cell":
-        add_str = add_strings[0]
-        add_key = "n_cells"
-        add_unit = ""
-    if add == "area":
-        add_str = add_strings[1]
-        add_key = "area"
-        add_unit = "/m2"
-
-    dict_cp = copy.deepcopy(values_dict)
-    if dict_type == "values":
-        for key, value in dict_cp.items():
-            if not key.startswith("std ") and add_strings[0] not in key and add_strings[
-                1] not in key and key != "area" and key != "n_cells":  # ignore entries with standart deviation
-                values_dict[key + add_str] = value / values_dict[add_key]
-    if dict_type == "units":
-        for key, value in dict_cp.items():
-            if not key.startswith("std ") and add_strings[0] not in key and add_strings[
-                1] not in key and key != "area" and key != "n_cells":  # ignore entries with standart deviation
-                values_dict[key + add_str] = value + add_unit
+    new_units=defaultdict(str)
+    for key, value in units_dict.items():
+        new_units[key]=value # copying to new dict
+        if not key.startswith("std ") and not any([e in key for e in exclude]):
+            new_units[key + add_name] = value + add_unit # adding new unit to dictionary
+    return new_units
 
 
 def t_test(values_dict1, values_dict2, types):
@@ -141,7 +145,8 @@ def t_test(values_dict1, values_dict2, types):
 
     t_test_dict = {}  # output dictionary
     for name in types:  # iterating through the names of all quantities that you want to compare
-        t_test_dict[name] = scipy_ttest_ind(values_dict1[name], values_dict2[name])  # performing a two-sided t-test
+        v1, v2 = filter_nans(values_dict1, values_dict2, name)
+        t_test_dict[name] = scipy_ttest_ind(v1, v2)  # performing a two-sided t-test
     return t_test_dict
 
 
@@ -248,8 +253,9 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
     bps = []  # list of boxplot objects. We need this to adjust the color of the boxes.
     # generating boxplots for each quantity in types
     for i, (name, ax, label) in enumerate(zip(types, axs, ylabels)):
-        bp1 = ax.boxplot(values_dict1[name], positions=[0.5], patch_artist=True)  # boxlpot of first experiment
-        bp2 = ax.boxplot(values_dict2[name], positions=[0.8], patch_artist=True)  # boxlpot of second experiment
+        v1, v2 = filter_nans(values_dict1, values_dict2, name)
+        bp1 = ax.boxplot(v1, positions=[0.5], patch_artist=True)  # boxlpot of first experiment
+        bp2 = ax.boxplot(v2, positions=[0.8], patch_artist=True)  # boxlpot of second experiment
         bps.append([bp1, bp2])  # saving boxplot
         ax.set_ylabel(label)  # setting label of y axis from ylabels list
         m_pos = np.mean([0.5, 0.8])  # x position between two boxes
@@ -265,8 +271,8 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
         if isinstance(t_test_dict, dict):
             # plotting a line connecting both boxplots
             # finding suitable y values for the edges of this lines
-            maxv = np.max(np.hstack([values_dict1[name], values_dict2[name]]))  # maximum value from both experiments
-            minv = np.min(np.hstack([values_dict1[name], values_dict2[name]]))  # minimum value from both experiments
+            maxv = np.max(np.hstack([v1, v2]))  # maximum value from both experiments
+            minv = np.min(np.hstack([v1, v2]))  # minimum value from both experiments
             v_range = maxv - minv  # range of values from both experiments
             # drawing the lines
             ax.plot([0.5, 0.5, 0.8, 0.8],
@@ -317,9 +323,9 @@ def plot_contractillity_correlation(values_dict1, values_dict2, lables, frame_li
     plt.xlabel("contractility [N]")  # xlabel
     plt.ylabel("contractile energy [J]")  # label
     # plotting contractillity vs contractile energy in first experiment
-    plt.plot(values_dict1["contractility"], values_dict1["contractile energy"], "o", color="C1", label=lables[0])
+    plt.plot(values_dict1["contractile energy on cell colony"], values_dict1["contractile energy on cell colony'"], "o", color="C1", label=lables[0])
     # plotting contractillity vs contractile energy in second experiment
-    plt.plot(values_dict2["contractility"], values_dict2["contractile energy"], "o", color="C2", label=lables[1])
+    plt.plot(values_dict2["contractile energy on cell colony"], values_dict2["contractile energy on cell colony'"], "o", color="C2", label=lables[1])
     # optionally labeling the data points with their corresponding string
     if isinstance(frame_list1, list) and isinstance(frame_list2, list):
         for f, v1, v2 in zip(frame_list1, values_dict1["contractility"], values_dict1["contractile energy"]):
@@ -327,12 +333,12 @@ def plot_contractillity_correlation(values_dict1, values_dict2, lables, frame_li
         for f, v1, v2 in zip(frame_list2, values_dict2["contractility"], values_dict2["contractile energy"]):
             plt.text(v1, v2, f, color="C2")
     # show numbers on y axis in scientific notation if they are outside of 10**3 to 10**-3
-    plt.ticklabel_format(axis='both', style="sci", scilimits=(-3, 3))
+    plt.gca().ticklabel_format(axis='both', style="sci", scilimits=(-3, 3))
     plt.legend()  # adding a legend
     return fig
 
 
-def full_standard_analysis(res_file1, res_file2, label1, label2, out_folder):
+def full_standard_analysis(res_file1, res_file2, label1, label2, out_folder,units):
     """
     current anaylyis of an experiment. The results from two samples in res_file1 and res_file2 (text files
     produced from the TFM clickpoints addon) are compared for several quantities. Each quantity is compared with two box
@@ -346,68 +352,105 @@ def full_standard_analysis(res_file1, res_file2, label1, label2, out_folder):
     :return:
     """
 
-    ### note_ import units from andreas_TM_package.TFM-functions_for_clickpoints
-    add_per_area_cell(units, add="cell", dict_type="units")  # adding per area
-    add_per_area_cell(units, add="area", dict_type="units")  # adding per cell to units list
-
-    # setting the output folder for plots
+    # setting the output folder for plots. All plots are saved to this folder.
     createFolder(out_folder)  # creating the folder if it doesn't already exist
 
-    # first file
-    exclude = []  # list of frames to be excluded
+    ## reading in results
+
+    # reading the first output file
+    # list of frames to be excluded. values from these frames are not read in. We don't exclude anything for the wildtype,
+    # but two frames in the ko, due to issues with imaging the beads.
+    exclude = []
     # path to the out.txt text file
 
-    parameter_dict1, res_dict1 = read_output_file(
-        res_file1)  # reading the fie and splitting into parameters and results
-    n_frames1, values_dict1, frame_list1 = prepare_values(res_dict1, exclude)  # pooling all frames
-    add_per_area_cell(values_dict1, add="area", dict_type="values")  # calculating measures per area
+    parameter_dict1, res_dict1 = read_output_file(res_file1)  # reading the file and splitting into parameters and results
+    # pooling all frames: values_dict has "name of the quantity": "list of values for each frame".
+    # this also returns the number of frames (n_frames) and a list of the label of frame (frame_list). The frame labels are
+    # ultimately derived from the number at the beginning of the image file names in your database.
+    # n_frames is the same for all quantities
+    n_frames1, values_dict1, frame_list1 = prepare_values(res_dict1, exclude)
 
     # second file
-    exclude = ["01", "10"]  # list of frames to be excluded
+    exclude = ["01", "10"]  # list of frames to be excluded, thes
     # path to the out.txt text file
 
-    parameter_dict2, res_dict2 = read_output_file(
-        res_file2)  # reading the fie and splitting into parameters and results
+    parameter_dict2, res_dict2 = read_output_file(res_file2)  # reading the fie and splitting into parameters and results
     n_frames2, values_dict2, frame_list2 = prepare_values(res_dict2, exclude)  # pooling all frames
-    add_per_area_cell(values_dict2, add="area", dict_type="values")  # calculating measures per area
 
-    # list of all names of measures  found in the outputfile
+    ## normalizing the quantities by the area of the cell colony
+
+    # units is a dictionary with quantity name: unit of the quantity
+    # its imported from andreas_TFM_package.parameters_and_strings
+    # here we add an " per area" for every existing entry in unit and update the unit with /m2
+    units = add_to_units(units, add_name=" per area", add_unit="/m2",
+                         exclude=["area", "cell"])  # adding per cell to units list
+    # you could do the same with per cells..:
+    # units2 =a dd_to_units(units,add_name=" per cell", add_unit="",exclude=["area", "cell"]) # adding per number of cells
+
+    # now we normalize all quantities. We exclude any quantity with a name that contains strings in exclude. Also std_
+    # (standart deviations) are not normalized.
+    # all suitable values are devided by values_dict[norm] and get a new name by adding add_name.
+    values_dict1 = normalize_values(values_dict1, norm="area of colony", add_name=" per area",
+                                    exclude=["area", "cells"])  # calculating measures per area
+    values_dict2 = normalize_values(values_dict2, norm="area of colony", add_name=" per area",
+                                    exclude=["area", "cells"])  # calculating measures per area
+
+    ## performing statistical analysis
+
+    # getting a list of all values that we want to analyze. There is nothing wrong with analyzing using every quantity.
     all_types = [name for name in values_dict2.keys() if not name.startswith("std ")]
-    # performing statistical test (t-test)
+    # performing a two sided t-test comparing values in values_dict1 with values in values_dict2 by a two sided
+    # independent t-test
     t_test_dict = t_test(values_dict1, values_dict2, all_types)
-    lables = [label1, label2]  # label for the first and second text file; make sure the order is correct
 
-    # plotting contractillity vs contractile energy
+    ## plotting
+
+    # here we produce a few boxplots and compare a set of quantities in each plot.
+    # additionally we plot contractillity vs the contractile energy.
+
+    # label for the first and second text file; make sure the order is correct
+    lables = [label1, label2]
+
+    # plotting contractillity vs contractile energy.
     fig = plot_contractillity_correlation(values_dict1, values_dict2, lables)
-    # fig=plot_contractility_correlation(values_dict1,values_dict2,lables,frame_list1,frame_list2)   # labeling the frame of each point
-    fig.savefig(
-        os.path.join(out_folder, "coordinated_contractility_vs_contractile_energy.png"))  # save to output folder
+    # You could also add the frame as a lable to each point, if you want to identify them:
+    # fig=plot_contractillity_correlation(values_dict1,values_dict2,lables,frame_list1,frame_list2)
+    # saving to output folder
+    fig.savefig(os.path.join(out_folder, "coordinated_contractility_vs_contractile_energy.png"))
 
-    # plotting other measures
-    # choosing which measures should be displyed
-    types = ['avarage normal stress', 'avarage shear stress']
-    # generating labels for the y axis. This uses units stored in a dictionary imported from some where else
-    ylabels = [ty + "\n" + units[ty] for ty in
-               types]  # list of lables on the y axis, must be list of strings with length =len(types)
+    # boxplots for the other measures
+    # choosing which measures should be displayed in this plot
+    types = ['average normal stress colony', 'average shear stress colony']
+    # generating labels for the y axis. This uses units stored in a dictionary imported from
+    # andreas_TFM_package.parameters_and_strings. ylabels must be a list of strings with length=len(types).
+    # Of cause you can also set labels manually e.g. ylabels=["label1","label2",...].
+    ylabels = [ty + "\n" + units[ty] for ty in types]
+
     # plotting box plots, with statistical information. Meaning of the stars:
     # ***-> p<0.001 **-> 0.01>p>0.001 *-> 0.05>p>0.01 ns-> p>0.05
     fig = box_plots(values_dict1, values_dict2, lables, t_test_dict=t_test_dict, types=types, ylabels=ylabels)
-    fig.savefig(os.path.join(out_folder, "stress_measures_on_the_cell_area.png"))  # saving to outputfolder
+    # saving to output folder
+    fig.savefig(os.path.join(out_folder, "stress_measures_on_the_cell_area.png"))
 
+    # same procedure for some other quantities
+    # measures of cell cell interactions
     types = ['avarage line stress', 'avarage cell force',
              'avarage cell pressure', 'avarage cell shear']
     ylabels = [ty + "\n" + units[ty] for ty in types]
     fig = box_plots(values_dict1, values_dict2, lables, t_test_dict=t_test_dict, types=types, ylabels=ylabels)
     fig.savefig(os.path.join(out_folder, "stress_measures_at_cell_borders.png"))
 
-    types = ['contractility per area', 'contractile energy per area']
+    # contractillity and contractile energy
+    types = ['contractillity on cell colony per area', 'contractile energy on cell colony per area']
     ylabels = [ty + "\n" + units[ty] for ty in types]
     fig = box_plots(values_dict1, values_dict2, lables, t_test_dict=t_test_dict, types=types, ylabels=ylabels)
     fig.savefig(os.path.join(out_folder, "contractility_contractile_energy.png"))
 
+    # only the colony area
     types = ['area']
     ylabels = [ty + "\n" + units[ty] for ty in types]
     fig = box_plots(values_dict1, values_dict2, lables, t_test_dict=t_test_dict, types=types, ylabels=ylabels)
     fig.savefig(os.path.join(out_folder, "cell area.png"))
+
 
 
