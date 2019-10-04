@@ -19,7 +19,7 @@ default_parameters={
     "h":300, # height of the substrate in µm
     "edge_padding":0.1, # fraction of the image close to the borders that is ignored for any analyzed value
     "TFM_mode":"finite_thickness",  # mode of traction force microscopy ("finite_thickness" or "infinite_thcikness")
-    "FEM_mode":"cell layer",  # mode for FEM type. Either perform FEM on a single colony (mode: "colony") or on the whole
+    "FEM_mode":"colony",  # mode for FEM type. Either perform FEM on a single colony (mode: "colony") or on the whole
                         # filed of view (mode: "cell layer"). In "cell layer you select two areas and calculate stress and
                         # contractile energy on them. In "colony" you select the area of a colony and draw cell borders. These
                         # borders are used to analyze stresses along these borders.
@@ -119,14 +119,27 @@ units["std line stress"]="N/m"
 units["std cell force"]="N"
 units["std cell pressure"]="N/m"
 units["std cell shear"]="N/m"
-units["contractility"]="N"
-units["contractile energy"]="J"
-units["avarage normal stress"]="N/m"
-units["avarage shear stress"]="N/m"
+units["contractillity on cell colony"]="N"
+units["contractile energy on cell colony"]="J"
+units["contractillity on cell type 1"]="N"
+units["contractile energy on cell type 1"]="J"
+units["contractillity on cell type 2"]="N"
+units["contractile energy cell type 2"]="J"
+units["avarage normal stress colony"]="N/m"
+units["avarage shear stress colony"]="N/m"
+units["avarage normal stress on cell type 1"]="N/m"
+units["avarage shear stress on cell type 1"]="N/m"
+units["avarage normal stress on cell type 2"]="N/m"
+units["avarage shear stress on cell type 2"]="N/m"
 units["area"]="m2"
-units["n_cells"]=""
+units["area of colony"]="m2"
+units["colony n_cells"]=""
 units["sum deformations"]="pixels"
 units["sum traction forces"]="N/m2"
+units["sum deformations on cell type 1 "]="pixels"
+units["sum traction forces on cell type 1"]="N/m2"
+units["sum deformations on cell type 2"]="pixels"
+units["sum traction forces on cell type 2"]="N/m2"
 units["sum deformations on cell colony"]="pixels"
 
 # dictionary setting a sting label for some calcualtions on mask. (summing deormations, finding the areas,
