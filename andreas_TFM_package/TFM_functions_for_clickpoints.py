@@ -445,7 +445,8 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,
         print(calculation_messages["general_properties"]%frame)
 
     mtypes = [m for m in ["cell type1", "cell type2"] if m in parameter_dict["area masks"] and m in db_info["mask_types"]]
-    sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, label="area", sumtype="area")
+    cut = True if parameter_dict["FEM_mode"] == "cell layer" else False  # cut close to image edges
+    sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, label="area", sumtype="area",cut=cut)
 
     u, v = try_to_load_deformation(db_info["path"], frame, warn=False)  # just to get correct shape
     ps_new = parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"][frame]) / np.array(u.shape))
@@ -464,22 +465,24 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,
 
 
 
-def sum_on_area(masks,frame,res_dict,parameter_dict, db,db_info,label,x=None,y=None,sumtype="abs",):
+def sum_on_area(masks,frame,res_dict,parameter_dict, db,db_info,label,x=None,y=None,sumtype="abs",cut=True):
 
     mtypes=make_iterable(masks)
     for mtype in mtypes:
         mask_membrane, warn = try_to_load_mask(db, db_info["frames_ref_dict"][frame], mtype=mtype,
                                                warn_thresh=1500)
-        mask_membrane=cut_mask_from_edge(mask_membrane,parameter_dict["edge_padding"])
+        mask_membrane=binary_fill_holes(mask_membrane)
+        if cut:
+            mask_membrane,warn_edge=cut_mask_from_edge(mask_membrane,parameter_dict["edge_padding"])
         label2=default_parameters["mask_labels"][mtype]
         if sumtype=="abs":
-            mask_int = interpolation(binary_fill_holes(mask_membrane), dims=x.shape, min_cell_size=100)
+            mask_int = interpolation(mask_membrane, dims=x.shape, min_cell_size=100)
             res_dict[frame]["%s on %s"%(label,label2)]= np.sum(np.sqrt(x[mask_int] ** 2 + y[mask_int] ** 2))
         if sumtype=="mean":
-            mask_int = interpolation(binary_fill_holes(mask_membrane), dims=x.shape, min_cell_size=100)
+            mask_int = interpolation(mask_membrane, dims=x.shape, min_cell_size=100)
             res_dict[frame]["%s on %s" % (label, label2)] = np.mean(x[mask_int])
         if sumtype=="area": # area of original mask, without interpolation
-            area = np.sum(binary_fill_holes(mask_membrane)) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
+            area = np.sum(mask_membrane) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
             res_dict[frame]["%s of %s" % (label, label2)] = area
 
 
@@ -524,7 +527,8 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,single=True,**kw
     np.save(os.path.join(db_info["path"], frame + "v.npy"), v)
     # summing deformation over certain areas
     mtypes=[m for m in db_info["mask_types"] if m in parameter_dict["area masks"]]
-    sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info,label="sum of deformations",x=u,y=v,sumtype="abs")
+    cut = True if parameter_dict["FEM_mode"]=="cell layer" else False # cut close to image edges
+    sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info,label="sum deformations",x=u,y=v,sumtype="abs",cut=cut)
 
     return None, frame
 
@@ -556,13 +560,22 @@ def make_contractile_energy_plot(u,v,t_x,t_y,frame, parameter_dict,res_dict, db,
 
 
 def cut_mask_from_edge(mask,cut_factor):
+    sum_mask1=np.sum(mask)
     dims=mask.shape
     inds=[int(dims[0]*cut_factor),int(dims[0]-(dims[0]*cut_factor)),int(dims[1]*cut_factor),int(dims[1]-(dims[1]*cut_factor))]
     mask[:inds[0], :] = 0
     mask[inds[1]:, :] = 0
-    mask[:, inds[2]] = 0
+    mask[:, :inds[2]] = 0
     mask[:, inds[3]:] = 0
-    return mask
+
+    sum_mask2 = np.sum(mask)
+    if sum_mask2<sum_mask1:
+        warn="mask was cut becuase close to image edge"
+    else:
+        warn=""
+    return mask, warn
+
+
 
 
 def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_info=None,
@@ -593,13 +606,15 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
         mask,warn=try_to_load_mask(db,db_info["frames_ref_dict"][frame],mtype=mtype,warn_thresh=1000)
         ps_new = parameter_dict["pixelsize"] * np.mean(np.array(mask.shape) / np.array(t_x.shape))
         # removing some fraction of the mask close to the border
-        mask=cut_mask_from_edge(mask,parameter_dict["edge_padding"])
-            # filling holes
+        # filling holes
         mask = binary_fill_holes(mask)
         # interpolation to size of traction force array
         mask_int = interpolation(mask, t_x.shape)
+
+        mask_int,warn_edge=cut_mask_from_edge(mask_int,parameter_dict["edge_padding"])
         # calculate contractillity only in "colony" mode
         if mtype=="contractillity_colony":
+            warn+=" "*(len(warn_edge>0)) +warn_edge
             contractile_force, proj_x, proj_y,center=contractillity(t_x, t_y, ps_new, mask_int)
             res_dict[frame]["contractillity on" + default_parameters["mask_labels"][mtype]] = [contractile_force, warn]
         # calculate contractile energy if deformations are provided
@@ -661,7 +676,8 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None, single=True
     np.save(os.path.join(db_info["path"], frame + "ty.npy"), ty)
 
     mtypes = [m for m in db_info["mask_types"] if m in parameter_dict["area masks"]]
-    sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, label="sum of traction forces", x=tx, y=ty, sumtype="abs")
+    cut = True if parameter_dict["FEM_mode"] == "cell layer" else False  # cut close to image edges
+    sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, label="sum traction forces", x=tx, y=ty, sumtype="abs",cut=cut)
     return None, frame
 
 
@@ -784,8 +800,8 @@ def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stre
         #             layer="FEM_output", path=1, sort_index=db_info["frames_ref_dict"][frame])
 
         mtypes=[m for m in db_info["mask_types"] if m in parameter_dict["area masks"]]
-        sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, "average normal stress", x=mean_normal_stress, sumtype="mean")
-        sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, "average shear stress", x=shear, y=None, sumtype="mean")
+        sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, "average normal stress", x=mean_normal_stress, sumtype="mean",cut=True)
+        sum_on_area(mtypes,frame,res_dict,parameter_dict, db,db_info, "average shear stress", x=shear, y=None, sumtype="mean",cut=True)
 
 
     if parameter_dict["FEM_mode"]=="colony":
@@ -920,8 +936,8 @@ if __name__=="__main__":
     #apply_to_frames(db, parameter_dict, deformation,res_dict, frames="04",db_info=db_info)
     #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="04", db_info=db_info)
     #apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="04", db_info=db_info)
-    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="04", db_info=db_info)
+    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="06", db_info=db_info)
     #apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="04", db_info=db_info)
 
-    write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
+    #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
     # calculating the deformation field and adding to data base
