@@ -180,11 +180,11 @@ def split_name(name):
     :return:
     """
 
-    if len(name) > 10:  # check the length of the string
-        name_part = name[10:]
+    if len(name) > 20:  # check the length of the string
+        name_part = name[20:]
         name_part = name_part.replace(" ", "\n",
                                       1)  # replace first blank space in the part that is too long with a new line
-        name_return = name[:10] + name_part  # rejoining the string
+        name_return = name[:20] + name_part  # rejoining the string
     else:
         name_return = copy.deepcopy(name)  # do nothing if the string is not to long
     return name_return
@@ -298,8 +298,15 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
     return fig
 
 
-def plot_contractillity_correlation(values_dict1, values_dict2, lables, frame_list1=[], frame_list2=[]):
+def compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]):
     """
+
+    Mostly used for:
+
+    ###
+    update documentation
+    ###
+
     plotting contractillity vs contractile energy. This plot is supposed to show differences in the correlation of
     contractillity and contractile energy. Contractillity is the sum of the projections of the traction forces to their
     force epicenter. Thus it is high when contraction originating from a single center. Contractile energy is the sum
@@ -309,10 +316,13 @@ def plot_contractillity_correlation(values_dict1, values_dict2, lables, frame_li
     If you provide lists of frames for each value with frame_list1 adn frame_list2, each point will by labled by its
     corresponding frame
     :param values_dict1: first dictionary with key: name of a quantity, value: measured values for this quantity,
-    must contain the keys "contractility" and "contractile energy"
+    must contain the keys in types
     :param values_dict2: second dictionary with key: name of a quantity, value: measured values for this quantity,
-    must contain the keys "contractility" and "contractile energy"
+    must contain the keys in types
+    :param types: list with the name of the two quantities that you want to compare. Must be length 2
     :param lables: list of lables describing values_dict1, values_dict2
+    :param xlabel: label for x axis
+    :param ylabel: label for y axis
     :param frame_list1: optional, list of frames corresponding to the values in values_dict1. Must be list of strings.
     :param frame_list2: optional, list of frames corresponding to the values in values_dict2. Must be list of strings.
     :return: fig, figure object
@@ -320,17 +330,17 @@ def plot_contractillity_correlation(values_dict1, values_dict2, lables, frame_li
 
     fig = plt.figure()
     plt.plot(0, 0)  # fixes lower x and y limits at 0 and 0
-    plt.xlabel("contractility [N]")  # xlabel
-    plt.ylabel("contractile energy [J]")  # label
+    plt.xlabel(xlabel)  # xlabel
+    plt.ylabel(ylabel)  # ylabel
     # plotting contractillity vs contractile energy in first experiment
-    plt.plot(values_dict1["contractile energy on cell colony"], values_dict1["contractile energy on cell colony'"], "o", color="C1", label=lables[0])
+    plt.plot(values_dict1[types[0]], values_dict1[types[1]], "o", color="C1", label=lables[0])
     # plotting contractillity vs contractile energy in second experiment
-    plt.plot(values_dict2["contractile energy on cell colony"], values_dict2["contractile energy on cell colony'"], "o", color="C2", label=lables[1])
+    plt.plot(values_dict2[types[0]], values_dict2[types[1]], "o", color="C2", label=lables[1])
     # optionally labeling the data points with their corresponding string
     if isinstance(frame_list1, list) and isinstance(frame_list2, list):
-        for f, v1, v2 in zip(frame_list1, values_dict1["contractility"], values_dict1["contractile energy"]):
+        for f, v1, v2 in zip(frame_list1, values_dict1[types[0]], values_dict1[types[1]]):
             plt.text(v1, v2, f, color="C1")
-        for f, v1, v2 in zip(frame_list2, values_dict2["contractility"], values_dict2["contractile energy"]):
+        for f, v1, v2 in zip(frame_list2, values_dict2[types[0]], values_dict2[types[1]]):
             plt.text(v1, v2, f, color="C2")
     # show numbers on y axis in scientific notation if they are outside of 10**3 to 10**-3
     plt.gca().ticklabel_format(axis='both', style="sci", scilimits=(-3, 3))
@@ -412,11 +422,18 @@ def full_standard_analysis(res_file1, res_file2, label1, label2, out_folder,unit
     lables = [label1, label2]
 
     # plotting contractillity vs contractile energy.
-    fig = plot_contractillity_correlation(values_dict1, values_dict2, lables)
+
+    types = ["contractile energy on cell colony", "contractillity on cell colony"]
+    # compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]
+    fig = compare_two_values(values_dict1, values_dict2, types, lables, xlabel="contractile energy [J]",
+                             ylabel="contractillity [N]")
     # You could also add the frame as a lable to each point, if you want to identify them:
+    fig = compare_two_values(values_dict1, values_dict2, types, lables, xlabel="contractile energy [J]",
+                             ylabel="contractillity [N]", frame_list1=frame_list1, frame_list2=frame_list2)
     # fig=plot_contractillity_correlation(values_dict1,values_dict2,lables,frame_list1,frame_list2)
     # saving to output folder
-    fig.savefig(os.path.join(out_folder, "coordinated_contractility_vs_contractile_energy.png"))
+    fig.savefig(os.path.join(out_folder, "coordinated_contractillity_vs_contractile_energy.png"))
+
 
     # boxplots for the other measures
     # choosing which measures should be displayed in this plot
