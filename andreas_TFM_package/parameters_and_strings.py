@@ -23,9 +23,23 @@ default_parameters={
                         # filed of view (mode: "cell layer"). In "cell layer you select two areas and calculate stress and
                         # contractile energy on them. In "colony" you select the area of a colony and draw cell borders. These
                         # borders are used to analyze stresses along these borders.
-    "area masks":["cell type1","cell type2","cell colony"] # use these mask to evaluate quantities only on this area.
+    "area masks":["cell type1","cell type2","membrane"] # use these mask to evaluate quantities only on this area.
                         # (mostly use full for sum of deformation...)
 }
+
+# dictionary setting a sting label for some calcualtions on mask. (summing deormations, finding the areas,
+# averaging stresses
+mask_label_dict={"cell type1":"cell type 1",
+"cell type2":"cell type 2",
+"membrane": "colony",
+"contractillity_colony":"colony"
+                }
+
+# adding to the parameters dict
+default_parameters["mask_labels"]=mask_label_dict
+
+
+
 
 # setting all parameters for plotting. Parameters can be set for each plotting instance separately by setting the value
 # in the first dictionary as another dictionary. The keys of this dictionary identify the plot they are applied to.
@@ -36,12 +50,21 @@ default_parameters={
 # nothing is passed to this plot.
 
 default_fig_parameters={
-    "cbar_str": {"deformation":"deformation\n[pixel]","traction":"traction\n[Pa]","FEM":"line stress\n[N/µm]",
-                 "FEM_cell_layer":"avg. normal stress in N/µm","energy_points":"contractile energy\nJ/pixel\n"
+    # list of which plots to generate depending on which analysis mode is chosen
+    # available plots are ["deformation","traction","FEM_borders","stress_map","energy_points"]
+    "plots":{"cell layer":["deformation","traction","energy_points","stress_map"],
+            "colony":["deformation","traction","FEM_borders","stress_map"]},
+    # dictionary specifying the name of the layer (in the cdb database) a lot is written to // you dont need to change this
+    "plots_layers":{"deformation":"deformation","traction":"traction","FEM_borders":"FEM_borders"
+        ,"stress_map":"stress_map","energy_points":"energy_points"}, #
+
+
+    "cbar_str": {"deformation":"deformation\n[pixel]","traction":"traction\n[Pa]","FEM_borders":"line stress\n[N/µm]",
+                 "stress_map":"avg. normal stress in N/µm","energy_points":"contractile energy\nJ/pixel\n"
                  },  # label of the color bar
     "cmap": "rainbow",  # colormap for displaying magnitudes in deformation and traction fields
-    "vmin": {"deformation":None,"traction":None,"FEM":None,"FEM_cell_layer":None,"energy_points":None},  # minimal value displayed in the colormap
-    "vmax": {"deformation":None,"traction":None,"FEM":None,"FEM_cell_layer":None,"energy_points":None},  # maximal value displayed in the colormap
+    "vmin": {"deformation":None,"traction":None,"FEM_borders":None,"stress_map":None,"energy_points":None},  # minimal value displayed in the colormap
+    "vmax": {"deformation":None,"traction":None,"FEM_borders":None,"stress_map":None,"energy_points":None},  # maximal value displayed in the colormap
     "cbar_width": "2%",  # width of the color bar in % of the main image. Must be string with % at the end.
     "cbar_height": "50%",  # height of the color bar in % of the main image. Must be string with % at the end.
     "cbar_borderpad": 4,  # distance between the edge of the image and the color bar (in pixels???)
@@ -49,13 +72,15 @@ default_fig_parameters={
     "headwidth": 3,  # width of the arrow heads (in pixels?)
     "headlength": 3,  # length of the arrow heads (in pixels?)
     "width": 0.002,  # width of the arrow shaft (what unit?)
-    "plot_t_vecs":{"FEM":False}, # plotting the stress vectors on the cell border stresses image
-    "plot_n_arrows":{"FEM":False}, # plotting normal vectors on the cell border stresses image
-    "linewidth":{"FEM":4}, # line width when plotting the cell border stresses
-    "cm_cmap":{"FEM":cm.jet}, # color map for plotting the cell border stresses. Needs a color maps object.
+    "plot_t_vecs":{"FEM_borders":False}, # plotting the stress vectors on the cell border stresses image
+    "plot_n_arrows":{"FEM_borders":False}, # plotting normal vectors on the cell border stresses image
+    "linewidth":{"FEM_borders":4}, # line width when plotting the cell border stresses
+    "cm_cmap":{"FEM_borders":cm.jet}, # color map for plotting the cell border stresses. Needs a color maps object.
     "border_arrow_filter":{"FEM":1}, # plot only every n'th arrow for on the cell border stresses image
     #"filter":[0,4],
     #"figsize":(10,10),
+    "file_names":{"deformation":"deformation.png","traction":"traction.png"   # filenames under wich plots are saved
+        ,"FEM_borders":"border_stress_img.png","stress_map":"avg_normal.png","energy_points":"energy_distribution.png"}
 }
 
 
@@ -142,13 +167,3 @@ units["sum deformations on cell type 2"]="pixels"
 units["sum traction forces on cell type 2"]="N/m2"
 units["sum deformations on cell colony"]="pixels"
 
-# dictionary setting a sting label for some calcualtions on mask. (summing deormations, finding the areas,
-# averaging stresses
-mask_label_dict={"cell type1":" cell type 1",
-"cell type2":" cell type 2",
-"membrane": "cell colony",
-"contractillity_colony":" cell colony"
-                }
-
-# adding to the parameters dict
-default_parameters["mask_labels"]=mask_label_dict

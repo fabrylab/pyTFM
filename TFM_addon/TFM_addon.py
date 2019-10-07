@@ -2,6 +2,7 @@
 from __future__ import division, print_function
 from andreas_TFM_package.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
 from andreas_TFM_package.parameters_and_strings import tooltips,default_parameters
+from andreas_TFM_package.database_functions import *
 #from TFM_functions_for_clickpoints import * local import
 
 #from utilities import  get_group,createFolder

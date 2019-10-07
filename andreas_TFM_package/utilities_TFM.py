@@ -10,6 +10,13 @@ def make_iterable(value):
     else:
         return value
 
+def make_iterable_args(value):
+    # in order to unack array as one value we need need [array]
+
+    if not hasattr(value, '__iter__') or isinstance(value,str) or isinstance(value, np.ndarray):
+        return [value]
+    else:
+        return value
 
 def convert_axis_tick_unit(ax,factor):
     plt.draw()
