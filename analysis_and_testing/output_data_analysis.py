@@ -14,7 +14,7 @@ import os
 
 
 # setting the output folder for plots. All plots are saved to this folder.
-folder_plots = "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/results_test/"
+folder_plots = "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/lates_analysis"
 createFolder(folder_plots) # creating the folder if it doesn't already exist
 
 
@@ -53,8 +53,8 @@ units = add_to_units(units, add_name=" per area", add_unit="/m2",exclude=["area"
 # now we normalize all quantities. We exclude any quantity with a name that contains strings in exclude. Also std_
 #(standart deviations) are not normalized.
 # all suitable values are devided by values_dict[norm] and get a new name by adding add_name.
-values_dict1=normalize_values(values_dict1,norm="area of colony",add_name=" per area",exclude=["area", "cells"]) # calculating measures per area
-values_dict2=normalize_values(values_dict2,norm="area of colony",add_name=" per area",exclude=["area", "cells"])# calculating measures per area
+values_dict1=normalize_values(values_dict1,norm="area of  colony",add_name=" per area",exclude=["area", "cells"]) # calculating measures per area
+values_dict2=normalize_values(values_dict2,norm="area of  colony",add_name=" per area",exclude=["area", "cells"])# calculating measures per area
 
 
 ## performing statistical analysis
@@ -77,11 +77,16 @@ t_test_dict=t_test(values_dict1,values_dict2,all_types)
 lables=["WT","KO"]
 
 # plotting contractillity vs contractile energy.
-fig=plot_contractillity_correlation(values_dict1,values_dict2,lables)
+
+types=["contractile energy on colony","contractillity on colony"]
+#compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]
+fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contractile energy [J]",ylabel="contractillity [N]")
 # You could also add the frame as a lable to each point, if you want to identify them:
+#fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contractile energy [J]",
+#                       ylabel="contractillity [N]",frame_list1=frame_list1,frame_list2=frame_list2)
 # fig=plot_contractillity_correlation(values_dict1,values_dict2,lables,frame_list1,frame_list2)
 # saving to output folder
-fig.savefig(os.path.join(folder_plots,"coordinated_contractility_vs_contractile_energy.png"))
+fig.savefig(os.path.join(folder_plots,"coordinated_contractillity_vs_contractile_energy.png"))
 
 # boxplots for the other measures
 # choosing which measures should be displayed in this plot
@@ -107,18 +112,15 @@ fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=typ
 fig.savefig(os.path.join(folder_plots,"stress_measures_at_cell_borders.png"))
 
 # contractillity and contractile energy
-types=['contractillity on cell colony per area','contractile energy on cell colony per area']
+types=['contractillity on colony per area','contractile energy on colony per area']
 ylabels=[ty+"\n"+units[ty] for ty in types]
 fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
 fig.savefig(os.path.join(folder_plots,"contractility_contractile_energy.png"))
 
 # only the colony area
-types=['area']
+types=['area of colony']
 ylabels=[ty+"\n"+units[ty] for ty in types]
 fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
 fig.savefig(os.path.join(folder_plots,"cell area.png"))
-
-
-
 
 
