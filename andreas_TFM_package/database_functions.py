@@ -13,6 +13,9 @@ class Mask_Error(Exception):
 
 
 
+
+
+
 def guess_TFM_mode(db_info,parameter_dict):
 
     cl_cond1= len(db_info["mask_types"])==2 and  "cell type1" in db_info["mask_types"] and  "cell type2" in db_info["mask_types"]

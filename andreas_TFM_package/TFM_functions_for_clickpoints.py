@@ -351,13 +351,13 @@ def sum_on_area(masks,frame,res_dict,parameter_dict, db,db_info,label,x=None,y=N
         label2=default_parameters["mask_labels"][mtype]
         if sumtype=="abs":
             mask_int = interpolation(mask_membrane, dims=x.shape, min_cell_size=100)
-            res_dict[frame]["%s on%s"%(label,label2)]= np.sum(np.sqrt(x[mask_int] ** 2 + y[mask_int] ** 2))
+            res_dict[frame]["%s on %s"%(label,label2)]= np.sum(np.sqrt(x[mask_int] ** 2 + y[mask_int] ** 2))
         if sumtype=="mean":
             mask_int = interpolation(mask_membrane, dims=x.shape, min_cell_size=100)
-            res_dict[frame]["%s on%s" % (label, label2)] = np.mean(x[mask_int])
+            res_dict[frame]["%s on %s" % (label, label2)] = np.mean(x[mask_int])
         if sumtype=="area": # area of original mask, without interpolation
             area = np.sum(mask_membrane) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
-            res_dict[frame]["%s of%s" % (label, label2)] = area
+            res_dict[frame]["%s of %s" % (label, label2)] = area
 
 
 
@@ -426,12 +426,12 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
         if mtype=="contractillity_colony":
             warn+=" "*(len(warn_edge)>0) +warn_edge
             contractile_force, proj_x, proj_y,center=contractillity(t_x, t_y, ps_new, mask_int)
-            res_dict[frame]["contractillity on" + default_parameters["mask_labels"][mtype]] = [contractile_force, warn]
+            res_dict[frame]["contractillity on " + default_parameters["mask_labels"][mtype]] = [contractile_force, warn]
         # calculate contractile energy if deformations are provided
         if isinstance(u,np.ndarray):
             check_shape(u, t_x)
             contr_energy = np.sum(energy_points[mask_int.astype(bool)])  # sum of contractile energy on on mask
-            res_dict[frame]["contractile energy on" + default_parameters["mask_labels"][mtype]] = [contr_energy, warn]
+            res_dict[frame]["contractile energy on " + default_parameters["mask_labels"][mtype]] = [contr_energy, warn]
         print("contractile energy=",round_flexible(contr_energy),"contractillity=",round_flexible(contractile_force))
 
 
@@ -570,6 +570,9 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,**kwa
     E_nodes, S_nodes = pos.strain_nodes(nodes, elements, mats, UC)  # stresses and strains
     stress_tensor = calculate_stress_tensor(S_nodes, nodes, dims=mask_area.shape)  # assembling the stress tensor
 
+    plot_fields(nodes, fields=[S_nodes[:, 0], S_nodes[:, 1], S_nodes[:, 2]], dims=mask_area.shape,
+                titles=["x_stress", "y_stress", "xy_stress"], cbar_str="stress in N/pixel", origin="upper",
+                mask=mask_area)  # ,mask_overlay=mask_int)
     return  UG_sol,stress_tensor
 
 
@@ -580,9 +583,9 @@ def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stre
 
     # analyzing the FEM results with average stresses
     shear=stress_tensor[:,:,0,1] # shear component of the stress tensor
-    mean_normal_stress =(stress_tensor[:,:,0,0]+stress_tensor[:,:,1,1])/2 # mena normal component of the stress tensor
-    shear=shear*ps_new*10**6# conversion to N/m
-    mean_normal_stress=mean_normal_stress*ps_new*10**6# conversion to N/m
+    mean_normal_stress =(stress_tensor[:,:,0,0]+stress_tensor[:,:,1,1])/2 # mean normal component of the stress tensor
+    shear=shear/(ps_new*10**-6)# conversion to N/m
+    mean_normal_stress=mean_normal_stress/(ps_new*10**-6)# conversion to N/m
     add_plot("stress_map", mean_normal_stress, show_map_clickpoints, frame, db_info, default_fig_parameters,
              parameter_dict,db)
 
@@ -613,7 +616,7 @@ def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tens
                                                                               stress_tensor, pixel_length=ps_new,
                                                                               interpol_factor=1)
     # plotting the stress at cell borders
-    add_plot("FEM_borders", (borders.mask_area.shape,borders.edge_lines, lines_interpol, max_v, min_v), plot_continous_boundary_stresses, frame,
+    add_plot("FEM_borders", (borders.mask_area.shape,borders.edge_lines, lines_interpol, min_v, max_v), plot_continous_boundary_stresses, frame,
              db_info, default_fig_parameters, parameter_dict, db)
 
     avg_line_stress=mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_vecs")
@@ -697,7 +700,7 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/database3.cdb", "r")
+        "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/KOshift/database3.cdb", "r")
 
     parameter_dict = default_parameters
     res_dict=defaultdict(dict)
@@ -708,7 +711,7 @@ if __name__=="__main__":
     #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames=all_frames, db_info=db_info)
     #apply_to_frames(db, parameter_dict, deformation,res_dict, frames="04",db_info=db_info)
     #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="04", db_info=db_info)
-    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="01", db_info=db_info)
+    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
     #apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="01", db_info=db_info)
     #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
     #apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="04", db_info=db_info)

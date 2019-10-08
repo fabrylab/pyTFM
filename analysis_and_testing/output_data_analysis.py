@@ -53,8 +53,8 @@ units = add_to_units(units, add_name=" per area", add_unit="/m2",exclude=["area"
 # now we normalize all quantities. We exclude any quantity with a name that contains strings in exclude. Also std_
 #(standart deviations) are not normalized.
 # all suitable values are devided by values_dict[norm] and get a new name by adding add_name.
-values_dict1=normalize_values(values_dict1,norm="area of  colony",add_name=" per area",exclude=["area", "cells"]) # calculating measures per area
-values_dict2=normalize_values(values_dict2,norm="area of  colony",add_name=" per area",exclude=["area", "cells"])# calculating measures per area
+values_dict1=normalize_values(values_dict1,norm="area of colony",add_name=" per area",exclude=["area", "cells"]) # calculating measures per area
+values_dict2=normalize_values(values_dict2,norm="area of colony",add_name=" per area",exclude=["area", "cells"])# calculating measures per area
 
 
 ## performing statistical analysis
@@ -124,3 +124,48 @@ fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=typ
 fig.savefig(os.path.join(folder_plots,"cell area.png"))
 
 
+
+
+#######
+types=['avarage line stress per area']
+ylabels=[ty+"\n"+units[ty] for ty in types]
+fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
+fig.savefig(os.path.join(folder_plots,"cell area.png"))
+
+
+
+types=["contractile energy on cell colony","avarage line stress per area"]
+#compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]
+fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contractile energy [J]",
+                       ylabel="line stress",frame_list1=frame_list1,frame_list2=frame_list2)
+
+
+
+types=["contractile energy on cell colony","avarage cell force per area"]
+#compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]
+fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contractile energy [J]",
+                       ylabel="cell froce",frame_list1=frame_list1,frame_list2=frame_list2)
+
+
+types=["contractile energy on cell colony","average normal stress colony per area"]
+#compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]
+fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contractile energy [J]",
+                       ylabel="avg norma stress",frame_list1=frame_list1,frame_list2=frame_list2)
+
+
+# normilizing wiht contractile energy
+values_dict1["average normal stress per contractile energy"]=values_dict1["average normal stress colony"]/values_dict1['contractile energy on cell colony']
+values_dict2["average normal stress per contractile energy"]=values_dict2["average normal stress colony"]/values_dict2['contractile energy on cell colony']
+values_dict1["contractillity per contractile energy"]=values_dict1["contractillity on cell colony"]/values_dict1['contractile energy on cell colony']
+values_dict2["contractillity per contractile energy"]=values_dict2["contractillity on cell colony"]/values_dict2['contractile energy on cell colony']
+
+values_dict1["avarage line stress per contractile energy"] = values_dict1["avarage line stress"]/values_dict1['contractile energy on cell colony']
+values_dict2["avarage line stress per contractile energy"] = values_dict1["avarage line stress"]/values_dict2['contractile energy on cell colony']
+
+
+all_types=[name for name in values_dict2.keys() if not name.startswith("std ")]
+t_test_dict=t_test(values_dict1,values_dict2,all_types)
+types=["average normal stress per contractile energy","contractillity per contractile energy","avarage line stress per contractile energy"]
+
+ylabels=[ty+"\n"+units[ty] for ty in types]
+fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)

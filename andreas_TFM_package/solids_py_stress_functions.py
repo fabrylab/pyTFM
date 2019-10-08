@@ -146,7 +146,7 @@ def interpolation_for_stress_and_normal_vector(lines_splines, lines_points,stres
                                                                  sig_yy_inter, inter_ranges)
 
 
-        t_vecs, t_norm=t_vecs*pixel_length*10**6, t_norm*pixel_length*10**6 # conversion to N/m (height not included)
+        t_vecs, t_norm=t_vecs/(pixel_length*10**-6), t_norm/(pixel_length*10**-6) # conversion to N/m (height not included)
 
 
         # udating minimal value to find global minimum eventually
