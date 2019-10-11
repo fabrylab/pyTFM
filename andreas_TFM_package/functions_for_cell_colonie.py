@@ -334,13 +334,13 @@ def plot_grid(nodes,elements,inverted_axis=False,symbol_size=4,arrows=False,imag
 
 
 
-def show_quiver(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headlength=3,width=0.002):
+def show_quiver(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,cmap="rainbow"):
     fx=fx.astype("float64")
     fy=fy.astype("float64")
     dims=fx.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
 
     fig=plt.figure()
-    im = plt.imshow(np.sqrt(fx ** 2 + fy ** 2))
+    im = plt.imshow(np.sqrt(fx ** 2 + fy ** 2),cmap=cmap)
 
 
 
