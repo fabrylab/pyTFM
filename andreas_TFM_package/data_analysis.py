@@ -293,6 +293,8 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
     # adding a legend  with labels from the "lables" list
     plt.plot(0, 0, color="C1", label=lables[0])  # empty line segments as "anchor" of the legend
     plt.plot(0, 0, color="C2", label=lables[1])
+    if len (types)==1:
+        plt.xlim((0,2)) # work around to get a nicer legend position if only onw type is plotted
     plt.legend(loc="upper right")  # fixing legend to upper right corner
     plt.tight_layout()  # improving the general plot layout
     return fig
