@@ -59,7 +59,7 @@ default_fig_parameters={
         ,"stress_map":"stress_map","energy_points":"energy_points"}, #
 
 
-    "cbar_str": {"deformation":"deformation\n[pixel]","traction":"traction\n[Pa]","FEM_borders":"line stress\n[N/µm]",
+    "cbar_str": {"deformation":"deformation\n[pixel]","traction":"traction\n[Pa]","FEM_borders":"line stress\n[N/m]",
                  "stress_map":"avg. normal stress\nin N/m","energy_points":"contractile energy\nJ/pixel\n"
                  },  # label of the color bar
     "cmap": "rainbow",  # colormap for displaying magnitudes in deformation and traction fields
