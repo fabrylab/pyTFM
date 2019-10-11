@@ -125,6 +125,7 @@ def setup_masks(db,db_info,parameter_dict):
             db.setMaskType("cell type1", color="#1322ff", index=1)
         if "cell type2" not in db_info["mask_types"]:
             db.setMaskType("cell type2",color="#ebff05",index=2)
+    db_info["mask_types"]=[m.name for m in db.getMaskTypes()] # update db info
 
 def fill_patches_for_cell_layer(frame, parameter_dict,res_dict, db,db_info=None,**kwargs):
     # trying to load the mask from clickpoints
