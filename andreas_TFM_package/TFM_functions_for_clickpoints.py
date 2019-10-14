@@ -404,12 +404,10 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
     # select mask
     mtypes=[m for m in db_info["mask_types"] if m in ["cell type1","cell type2","contractillity_colony"]]
 
-
     if isinstance(u, np.ndarray):
         energy_points = contractile_energy_points(u, v, t_x, t_y, parameter_dict["pixelsize"], ps_new)  # contractile energy at any point
-        # ploting contractile energy (onyl happens if enable in default_fig_parameters
+        # plotting contractile energy (only happens if enable in default_fig_parameters
         add_plot("energy_points",energy_points,show_map_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db)
-
 
         # iterating though mask that are selected for summation
     for mtype in mtypes:
@@ -431,6 +429,7 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
         if isinstance(u,np.ndarray):
             check_shape(u, t_x)
             contr_energy = np.sum(energy_points[mask_int.astype(bool)])  # sum of contractile energy on on mask
+
             res_dict[frame]["contractile energy on " + default_parameters["mask_labels"][mtype]] = [contr_energy, warn]
         print("contractile energy=",round_flexible(contr_energy),"contractillity=",round_flexible(contractile_force))
 
@@ -711,10 +710,10 @@ if __name__=="__main__":
     #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames=all_frames, db_info=db_info)
     #apply_to_frames(db, parameter_dict, deformation,res_dict, frames="04",db_info=db_info)
     #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="04", db_info=db_info)
-    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
-    #apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="01", db_info=db_info)
     #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
-    #apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="04", db_info=db_info)
+    #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="02", db_info=db_info)
+    #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
+    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames=all_frames, db_info=db_info)
 
     #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
     # calculating the deformation field and adding to data base

@@ -596,16 +596,31 @@ def contractillity(tx,ty,pixelsize,mask):
 
     return contractile_force, proj_x, proj_y,center # unit of contractile force is N
 
-
-def contractile_energy_points(u,v,tx,ty,pixelsize1,pixelsize2):
+### incorrect function that was previously used
+def contractile_energy_points_old(u,v,tx,ty,pixelsize1,pixelsize2):
     pixelsize2*=10**-6 # conversion to m
     pixelsize1*=10**-6
     energy_points = 0.5 * (pixelsize2 ** 2) * (np.sqrt((tx  * u * pixelsize1) ** 2 + (
             ty  * v * pixelsize1) ** 2))
 
+
     bg = np.percentile(energy_points, 30)  # value of a background point
     energy_points-=bg
     return energy_points
+
+
+def contractile_energy_points(u,v,tx,ty,pixelsize1,pixelsize2):
+    pixelsize2*=10**-6 # conversion to m
+    pixelsize1*=10**-6
+    energy_points =  0.5 * (pixelsize2 ** 2) * (tx * u * pixelsize1 + ty * v * pixelsize1)
+
+
+    bg = np.percentile(energy_points, 30)  # value of a background point
+    energy_points-=bg
+    return energy_points
+
+
+
 
 
 def plot_deformation_few_arrows(u,v,vmin=0,vmax=False,scale_ratio=0.5):
