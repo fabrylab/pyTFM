@@ -44,7 +44,7 @@ def guess_TFM_mode(db_info,parameter_dict):
 
 
 
-def setup_database_for_tfm(folder, name, return_db=False):
+def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after*",key2="\d{1,4}before*",key3="\d{1,4}mebrane*",frame_key='(\d{1,4})'):
 
     '''
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
@@ -60,17 +60,18 @@ def setup_database_for_tfm(folder, name, return_db=False):
     db = clickpoints.DataFile(os.path.join(folder,name), "w")
     # regex patterns to sort files into layers. If any of these matches, the file will  be sorted into a layer.
     # keys: name of the layer, values: list of regex patterns
-    file_endings = "(png|jpg|tif|swg)" # all allowed file endings
-    layer_search = {"images_after": [re.compile("\d{1,4}after.*" + file_endings)],
-                    "images_before": [re.compile("\d{1,4}before.*" + file_endings)],
-                    "membranes": [re.compile("\d{1,4}mebrane.*" + file_endings),
-                                          re.compile("\d{1,4}bf_before.*" + file_endings)]
+    file_endings = "(\.png|\.jpg|\.tif|\.swg)" # all allowed file endings
+    layer_search = {"images_after": [re.compile(key1 + file_endings)],
+                    "images_before": [re.compile(key2 + file_endings)],
+                    "membranes": [re.compile(key3 + file_endings)]
                             }
     # filtering all files in the folder
     all_patterns=list(itertools.chain(*layer_search.values()))
+    print(os.listdir(folder))
     images = [x for x in os.listdir(folder) if any([pat.match(x) for pat in all_patterns])]
+    print(images)
     # identifying frames by evaluating the leading number.
-    frames = [get_group(re.search('(\d{1,4})', x), 0) for x in images] # extracting frame
+    frames = [get_group(re.search(frame_key, x), 1) for x in images] # extracting frame
     # generating a list of sort_ids for the clickpoints database (allows you to miss some frames)
     sort_id_list=make_rank_list(frames,dtype=int)# list of sort indexes (frames) of images in the database
     warn_incorrect_files(frames) # checking if there where more or less then three images per frame

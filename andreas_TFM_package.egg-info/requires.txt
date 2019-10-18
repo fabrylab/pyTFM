@@ -1,0 +1,7 @@
+numpy
+cython
+scipy
+scikit-image
+matplotlib
+tqdm
+solidspy
