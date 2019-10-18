@@ -39,7 +39,7 @@ Next install the traction force microscopy package. I recommend to make an edita
 Simply download or clone the repository. Unizp the files, then open a terminal and navigate to the folder tracktion_force_mircoscopy. Now perform a local installation with the command
 
 ```
-pip install -e
+pip install -e.
 ```
 
 You can also install this package directly from github. First you need to install git.
