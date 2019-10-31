@@ -1,6 +1,0 @@
-numpy
-scipy
-skimage
-matplotlib
-tqdm
-solidspy
