@@ -44,7 +44,8 @@ def guess_TFM_mode(db_info,parameter_dict):
 
 
 
-def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after",key2="\d{1,4}before",key3="\d{1,4}mebrane",frame_key='(\b\d{1,4})'):
+def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after",
+                           key2="\d{1,4}before",key3=["\d{1,4}mebrane","\d{1,4}bf_before"],frame_key='(\d{1,4})'):
 
     '''
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
@@ -53,6 +54,13 @@ def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after",key
     :param name: Name of the database. Needs to end with .cdb.
     :param return_db: Choose weather function returns the database object, or weather the connection to the
     database is closed
+    :param key1,key2,key3: regular expression that define how to sort images. Can be single string
+    or a list. If any of the regex is matched for one key, the image will be classified accordingly.
+    Don't include the file ending. Typical image endings (.png,.tif ... ) are added automatically.
+    key1: image after bead removal, key2: image before bead removal, key3: image of the
+    cells.
+    :param frame_key: reguar expression that defines how the frame number is searched. You must
+    mark the group that contains the frame with parenthesis "()".
     :return:
     '''
 
@@ -60,14 +68,17 @@ def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after",key
     db = clickpoints.DataFile(os.path.join(folder,name), "w")
     # regex patterns to sort files into layers. If any of these matches, the file will  be sorted into a layer.
     # keys: name of the layer, values: list of regex patterns
-    file_endings = "(\.png|\.jpg|\.tif|\.swg)" # all allowed file endings
-    layer_search = {"images_after": [re.compile(key1 + file_endings)],
-                    "images_before": [re.compile(key2 + file_endings)],
-                    "membranes": [re.compile(key3 + file_endings)]
+    key1 = make_iterable(key1)
+    key2 = make_iterable(key2)
+    key3 = make_iterable(key3)
+
+    file_endings = "(.*\.png|.*\.jpg|.*\.tif|.*\.swg)" # all allowed file endings
+    layer_search = {"images_after": [re.compile(k + file_endings) for k in key1],
+                    "images_before": [re.compile(k + file_endings) for k in key2],
+                    "membranes": [re.compile(k + file_endings) for k in key3]
                             }
     # filtering all files in the folder
     all_patterns=list(itertools.chain(*layer_search.values()))
-    print(os.listdir(folder))
     images = [x for x in os.listdir(folder) if any([pat.match(x) for pat in all_patterns])]
     # identifying frames by evaluating the leading number.
     frames = [get_group(re.search(frame_key, x), 1) for x in images] # extracting frame
@@ -82,29 +93,28 @@ def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after",key
         db.getLayer(l, base_layer=base_layer, create=True)
     path = db.setPath(folder, 1)  # setting the path to the images
 
-    # sorting images into layers   
+    # sorting images into layers
     for id, (sort_index_id,frame, im) in enumerate(zip(sort_id_list,frames, images)):
-        if any([pat.match(im) for pat in layer_search["images_after"]]):
-            db.setImage(id=id, filename=im, sort_index=sort_index_id
-                        , layer="images_after", path=1)
-            db.setAnnotation(filename=im, comment=frame + "after__"+str(sort_index_id)+"sid")
-            # setting new layer and sorting in at the same time
-        if any([pat.match(im) for pat in layer_search["images_before"]]):
-            db.setImage(id=id, filename=im
-                        , sort_index=sort_index_id, layer="images_before", path=1)
-            db.setAnnotation(filename=im, comment=frame + "before__"+str(sort_index_id)+"sid")
-        if any([pat.match(im) for pat in layer_search["membranes"]]):
-            db.setImage(id=id, filename=im, sort_index=sort_index_id,
-                        layer="membranes", path=1)
-            db.setAnnotation(filename=im, comment=frame+"bf__"+str(sort_index_id)+"sid")
-    # delete_empty_layers(db) # not necessary
 
+        if any([pat.match(im) for pat in layer_search["images_after"]]):
+            layer="images_after"
+            comment=frame + "after__"+str(sort_index_id)+"sid"
+        if any([pat.match(im) for pat in layer_search["images_before"]]):
+            layer = "images_before"
+            comment = frame + "before__"+str(sort_index_id)+"sid"
+        if any([pat.match(im) for pat in layer_search["membranes"]]):
+            layer = "membranes"
+            comment = frame+"bf__"+str(sort_index_id)+"sid"
+        print("file:", im, "frame:", frame, "layer", "layer:", layer)
+        db.setImage(id=id, filename=im, sort_index=sort_index_id,
+                    layer=layer, path=1)
+        db.setAnnotation(filename=im, comment=comment)
     # return database connection or close
     if return_db:
         return frames, db
     else:
         db.db.close()
-        
+        return frames
 
 
 
