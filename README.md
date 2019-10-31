@@ -52,7 +52,12 @@ then install this package by
 pip install git+https://github.com/fabrylab/tracktion_force_microscopy.git
 ```
 
-To activate the clickpoints addon download or clone this repository. Copy and paste the folder TFM_addon to the clickpoints addons subdirectory.
+To activate the clickpoints addon download or clone this repository. Copy and paste the folder "TFM_addon" to the clickpoints addons subdirectory.If you don' know where clickpoints is installed, simply open a terminal and go into the python interpreter by typing the command "python". Then import clickpoints and get the location with:
+```
+import clickpoints
+clickpoints.__file__
+```
+The addons folder is located directly in this folder.
 
 # Performing traction force microscopy with clickpoints. 
 
