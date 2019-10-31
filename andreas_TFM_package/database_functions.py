@@ -44,7 +44,7 @@ def guess_TFM_mode(db_info,parameter_dict):
 
 
 
-def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after.*",key2="\d{1,4}before.*",key3="\d{1,4}mebrane.*",frame_key='(\b\d{1,4})'):
+def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after",key2="\d{1,4}before",key3="\d{1,4}mebrane",frame_key='(\b\d{1,4})'):
 
     '''
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
@@ -69,7 +69,6 @@ def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after.*",k
     all_patterns=list(itertools.chain(*layer_search.values()))
     print(os.listdir(folder))
     images = [x for x in os.listdir(folder) if any([pat.match(x) for pat in all_patterns])]
-    print(images)
     # identifying frames by evaluating the leading number.
     frames = [get_group(re.search(frame_key, x), 1) for x in images] # extracting frame
     # generating a list of sort_ids for the clickpoints database (allows you to miss some frames)
@@ -83,7 +82,7 @@ def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after.*",k
         db.getLayer(l, base_layer=base_layer, create=True)
     path = db.setPath(folder, 1)  # setting the path to the images
 
-    # sorting images into layers
+    # sorting images into layers   
     for id, (sort_index_id,frame, im) in enumerate(zip(sort_id_list,frames, images)):
         if any([pat.match(im) for pat in layer_search["images_after"]]):
             db.setImage(id=id, filename=im, sort_index=sort_index_id
