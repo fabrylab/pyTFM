@@ -105,7 +105,7 @@ def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after*",ke
         return frames, db
     else:
         db.db.close()
-        return frames
+        
 
 
 
