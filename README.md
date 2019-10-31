@@ -58,11 +58,11 @@ To activate the clickpoints addon download or clone this repository. Copy and pa
 
 ## Generating a clickpoints database from images
 
-Prior to using the addon, you need to generate a clickpoints data base from images. The data base will sort images into layers and frames. For each layer you need to provide 3 images: an image of beads before the cells where removed, an image of beads after the cells where removed and an image that should show the cells themselfs. The following methods to generate the data base identify layers in frames per defualt in the following way:
-The frame is identified by a number at the beginning of the file name. The number can be up to 4 digits long and can be zeropadded. You can leave out frames, e.g provide images for frame 1 and 3, but leave out frame 2. Each frame needs 3 images: one that starts with the frame number followed by "after", one that starts with the frame number followed by "before" and one that starts with the frame number followed by "membrane". These are the images for beads after and before cells wher removed and an image of the cells themselfs respectively. You can check out the example_analysis for an example of how to name your image files. You can also provide your own keys to sort the images. See [generating a data base with the python interpreter](###generating a data base with the python interpreter) for more deatils.
+Prior to using the addon, you need to generate a clickpoints data base from images. The data base will sort images into layers and frames. For each layer you need to provide 3 images: an image of beads before the cells were removed, an image of beads after the cells where removed and an image that should show the cells themselves. The default way to identify layers and frames is the following:
+The frame is identified by a number at the beginning of the file name. The number can be up to 4 digits long and can be zeropadded. You can leave out frames, e.g provide images for frame 1 and 3, but leave out frame 2. Each frame needs 3 images: one that starts with the frame number followed by "after", one that starts with the frame number followed by "before" and one that starts with the frame number followed by "membrane"."bf_before" is also accepted. These are the images for beads after and before cells wher removed and an image of the cells themselves. You can check out the example_analysis for an example of how to name your image files. You can also provide your own keys to sort the images. See [generating a data base with the python interpreter](###generating a data base with the python interpreter) for more details.
 
 ### Using the build_cdb_database_TFM.py script
-This can be done in two ways.  
+Building the data base can be done in two ways.
 The first possibility is to use the script build_cdb_database_TFM.py. Open a terminal, navigate to the folder your images are located in and call the script with 
 ```
 python build_cdb_database_TFM.py
@@ -70,12 +70,12 @@ python build_cdb_database_TFM.py
 If the script build_cdb_database_TFM.py is not located in the same folder, your need to provide the full path to the script.
 
 ### Generating a data base with the python interpreter: 
-Alternativly you can do it from the python interpreter directly. Either open python in the terminal or use the interpreter in PyCharm.
-Import the function to setup a database:
+Alternativly you can build the database from a python interpreter directly. Either open python in the terminal or use the interpreter for example in PyCharm.
+Import the function to setup a data base:
 ```
 from andreas_TFM_package.database_functions import setup_database_for_tfm
 ```
-set the folder that your images are located in (only an example here):
+set the folder that your images are located in. It could look like this:
 ```
 folder = r"C:\Users\Andy\Desktop\exmaple_analysis\KO_shift_parts"
 ```
@@ -83,13 +83,13 @@ call the setup_database_for_tfm function with default parameters on this folder.
 ```
 setup_database_for_tfm(folder,"database.cdb")
 ```
-You can also pass your own keys to sort images as parameters to the function. For each parameter you need to provide a regular expression. The regular expression to identfy a frame needs to contain the actual frame number as a group "()":
+You can also pass your own keys to sort images as parameters to the function. For each parameter you need to provide a regular expression. The regular expression to identfy a frame needs to contain the actual frame number as a group marked with "()". Don't include the file ending. ".png" or ".tif" and so on is added automatically. 
 ```
 # using custom search keys for the data base setup:
 
-key1="\d{1,4}after" # finds any filname with 1 to 4 numbers followed by "after"
-key2="\d{1,4}before" # finds any filname with 1 to 4 numbers followed by "before"
-key3="\d{1,4}membrane" # finds any filname with 1 to 4 numbers followed by "membrane"
+key1="\d{1,4}after" # finds any file name with 1 to 4 numbers followed by "after"
+key2="\d{1,4}before" # finds any file name with 1 to 4 numbers followed by "before"
+key3="\d{1,4}membrane" # finds any file name with 1 to 4 numbers followed by "membrane"
 frame_key= "(\b\d{1,4})" # finds the first 4 leading numbers of the filename
 
 # build the data base:
