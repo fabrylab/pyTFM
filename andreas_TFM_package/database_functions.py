@@ -44,7 +44,7 @@ def guess_TFM_mode(db_info,parameter_dict):
 
 
 
-def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after*",key2="\d{1,4}before*",key3="\d{1,4}mebrane*",frame_key='(\d{1,4})'):
+def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after.*",key2="\d{1,4}before.*",key3="\d{1,4}mebrane.*",frame_key='(\b\d{1,4})'):
 
     '''
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
