@@ -96,7 +96,7 @@ frame_key= "(\b\d{1,4})" # finds the first 4 leading numbers of the filename
 setup_database_for_tfm(folder,"database.cdb",key1=key1,key2=key2,key3=key3,frame_key=frame_key)
 ```
 
-Note that the images of beads should ideally be corrected for drift and rotation. You can use the script function correcting_frame_shift.py for drift correction.
+Note that the images of beads should ideally be corrected for drift and rotation. You can use the script correcting_frame_shift.py for drift correction.
 
 
 ## Using the clickpoints addon
