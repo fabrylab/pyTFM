@@ -1,140 +1,58 @@
+# correcting frame shift between images of beads before and after cell removal.
+
+# the correction is done by finding the shift between two images using image registration. Then the images are cropped
+# to the common field of view. If this script finds further images of the cells, it wil also cropp them to this field
+# of view. The output is saved to the input folder. For each "experiment" a new folder is created. An experiment is
+# identified as a directory that contains one folder for the images before cell removal and one folder with images after
+# the cell removal.
 
 
-
-## generating gifs of shift corrected "before" and "after" images.
-# the programm will search trough all sub folders in the given folder,
-#output is saved in the "folder" as single gifs
-
-# beware: sometimes files on usb drive are saved as hidden. check  with ls commadn
-
-# data structure:
-#....
-
-import numpy as np
-import matplotlib.pyplot as plt
-from skimage.feature import register_translation
-from scipy.ndimage.interpolation import shift
-from PIL import Image
-import os
+# importing functions for drift correction and finding and grouping images
+from andreas_TFM_package.frame_shift_correction import *
 import re
 
-import imageio
+# First set an input folder. The script will search the entire tree of this folder.
+# Its better to enter a directory with r"". This is needed to interpret backslashes correctly.
+#folder = r"/media/user/GINA1-BK/test_tfm_structure" # enter a custom folder
+folder=os.getcwd() # or use the current directory
 
+# The script expects two sub folders: one containing images after cell removal and one containing images
+# before cell removals.
+# you can set the identifier for these two folders like this:
 
+# The first argument of re.compile must be a regular expression
+# regular expressions allow you to search stings. Go to https://docs.python.org/3/library/re.html for a documentation
+# identifier for the folder with images after cell removal:
+after_folder_identifier = re.compile("after", re.IGNORECASE)
+# identifier for the folder with images before cell removal:
+before_folder_identifier = re.compile("before", re.IGNORECASE)
 
-def normalizing(img):
-    img = img - np.percentile(img, 1)  # 1 Percentile
-    img = img / np.percentile(img, 99.99)  # norm to 99 Percentile
-    img[img < 0] = 0.0
-    img[img > 1] = 1.0
-    return img
+# The script searches for image files in the folders above only if both folders can be found in the same directory.
+# "after" images are only searched for in the "after" folder, and "before" only in the "before" folder.
+# "brightfield" is searched in both folders. While searching images the script also identifies the frame number
+# of the image. You can set the identifiers for files like this:
+# The frame number needs to be marked as a group with "()". Not including a group will cause an error.
+after_file_identifier = re.compile("(\d{0,3})_{0,1}fluo", re.IGNORECASE)
+before_file_identifier = re.compile("(\d{0,3})_{0,1}fluo", re.IGNORECASE)
+bf_file_identifier = re.compile("(\d{0,3})_{0,1}BF_before", re.IGNORECASE)
+# putting identifiers in one list
+identifier_list=[after_folder_identifier, before_folder_identifier, after_file_identifier, before_file_identifier, bf_file_identifier]
 
+# You can also define the output names for the frame shift corrected images. The order is:
+# [after bead removal, before bead removal,third image showing the cells]
+names=["after_shift.tif","before_shift.tif","bf_before_shift.tif"]
 
-def croping_after_shift(image, shift_x, shift_y):
-    if shift_x < 0:
-        image = image[:, int(np.ceil(-shift_x)):]
-    else:
-        image = image[:, :-int(np.ceil(shift_x))]
-    if shift_y < 0:
-        image = image[int(np.ceil(-shift_y)):, :]
-    else:
-        image = image[:-int(np.ceil(shift_y)), :]
-    return np.array(image, dtype=np.float)
+# finding files and sorting for frames and experiments
+# this functions iterates through a directory tree. If it identifies subdirectories containing images
+# before and after cell removal (specified by the "after_folder_identifier" and "before_folder_identifier")
+# it notes down the name of the directory as the "experiment". Then the function enters both subdirectories and searches
+# for the "before", "after" and "brightfield" images. It identifies the frame of the images. Any frame for which one of
+# the images is missing is discarded entirely
+files_dict=find_files_for_shifting(folder, identifier_list)
 
-
-
-
-def createFolder(directory):
-    '''
-    function to create directories, if they dont already exist
-    '''
-    try:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    except OSError:
-        print('Error: Creating directory. ' + directory)
-
-
-
-
-folder="/home/user/Desktop/20190216/SNU"
-
-def cut_images(folder,selector=""):
-    files_dict = {}
-    for subdir, dirs, files in os.walk(folder):
-        bf_check = sum(["before" in x or "Before" in x for x in dirs] + ["after" in x or "After" in x for x in dirs])
-        if not selector in subdir:
-            continue
-        if bf_check == 2 and not subdir in files_dict:  # also cheks if key already exists
-            experiment = os.path.split(subdir)[1]
-            files_dict[experiment] = []
-            print(experiment)
-        if "before" not in subdir and "after" not in subdir and "Before" not in subdir and "After" not in subdir :  #
-            continue
-
-
-        for file in files:
-            if re.match("\d{0,3}_{0,1}fluo.*",file,flags=re.I):  # finding flou images of beads
-                files_dict[experiment].append(os.path.join(subdir,file))
-            if re.match("\d{0,3}_{0,1}BF_before.*", file,flags=re.I):
-                files_dict[experiment].append(os.path.join(subdir, file))
-
-
-
-
-
-
-    for keys,values in files_dict.items():
-        new_folder =os.path.join(folder, keys + "shift")
-        createFolder(new_folder)
-
-        numbers=[re.match("(\d{0,3})_{0,1}[fluo|BF_before].*", os.path.split(file)[1]).group(1) for file in values]
-        for number in np.unique(numbers):
-
-            print(keys,number)
-            file_before=[image for image in values if "before" in image and re.match(".*"+number+"_{0,1}fluo.*", image,flags=re.I)][0]
-
-
-            file_after =[image for image in values if "after" in image and re.match(".*"+number+"_{0,1}fluo.*", image,flags=re.I)][0]
-
-
-            file_bf_before=[image for image in values if "before" in image and re.match(".*"+number+"_{0,1}BF_before.*", image,flags=re.I)][0]
-
-            img_b = plt.imread(file_before)
-            img_a = plt.imread(file_after)
-            imb_b_BF=plt.imread(file_bf_before)
-
-            shift_values = register_translation(img_b, img_a, upsample_factor=100)
-            shift_y = shift_values[0][0]
-            shift_x = shift_values[0][1]
-
-            # using interpolation to shift subpixel precision
-            img_shift_b = shift(img_b, shift=(-shift_y, -shift_x), order=5)
-            img_shift_bf = shift(imb_b_BF, shift=(-shift_y, -shift_x), order=5)
-
-
-
-
-
-            b = normalizing(croping_after_shift(img_shift_b, shift_x, shift_y))
-            a = normalizing(croping_after_shift(img_a, shift_x, shift_y))
-            bf = normalizing(croping_after_shift(img_shift_bf, shift_x, shift_y))
-
-            b_save = Image.fromarray(b * 255)
-            a_save = Image.fromarray(a * 255)
-            bf_save = Image.fromarray(bf * 255)
-
-
-            b_save.save(os.path.join(new_folder, number+"after_shift.tif"))
-            a_save.save(os.path.join(new_folder,  number+"before_shift.tif"))
-            bf_save.save(os.path.join(new_folder,  number+"bf_before_shift.tif"))
-
-
-
-
-if __name__ == '__main__':
-    folder="/home/user/Desktop/20190216/SNU"
-    cut_images(folder)
+# frame shift correction an cutting to a common field of view
+# using image registration
+cut_images(folder,files_dict,names)
 
 
 
@@ -143,28 +61,6 @@ if __name__ == '__main__':
 
 
 
-
-'''
-folder="/media/user/GINA1-BK/traktion_force_microscopy/7_8_PERCENT/"
-file_before="/media/user/MAGDALENA/TFM/20190216/Images for analysis/SNU/7_85_percent/before/01fluo.tif"
-file_after="/media/user/MAGDALENA/TFM/20190216/Images for analysis/SNU/7_85_percent/after/01fluo.tif"
-file_before_bf="/media/user/MAGDALENA/TFM/20190216/Images for analysis/SNU/7_85_percent/before_BF.tif"
-img_b = plt.imread(file_before)
-img_a = plt.imread(file_after)
-img_bf= plt.imread(file_before_bf)
-shift_values = register_translation(img_b, img_a, upsample_factor=100)
-
-shift_y = shift_values[0][0]
-shift_x = shift_values[0][1]
-img_shift_b = shift(img_b, shift=(-shift_y, -shift_x), order=5)
-img_shift_bf = shift(img_bf, shift=(-shift_y, -shift_x), order=5)
-
-b=normalizing(croping_after_shift(img_shift_b,shift_x,shift_y))
-a=normalizing(croping_after_shift(img_a,shift_x,shift_y))
-bf=normalizing(croping_after_shift(img_shift_bf,shift_x,shift_y))
-
-
-'''
 
 
 
