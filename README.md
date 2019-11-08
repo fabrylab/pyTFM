@@ -72,7 +72,7 @@ On the right you can see variables that you can set.These variables define how i
 
 In general the script searches through the full tree of an input folder. Once it identifies a folder for the images after bead removal and before bead removal in the same subdirectory it stops and enters these folders. There is searches for the corresponding images and identifies their frame. Note that it searches for bright field or other images of the cells in both folders.The output images are saved in directories named the same as the directories the "before" and "after" folder were been found in. These directories are located directly in the input folder.
 If you want to use the script with default settings open a terminal, navigate to the folder that contains your data. 
-Then execute the script with. 
+Then execute the script with: 
 
 ```
 python path_to_the_script/correcting_frame_shift.py
