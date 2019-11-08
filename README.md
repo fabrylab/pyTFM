@@ -63,7 +63,7 @@ The addons folder is located directly in this folder.
 
 ## Correction of frame shift in images:
 Slight movements of the microscopes field of view while removing cells will reuslt in non-zero drift in the deformation field.
-You can use the script "correcting_frame_shift.py" to correct for any shift between the images of the beads before and after the removal of cells. This script searches a folder tree and finds pairs of images before and after cell removal. Then it uses image registration to find a shift. The common field of view of the image pair is determinied and they are cropped accordingly. If the script finds additional images of the cell, it will also cut these images to the same field of view. 
+You can use the script "correcting_frame_shift.py" to correct for any shift between the images of the beads before and after the removal of cells. You can find it in the analysing_and_testing folder. This script searches a folder tree and finds pairs of images before and after cell removal. Then it uses image registration to find a shift. The common field of view of the image pair is determinied and they are cropped accordingly. If the script finds additional images of the cell, it will also cut these images to the same field of view. 
 
 The basic folder structure of input and output looks like this:
 ![Analysis plot](images/frame_shift_folder_structure.png?raw=true "Optional Title"). 
@@ -73,6 +73,7 @@ On the right you can see variables that you can set.These variables define how i
 In general the script searches through the full tree of an input folder. Once it identifies a folder for the images after bead removal and before bead removal in the same subdirectory it stops and enters these folders. There is searches for the corresponding images and identifies their frame. Note that it searches for bright field or other images of the cells in both folders.The output images are saved in directories named the same as the directories the "before" and "after" folder were been found in. These directories are located directly in the input folder.
 If you want to use the script with default settings open a terminal, navigate to the folder that contains your data. 
 Then execute the script with. 
+
 ```
 python path_to_the_script/correcting_frame_shift.py
 ```
