@@ -59,7 +59,34 @@ clickpoints.__file__
 ```
 The addons folder is located directly in this folder.
 
-# Performing traction force microscopy with clickpoints. 
+# Performing traction force microscopy with clickpoints.
+
+## Correction of frame shift in images:
+Slight movements of the microscopes field of view while removing cells will reuslt in non-zero drift in the deformation field.
+You can use the script "correcting_frame_shift.py" to correct for any shift between the images of the beads before and after the removal of cells. This script searches a folder tree and finds pairs of images before and after cell removal. Then it uses image registration to find a shift. The common field of view of the image pair is determinied and they are cropped accordingly. If the script finds additional images of the cell, it will also cut these images to the same field of view. 
+
+The basic folder structure of input and output looks like this:
+![Analysis plot](images/frame_shift_folder_structure.png?raw=true "Optional Title"). 
+
+On the right you can see variables that you can set.These variables define how images are named and identified (see below). The folder and filenames in this image would work for default values of these variables.
+
+In general the script searches through the full tree of an input folder. Once it identifies a folder for the images after bead removal and before bead removal in the same subdirectory it stops and enters these folders. There is searches for the corresponding images and identifies their frame. Note that it searches for bright field or other images of the cells in both folders.The output images are saved in directories named the same as the directories the "before" and "after" folder were been found in. These directories are located directly in the input folder.
+If you want to use the script with default settings open a terminal, navigate to the folder that contains your data. 
+Then execute the script with. 
+```
+python path_to_the_script/correcting_frame_shift.py
+```
+
+Alternatively and if you want to change how files are recognized and named check out the correcting_frame_shift.py script.
+There you will also find extensive explanations on all parameters.
+You can for example open it in pycharm and play around with the various parameters 
+
+You can basically change 3 parameters:
+1. How the script finds the correct folders for "before" and "after" images. 
+2. How the script identifies the image files, and the frame an image belongs to.
+3. The filenames for the drift corrected images.
+Inside the script you will find more detailed explanations on how to set the parameters.
+
 
 ## Generating a clickpoints database from images
 
