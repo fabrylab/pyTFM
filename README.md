@@ -77,6 +77,13 @@ Then execute the script with:
 ```
 python path_to_the_script/correcting_frame_shift.py
 ```
+You can also do the frame shift correction inside a python interpreter, e.g. in the pycharm interpreter:
+
+```
+from andreas_TFM_package.frame_shift_correction import correct_frame_shift
+folder= r"/home/user/Desktop/tfm_images/" # the folder with images
+correct_frame_shift(folder)
+```
 
 Alternatively and if you want to change how files are recognized and named check out the correcting_frame_shift.py script.
 There you will also find extensive explanations on all parameters.
