@@ -118,3 +118,34 @@ def cut_images(folder,files_dict,names=["after_shift.tif","before_shift.tif","bf
             b_save.save(os.path.join(new_folder, frame+"after_shift.tif"))
             a_save.save(os.path.join(new_folder,  frame+"before_shift.tif"))
             bf_save.save(os.path.join(new_folder,  frame+"bf_before_shift.tif"))
+# correcting frame shift between images of beads before and after cell removal.
+
+# the correction is done by finding the shift between two images using image registration. Then the images are cropped
+# to the common field of view. If this script finds further images of the cells, it wil also cropp them to this field
+# of view. The output is saved to the input folder. For each "experiment" a new folder is created. An experiment is
+# identified as a directory that contains one folder for the images before cell removal and one folder with images after
+# the cell removal.
+
+
+
+
+def correct_frame_shift(folder):
+    '''
+    frame shift correction with default settings
+    :return:
+    '''
+    # identifier for the folder with images after cell removal:
+    after_folder_identifier = re.compile("after", re.IGNORECASE)
+    # identifier for the folder with images before cell removal:
+    before_folder_identifier = re.compile("before", re.IGNORECASE)
+
+
+    after_file_identifier = re.compile("(\d{0,3})_{0,1}fluo", re.IGNORECASE)
+    before_file_identifier = re.compile("(\d{0,3})_{0,1}fluo", re.IGNORECASE)
+    bf_file_identifier = re.compile("(\d{0,3})_{0,1}BF_before", re.IGNORECASE)
+    # putting identifiers in one list
+    identifier_list=[after_folder_identifier, before_folder_identifier, after_file_identifier, before_file_identifier, bf_file_identifier]
+
+    names=["after_shift.tif","before_shift.tif","bf_before_shift.tif"]
+    files_dict=find_files_for_shifting(folder, identifier_list)
+    cut_images(folder,files_dict,names)
