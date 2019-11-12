@@ -117,6 +117,75 @@ def setup_database_for_tfm(folder, name, return_db=False,key1="\d{1,4}after",
         return frames
 
 
+def setup_database_internal(db, key1="\d{1,4}after",
+                           key2="\d{1,4}before",key3=["\d{1,4}mebrane","\d{1,4}bf_before"],frame_key='(\d{1,4})'):
+
+    '''
+    Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
+    the file name.
+    :param folder: Folder where images are searched.
+    :param name: Name of the database. Needs to end with .cdb.
+    :param return_db: Choose weather function returns the database object, or weather the connection to the
+    database is closed
+    :param key1,key2,key3: regular expression that define how to sort images. Can be single string
+    or a list. If any of the regex is matched for one key, the image will be classified accordingly.
+    Don't include the file ending. Typical image endings (.png,.tif ... ) are added automatically.
+    key1: image after bead removal, key2: image before bead removal, key3: image of the
+    cells.
+    :param frame_key: reguar expression that defines how the frame number is searched. You must
+    mark the group that contains the frame with parenthesis "()".
+    :return:
+    '''
+
+    folder=os.getcwd()
+    # regex patterns to sort files into layers. If any of these matches, the file will  be sorted into a layer.
+    # keys: name of the layer, values: list of regex patterns
+    key1 = make_iterable(key1)
+    key2 = make_iterable(key2)
+    key3 = make_iterable(key3)
+
+    file_endings = "(.*\.png|.*\.jpg|.*\.tif|.*\.swg)" # all allowed file endings
+    layer_search = {"images_after": [re.compile(k + file_endings) for k in key1],
+                    "images_before": [re.compile(k + file_endings) for k in key2],
+                    "membranes": [re.compile(k + file_endings) for k in key3]
+                            }
+    # filtering all files in the folder
+    all_patterns=list(itertools.chain(*layer_search.values()))
+    images = [x for x in os.listdir(folder) if any([pat.match(x) for pat in all_patterns])]
+    print(folder)
+    # identifying frames by evaluating the leading number.
+    frames = [get_group(re.search(frame_key, x), 1) for x in images] # extracting frame
+    # generating a list of sort_ids for the clickpoints database (allows you to miss some frames)
+    sort_id_list=make_rank_list(frames,dtype=int)# list of sort indexes (frames) of images in the database
+    warn_incorrect_files(frames) # checking if there where more or less then three images per frame
+
+    # initializing layer in the database
+    if len(images)==0:
+        return
+    db.deleteImages() # delete exsiting images
+    db.deleteLayers() # delte exisitng layers
+    layer_list = ["images_after", "images_before","membranes"]
+    base_layer = db.getLayer(layer_list[0], create=True, id=0)
+    for l in layer_list[1:]:
+        db.getLayer(l, base_layer=base_layer, create=True)
+    path = db.setPath(folder, 1)  # setting the path to the images
+
+    # sorting images into layers
+    for id, (sort_index_id,frame, im) in enumerate(zip(sort_id_list,frames, images)):
+
+        if any([pat.match(im) for pat in layer_search["images_after"]]):
+            layer="images_after"
+            comment=frame + "after__"+str(sort_index_id)+"sid"
+        if any([pat.match(im) for pat in layer_search["images_before"]]):
+            layer = "images_before"
+            comment = frame + "before__"+str(sort_index_id)+"sid"
+        if any([pat.match(im) for pat in layer_search["membranes"]]):
+            layer = "membranes"
+            comment = frame+"bf__"+str(sort_index_id)+"sid"
+        print("file:", im, "frame:", frame, "layer", "layer:", layer)
+        db.setImage(id=id, filename=im, sort_index=sort_index_id,
+                    layer=layer, path=1)
+        db.setAnnotation(filename=im, comment=comment)
 
 
 def setup_masks(db,db_info,parameter_dict):
