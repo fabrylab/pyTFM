@@ -62,8 +62,13 @@ class Addon(clickpoints.Addon):
         self.parameter_dict["FEM_mode"],undetermined=guess_TFM_mode(self.db_info,self.parameter_dict)
         self.colony_type_old_id =int(self.parameter_dict["FEM_mode"] == "cell layer")
 
-        # connection between frames in the data base and numbering of images in their filename, list of all frames
-
+        #if all([l not in self.db_info["layers"] for l in ["images_after", "images_before", "membranes"]]):
+        print(self.db_info["layers"][0] == "default")
+        print(len(self.db_info["layers"]))
+        if self.db_info["layers"][0]=="default" and len(self.db_info["layers"])==1: # when only default layer exists
+            print("test")
+            setup_database_internal(self.db)
+            self.db_info, self.all_frames = get_db_info_for_analysis(self.db)
 
         """ GUI Widgets"""
         # set the title and layout
@@ -83,7 +88,6 @@ class Addon(clickpoints.Addon):
 
 
         # choosing type of cell system
-
         self.colony_type = QtWidgets.QComboBox()
         self.colony_type.addItems(["colony", "cell layer"])
         self.colony_type.setToolTip(tooltips["colony_type"])
@@ -160,6 +164,10 @@ class Addon(clickpoints.Addon):
         # adding to layout
         self.setLayout(self.layout)
         self.parameters_changed() # initialize parameters dict
+
+
+
+
 
     # reading paramteres and updating the dictionary
     def parameters_changed(self):
