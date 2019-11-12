@@ -1,0 +1,2 @@
+include andreas_TFM_package/__clickpoints_addon__.txt
+recursive-include andreas_TFM_package/TFM_addon *.py *.txt *.png *.jpg
