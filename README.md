@@ -109,6 +109,15 @@ python build_cdb_database_TFM.py
 ```
 If the script build_cdb_database_TFM.py is not located in the same folder, your need to provide the full path to the script.
 
+You can also build the database from inside a python interpreter, e.g. in the pycharm interpreter:
+
+```
+from andreas_TFM_package.database_functions import *  
+folder=r"/home/user/Desktop/tfm_images/" 
+name="database.cdb" # must end with .cdb
+setup_database_for_tfm(folder,name,return_db=False) 
+```
+
 ### Generating a data base with the python interpreter: 
 Alternativly you can build the database from a python interpreter directly. Either open python in the terminal or use the interpreter for example in PyCharm.
 Import the function to setup a data base:
