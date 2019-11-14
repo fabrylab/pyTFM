@@ -7,6 +7,7 @@ from andreas_TFM_package.database_functions import *
 
 #from utilities import  get_group,createFolder
 import os
+from functools import partial
 from qtpy import QtCore, QtGui, QtWidgets
 import qtawesome as qta
 import clickpoints
@@ -16,7 +17,6 @@ import threading
 
 import warnings
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
-
 
 
 
@@ -46,14 +46,165 @@ def read_all_paramters(parameter_widgets,parameter_dict):
             parameter_dict[p_name] = p_widget.currentText()
     return parameter_dict
 
+from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSignal
+
+
+
+
+
+
+
+
+
+
+
+
+class NewWindow(QtWidgets.QWidget):
+    def __init__(self,main_window):
+        super(NewWindow, self).__init__()
+        self._new_window = None
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(300)
+        self.main_window=main_window
+        self.main_window.outfile_path=os.path.join(os.getcwd(),"out.txt"),
+        self.folders = {"folder1_txt": os.getcwd(),
+                        "folder2_txt": os.getcwd(),
+                        "folder3_txt": os.getcwd(),
+                        "folder_out_txt": os.getcwd()}
+        self.search_keys = {"after": "\d{1,4}after", "before": "\d{1,4}before",
+                            "cells": "\d{1,4}bf_before",
+                            "frames": "(\d{1,4})"}
+        self.layout = QtWidgets.QGridLayout()
+        self.layout.setColumnStretch(0,8)
+        self.layout.setColumnStretch(1, 1)
+        self.layout.setColumnStretch(2, 6)
+        self.cwd=os.getcwd()
+        #def sub_grid(self):
+            #grid=QtWidgets.QGridLayout()
+            #grid.
+
+        self.sub_v_layout = defaultdict(QtWidgets.QVBoxLayout)
+        self.sub_h_layout= defaultdict(QtWidgets.QHBoxLayout)
+        self.objects = {
+            "folder_out_txt": {"object": None, "properties": [0, 0,None,20, "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "folder1_txt": {"object": None, "properties": [1, 0,None,20, "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "folder2_txt": {"object": None, "properties": [2, 0,None,20,"textChanged" ,self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "folder3_txt": {"object": None, "properties": [3, 0,None,20, "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "folder_out_button": {"object": None, "properties": [0, 1,30,80, "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
+            "folder1_button": {"object": None, "properties": [1, 1,30,80, "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
+            "folder2_button": {"object": None, "properties": [2, 1,30,80, "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
+            "folder3_button": {"object": None, "properties": [3, 1,30,80, "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
+            "after": {"object": None, "properties": [0, 2,200,30,"textChanged" ,self.update_dirs, QtWidgets.QLineEdit, "default"]},
+            "before": {"object": None, "properties": [1, 2,200,30, "textChanged",self.update_dirs, QtWidgets.QLineEdit, "default"]},
+            "cells": {"object": None, "properties": [2, 2,200,30, "textChanged",self.update_dirs, QtWidgets.QLineEdit, "default"]},
+            "frames": {"object": None, "properties": [3, 2,200,30, "textChanged",self.update_dirs, QtWidgets.QLineEdit, "default"]}}
+
+
+        self.texts = {
+            "folder_out_txt": {"object": None, "properties": [0, 0, "output folder"]},
+            "folder1_txt": {"object": None, "properties": [0, 0, "images after cell removal"]},
+            "folder2_txt": {"object": None, "properties": [0, 0, "images before cell removal"]},
+            "folder3_txt": {"object": None, "properties": [0, 0, "images cells"]},
+            "folder_out_button": {"object": None, "properties": [0, 0, ""]},
+            "folder1_button": {"object": None, "properties": [0, 0, ""]},
+            "folder2_button": {"object": None, "properties": [0, 0, ""]},
+            "folder3_button": {"object": None, "properties": [0, 0, ""]},
+            "after": {"object": None, "properties": [0, 0, ""]},
+            "before": {"object": None, "properties": [0, 0, ""]},
+            "cells": {"object": None, "properties": [0, 0, ""]},
+            "frames": {"object": None, "properties": [0, 0, ""]}}
+
+        for name in self.texts.keys():
+            self.add_text(name, *self.texts[name]["properties"])
+        for name in self.objects.keys():
+            self.add_object(name, *self.objects[name]["properties"])
+        # adding the start button
+        self.super_layout=QtWidgets.QGridLayout(self)
+
+        self.super_layout.addLayout(self.layout,0,0)
+        self.Spacer1 = QtWidgets.QSpacerItem(50, 50)
+        self.super_layout.addItem(self.Spacer1, 1, 0)
+        self.collect_button=QtWidgets.QPushButton("collect images")
+        self.collect_button.clicked.connect(self.collect_files)
+        self.super_layout.addWidget(self.collect_button,2,0,alignment=QtCore.Qt.AlignLeft)
+
+        self.super_layout.setRowStretch(12,1)
+
+
+    def add_text(self,name,vpos,hpos,string):
+        self.texts[name]["object"]=QtWidgets.QLabel(string)
+        self.sub_v_layout[name].addStretch()
+        self.sub_v_layout[name].addWidget(self.texts[name]["object"]) # adds to sub gid layout
+
+    def add_object(self, name, vpos, hpos,m_width,s_width,connect_type, connect_function, type, text):
+        text = self.search_keys[name] if text == "default" else text
+        self.objects[name]["object"] = type(text) # creates widget with text as label
+        getattr(self.objects[name]["object"], connect_type).connect(partial(connect_function, name)) # connects to function
+        self.objects[name]["object"].setToolTip(tooltips[name]) # sets tooltip
+
+        if m_width:
+            self.objects[name]["object"].setMaximumWidth(m_width)
+        self.sub_v_layout[name].addWidget(self.objects[name]["object"]) # generates new grid layout
+        self.sub_h_layout[name].addLayout(self.sub_v_layout[name]) # generates new horizontal layout
+        self.sub_h_layout[name].addSpacing(s_width)  # adds spacing on the right
+        self.layout.addLayout(self.sub_h_layout[name], vpos, hpos) # adds to main grid layout
+
+    # additional file selectors
+
+    def file_dialog(self,button_name):
+        dialog=QtWidgets.QFileDialog()
+        dialog.setFileMode(QtWidgets.QFileDialog.DirectoryOnly)
+        dialog.setDirectory(self.cwd)
+        if dialog.exec_():
+            dirname=dialog.selectedFiles()
+            text_field=self.objects[button_name[:-6]+"txt"]["object"]
+            text_field.setText(dirname[0])
+        self.update_dirs()
+
+    def update_dirs(self,*args):
+        # updating the selected folders and search keys
+        self.folders={key:self.objects[key]["object"].text() for key in self.folders.keys()}
+        self.earch_keys={key:self.objects[key]["object"].text() for key in self.search_keys.keys()}
+
+    def collect_files(self):
+        print("test")
+        self.main_window.db.deleteImages()  # delete exsiting images
+        self.main_window.db.deleteLayers()  # delete existing layers
+        setup_database_internal(self.main_window.db,self.search_keys,self.folders)# sort in images
+        self.main_window.cp.updateImageCount()  # reload the image bar
+        self.main_window.db_info, self.main_window.all_frames = get_db_info_for_analysis(self.main_window.db) # updat meta info
+
+        self.main_window.outfile_path = os.path.join(self.folders["folder_out_txt"],"out.txt")
+        print(self.main_window.db_info)
+
+        # reiinitiate masks
+        self.main_window.parameter_dict["FEM_mode"], undetermined = guess_TFM_mode(self.main_window.db_info, self.main_window.parameter_dict)
+        print(undetermined)
+        if undetermined:
+            setup_masks(self.main_window.db,self.main_window.db_info, self.main_window.parameter_dict,delete_all=True)
+            self.main_window.cp.reloadMaskTypes()
+
+        #elf.main_window.db
+        pass
+
 
 
 class Addon(clickpoints.Addon):
 
     def __init__(self, *args, **kwargs):
         clickpoints.Addon.__init__(self, *args, **kwargs)
+        try:
+            self.folder=db.getOption("folder")
+        except:
+            self.folder = os.getcwd()
+            self.db._AddOption(key="folder", value=self.folder)
+        self.outfile_path=os.path.join(self.folder,"out.txt") # path for output text file
 
-        self.outfile_path=os.path.join(os.path.split(self.db._database_filename)[0],"out.txt") # path for output text file
+
+
+
         self.frame_number=self.db.getImageCount()
         self.db_info, self.all_frames = get_db_info_for_analysis(self.db) # information about the path, image dimensions
         self.res_dict=defaultdict(dict) # dictionary that catches all results
@@ -61,14 +212,6 @@ class Addon(clickpoints.Addon):
         # guessing the curent analysis mode
         self.parameter_dict["FEM_mode"],undetermined=guess_TFM_mode(self.db_info,self.parameter_dict)
         self.colony_type_old_id =int(self.parameter_dict["FEM_mode"] == "cell layer")
-
-        #if all([l not in self.db_info["layers"] for l in ["images_after", "images_before", "membranes"]]):
-        print(self.db_info["layers"][0] == "default")
-        print(len(self.db_info["layers"]))
-        if self.db_info["layers"][0]=="default" and len(self.db_info["layers"])==1: # when only default layer exists
-            print("test")
-            setup_database_internal(self.db)
-            self.db_info, self.all_frames = get_db_info_for_analysis(self.db)
 
         """ GUI Widgets"""
         # set the title and layout
@@ -87,6 +230,17 @@ class Addon(clickpoints.Addon):
         self.layout.addWidget(self.button_start,0,0)
 
 
+        # button to select images:
+        # if all([l not in self.db_info["layers"] for l in ["images_after", "images_before", "membranes"]]):
+
+        self.button_select_images = QtWidgets.QPushButton("select images")
+        self.button_select_images.clicked.connect(self.select_images)
+        self.button_select_images.setToolTip(tooltips["select images"])
+        self.sub_layout1 = QtWidgets.QHBoxLayout()
+        self.sub_layout1.addWidget(self.button_select_images)
+        self.sub_layout1.addStretch()
+        self.layout.addLayout(self.sub_layout1, 1, 0)
+
         # choosing type of cell system
         self.colony_type = QtWidgets.QComboBox()
         self.colony_type.addItems(["colony", "cell layer"])
@@ -96,11 +250,10 @@ class Addon(clickpoints.Addon):
 
 
 
-
-        self.sub_layout=QtWidgets.QHBoxLayout()
-        self.sub_layout.addWidget(self.colony_type)
-        self.sub_layout.addStretch()
-        self.layout.addLayout(self.sub_layout, 2, 0)
+        self.sub_layout2=QtWidgets.QHBoxLayout()
+        self.sub_layout2.addWidget(self.colony_type)
+        self.sub_layout2.addStretch()
+        self.layout.addLayout(self.sub_layout2, 2, 0)
 
         # filling areas for cell patches
         self.fill_patches_button = QtWidgets.QPushButton("fill cell area")
@@ -113,12 +266,12 @@ class Addon(clickpoints.Addon):
         self.layout.addLayout(self.sub_layout2, 3, 0)
         self.fill_patches_button.setVisible(self.colony_type_old_id) # ide button for now
 
-        if not undetermined:
-            self.switch_colony_type_mode(first=True) # initializing masks according to the first value of "FEM_mode"
+        #if undetermined: # only when selecting images now
+        #    self.switch_colony_type_mode(first=True) # initializing masks according to the first value of "FEM_mode"
 
 
          # check_boxes
-        self.check_box_def =QtWidgets.QCheckBox("deformation")
+        self.check_box_def = QtWidgets.QCheckBox("deformation")
         self.check_box_tra = QtWidgets.QCheckBox("traction forces")
         self.check_box_FEM = QtWidgets.QCheckBox("FEM analysis")
         self.check_box_contract = QtWidgets.QCheckBox("contractillity_measures")
@@ -166,8 +319,15 @@ class Addon(clickpoints.Addon):
         self.parameters_changed() # initialize parameters dict
 
 
+    def select_images(self):
+        self._new_window = NewWindow(self)
+        self._new_window.show()
 
 
+
+
+            #setup_database_internal(self.db)
+            #self.db_info, self.all_frames = get_db_info_for_analysis(self.db)
 
     # reading paramteres and updating the dictionary
     def parameters_changed(self):
