@@ -23,8 +23,13 @@ class ShapeMismatchError(Exception):
     pass
 
 
-def write_output_file(values,value_type, file_path,with_prefix=False):
-
+def write_output_file(values,value_type, file_path,with_prefix=False,new_file=False):
+    if new_file:
+        if os.path.exists(file_path): # try some other out names when one already exists
+            for i in range(100000):
+                file_path=os.path.join(os.path.split(file_path)[0],"out"+str(i)+".txt")
+                if not os.path.exists(file_path):
+                    break
     if value_type=="parameters":
         with open(file_path, "w+") as f:
             f.write("analysis_paramters\n")
@@ -44,7 +49,7 @@ def write_output_file(values,value_type, file_path,with_prefix=False):
                     warn_empty = (warn != "")
                     f.write(frame + "\t" + name + "\t" + str(round_flexible(res_unpack)) + "\t" + units[
                         name] + "\t" * warn_empty + warn + "\n")
-
+    return file_path
 
 def except_error(func, error,print_error=True, **kwargs):  # take functino and qkwarks
     '''
@@ -261,7 +266,6 @@ def get_frame_from_annotation(db,cdb_frame):
     :return: str_frame: frame as a string in the typical convention
     '''
     annotations=[]
-    print(cdb_frame,"#####")
     for an in db.getAnnotations(frame=cdb_frame):
         annotations.append(an.comment)
     str_frame = np.unique([get_group(re.search('(\d{1,4})', x), 1) for x in annotations])

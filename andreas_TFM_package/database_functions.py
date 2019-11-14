@@ -172,6 +172,8 @@ def setup_database_internal(db, keys_dict,folders_dict):
     # generating a list of sort_ids for the clickpoints database (allows you to miss some frames)
     sort_id_list=make_rank_list(frames,dtype=int)# list of sort indexes (frames) of images in the database
     warn_incorrect_files(frames) # checking if there where more or less then three images per frame
+
+
        # initializing layer in the database
     if len(images)==0:
         return
@@ -183,7 +185,6 @@ def setup_database_internal(db, keys_dict,folders_dict):
 
     # sorting images into layers
     for id, (sort_index_id,frame, im) in enumerate(zip(sort_id_list,frames, images)):
-        print(id,sort_index_id,frame,im)
         if any([pat.match(os.path.split(im)[1]) for pat in layer_search["images_after"]["file_key"]]):
             layer="images_after"
             comment=frame + "after__"+str(sort_index_id)+"sid"
@@ -196,8 +197,8 @@ def setup_database_internal(db, keys_dict,folders_dict):
         print("file:", im, "frame:", frame, "layer", "layer:", layer)
 
         image_object=db.setImage(id=id, filename=im, sort_index=sort_index_id,
-                    layer=layer, path=1)
-        an=db.setAnnotation(filename=os.path.split(im)[1],comment=comment)
+                    layer=layer, path=1,use_full_path=True)
+        an=db.setAnnotation(filename=im,comment=comment)
         print(an)
 
 

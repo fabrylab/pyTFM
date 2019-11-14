@@ -46,29 +46,16 @@ def read_all_paramters(parameter_widgets,parameter_dict):
             parameter_dict[p_name] = p_widget.currentText()
     return parameter_dict
 
-from PyQt5.QtWidgets import QLineEdit
-from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtCore import pyqtSignal
-
-
-
-
-
-
-
-
-
-
-
-
 class NewWindow(QtWidgets.QWidget):
     def __init__(self,main_window):
         super(NewWindow, self).__init__()
         self._new_window = None
+        self.setWindowTitle("file selection")
         self.setMinimumWidth(600)
         self.setMinimumHeight(300)
         self.main_window=main_window
         self.main_window.outfile_path=os.path.join(os.getcwd(),"out.txt"),
+        self.db_name ="database.cdb"
         self.folders = {"folder1_txt": os.getcwd(),
                         "folder2_txt": os.getcwd(),
                         "folder3_txt": os.getcwd(),
@@ -92,7 +79,9 @@ class NewWindow(QtWidgets.QWidget):
             "folder1_txt": {"object": None, "properties": [1, 0,None,20, "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
             "folder2_txt": {"object": None, "properties": [2, 0,None,20,"textChanged" ,self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
             "folder3_txt": {"object": None, "properties": [3, 0,None,20, "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "db_name_text": {"object": None,"properties": [4, 0, None, 20, "textChanged", self.update_dirs, QtWidgets.QLineEdit,"database.cdb"]},
             "folder_out_button": {"object": None, "properties": [0, 1,30,80, "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
+
             "folder1_button": {"object": None, "properties": [1, 1,30,80, "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
             "folder2_button": {"object": None, "properties": [2, 1,30,80, "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
             "folder3_button": {"object": None, "properties": [3, 1,30,80, "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
@@ -107,29 +96,29 @@ class NewWindow(QtWidgets.QWidget):
             "folder1_txt": {"object": None, "properties": [0, 0, "images after cell removal"]},
             "folder2_txt": {"object": None, "properties": [0, 0, "images before cell removal"]},
             "folder3_txt": {"object": None, "properties": [0, 0, "images cells"]},
+            "db_name_text": {"object": None, "properties": [0, 0, "database name"]},
             "folder_out_button": {"object": None, "properties": [0, 0, ""]},
             "folder1_button": {"object": None, "properties": [0, 0, ""]},
             "folder2_button": {"object": None, "properties": [0, 0, ""]},
             "folder3_button": {"object": None, "properties": [0, 0, ""]},
-            "after": {"object": None, "properties": [0, 0, ""]},
-            "before": {"object": None, "properties": [0, 0, ""]},
-            "cells": {"object": None, "properties": [0, 0, ""]},
-            "frames": {"object": None, "properties": [0, 0, ""]}}
+            "after": {"object": None, "properties": [0, 0, "'after' image identifier'"]},
+            "before": {"object": None, "properties": [0, 0, "'before' image'"]},
+            "cells": {"object": None, "properties": [0, 0, "cell image identifier"]},
+            "frames": {"object": None, "properties": [0, 0, "frame identifier"]}}
 
         for name in self.texts.keys():
             self.add_text(name, *self.texts[name]["properties"])
         for name in self.objects.keys():
             self.add_object(name, *self.objects[name]["properties"])
+
         # adding the start button
         self.super_layout=QtWidgets.QGridLayout(self)
-
         self.super_layout.addLayout(self.layout,0,0)
         self.Spacer1 = QtWidgets.QSpacerItem(50, 50)
         self.super_layout.addItem(self.Spacer1, 1, 0)
         self.collect_button=QtWidgets.QPushButton("collect images")
         self.collect_button.clicked.connect(self.collect_files)
         self.super_layout.addWidget(self.collect_button,2,0,alignment=QtCore.Qt.AlignLeft)
-
         self.super_layout.setRowStretch(12,1)
 
 
@@ -167,27 +156,48 @@ class NewWindow(QtWidgets.QWidget):
         # updating the selected folders and search keys
         self.folders={key:self.objects[key]["object"].text() for key in self.folders.keys()}
         self.earch_keys={key:self.objects[key]["object"].text() for key in self.search_keys.keys()}
+        self.db_name=self.objects["db_name_text"]["object"].text()
 
     def collect_files(self):
-        print("test")
+        # clearing database
         self.main_window.db.deleteImages()  # delete exsiting images
         self.main_window.db.deleteLayers()  # delete existing layers
+        self.main_window.db.deletePaths() # removes existing paths
+        # searchin,sorting and ading new images
         setup_database_internal(self.main_window.db,self.search_keys,self.folders)# sort in images
+        # update display
         self.main_window.cp.updateImageCount()  # reload the image bar
+
+        # update output folder
+        self.main_window.outfile_path = os.path.join(self.folders["folder_out_txt"], "out.txt")
+        self.folder = self.main_window.db.setOption("folder",self.folders["folder_out_txt"])
+        # update db info
         self.main_window.db_info, self.main_window.all_frames = get_db_info_for_analysis(self.main_window.db) # updat meta info
-
-        self.main_window.outfile_path = os.path.join(self.folders["folder_out_txt"],"out.txt")
-        print(self.main_window.db_info)
-
-        # reiinitiate masks
+        # reinitiate masks
         self.main_window.parameter_dict["FEM_mode"], undetermined = guess_TFM_mode(self.main_window.db_info, self.main_window.parameter_dict)
-        print(undetermined)
         if undetermined:
             setup_masks(self.main_window.db,self.main_window.db_info, self.main_window.parameter_dict,delete_all=True)
             self.main_window.cp.reloadMaskTypes()
+        # save database
+        self.save_database_automatically()  # save data base object ot cwd
 
-        #elf.main_window.db
-        pass
+
+    def save_database_automatically(self):
+        # saving the database in the current folder if a temporary filename
+        if ".clickpoints" in self.main_window.db._database_filename and ".cdb" in self.main_window.db._database_filename:
+            filename = os.path.join(self.folders["folder_out_txt"], self.db_name)
+            if not os.path.exists(filename): # save if no file with same name is around
+                print("saved database to " + filename )
+                self.main_window.cp.window.SaveDatabase(srcpath=filename)
+            else: # try some other filenames
+                for i in range(100000):
+                    if not os.path.exists(filename):
+                        print("saved database to " + filename)
+                        self.main_window.cp.window.SaveDatabase(srcpath=filename)
+
+
+
+
 
 
 
@@ -201,9 +211,6 @@ class Addon(clickpoints.Addon):
             self.folder = os.getcwd()
             self.db._AddOption(key="folder", value=self.folder)
         self.outfile_path=os.path.join(self.folder,"out.txt") # path for output text file
-
-
-
 
         self.frame_number=self.db.getImageCount()
         self.db_info, self.all_frames = get_db_info_for_analysis(self.db) # information about the path, image dimensions
@@ -392,8 +399,8 @@ class Addon(clickpoints.Addon):
 
     def start(self): # perform all checked calculations
         cdb_frame = self.cp.getCurrentFrame()
+        print(self.outfile_path)
         self.frame = get_frame_from_annotation(self.db, cdb_frame) # current frame
-
 
         print("parameters:\n",self.parameter_dict)
         self.mode=self.analysis_mode.currentText() # only current frame or all frames
@@ -403,7 +410,7 @@ class Addon(clickpoints.Addon):
         if self.mode == "all frames": # all frames
             frames=self.all_frames
             print("analyzing frames = ", frames)
-            write_output_file(self.parameter_dict, "parameters", self.outfile_path)
+            self.outfile_path=write_output_file(self.parameter_dict, "parameters", self.outfile_path,new_file=True)
 
 
         if self.check_box_def.isChecked():     
@@ -416,15 +423,12 @@ class Addon(clickpoints.Addon):
         if self.check_box_contract.isChecked():
             self.calculate_contractile_measures(frames)
 
+        if self.mode == "all frames":  # all frames
+            self.outfile_path=write_output_file(self.res_dict, "results", self.outfile_path,new_file=False)  # writing to output file
+        else:
+            self.outfile_path = write_output_file(self.res_dict, "results", self.outfile_path,
+                                                  new_file=True)  # writing to output file
 
-        write_output_file(self.res_dict, "results", self.outfile_path)  # writing to output file
-        # reloding all images that where changed
-        #if self.mode=="current frame":
-        #        self.cp.reloadImage(frame_index=cdb_frame)
-        #else:
-        #        for frame_index in range(self.frame_number):
-        #                self.cp.reloadImage(frame_index=frame_index )
-        
         print("calculation complete")
 
 
