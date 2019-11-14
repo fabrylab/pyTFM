@@ -213,10 +213,8 @@ def get_file_order_and_frames(db):
     #string to search for sort index (frame in the cdb database)
     # max for numbers after__
     s_sid='__(\d{1,4})'
-
     file_order = defaultdict(list) # name of the image (contains before and after): id in cdb database
     frames_ref_dict={} #frame of image: frame in cdb database
-
     for an in db.getAnnotations():
         img_frame,name,cdb_frame=get_group(re.search(s_frame+'(\w{1,})'+s_sid, an.comment), "all")
         frames_ref_dict[img_frame]=int(cdb_frame)
@@ -231,7 +229,10 @@ def get_db_info_for_analysis(db):
 
     all_frames, file_order, frames_ref_dict = get_file_order_and_frames(db)
     layers=[l.name for l in db.getLayers()]
-    path = db.getPath(id=1).path
+    try:
+        path=db.getOption("folder")
+    except:
+        path = db.getPath(id=1).path
     if path==".": # if empty path object in clickpoints use the path where clickpoints is saved
         path=os.path.split(db._database_filename)[0]
     im_shapes={} #exact list of image shapes
@@ -260,9 +261,10 @@ def get_frame_from_annotation(db,cdb_frame):
     :return: str_frame: frame as a string in the typical convention
     '''
     annotations=[]
+    print(cdb_frame,"#####")
     for an in db.getAnnotations(frame=cdb_frame):
         annotations.append(an.comment)
-    str_frame = np.unique([get_group(re.search('(\d{1,4})', x), 0) for x in annotations])
+    str_frame = np.unique([get_group(re.search('(\d{1,4})', x), 1) for x in annotations])
     return str_frame[0]
 
 def cut_mask_from_edge(mask,cut_factor):

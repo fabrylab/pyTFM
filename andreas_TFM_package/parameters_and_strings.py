@@ -122,7 +122,7 @@ tooltips["overlapp"]="Set the overlapp for calcualting the deformation fiel by P
             "the stress analysis. "
 tooltips["window_size"]="Set the windowsize for calcualting the deormation field by PIV. A could guess is 7 times the radius of a bead."
 tooltips["h"]="set the height of the substrate your cells are growing on"
-
+tooltips["select images"]="select images for your analysis"
 
 
 # some message to be printed
