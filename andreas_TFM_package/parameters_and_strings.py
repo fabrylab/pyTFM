@@ -135,7 +135,11 @@ tooltips["after"]="set an additional identifier for the image files. You need to
 tooltips["before"]="set an additional identifier for the image files. You need to provide a regular expression."
 tooltips["cells"]="set an additional identifier for the image files. You need to provide a regular expression."
 tooltips["frames"]="set where the number of the frame is provided. You need a regular expression"
-
+tooltips["colony"]= "choose the type of analysis"
+tooltips["correct drift"]="correct the drift between image pairs"
+tooltips["select images"]=" select images, output folder and name of the database"
+tooltips["fill cell area"]= "Fill areas that are fully encircled by a mask. Use with care, this will not work perfectly " \
+                            "and might overwrite parts of the mask that you have drawn. Function is applied to all frames."
 
 
 
