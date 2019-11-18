@@ -116,7 +116,7 @@ class NewWindow(QtWidgets.QWidget):
             "folder2_button": {"object": None, "properties": [0, 0, ""]},
             "folder3_button": {"object": None, "properties": [0, 0, ""]},
             "after": {"object": None, "properties": [0, 0, "'after' image identifier"]},
-            "before": {"object": None, "properties": [0, 0, "'before' image"]},
+            "before": {"object": None, "properties": [0, 0, "'before' image identifier"]},
             "cells": {"object": None, "properties": [0, 0, "cell image identifier"]},
             "frames": {"object": None, "properties": [0, 0, "frame identifier"]}}
 
