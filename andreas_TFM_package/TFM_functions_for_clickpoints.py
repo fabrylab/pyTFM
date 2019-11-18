@@ -6,6 +6,7 @@ from andreas_TFM_package.solids_py_stress_functions import *
 from andreas_TFM_package.utilities_TFM import *
 from andreas_TFM_package.TFM_functions import *
 from andreas_TFM_package.parameters_and_strings import *
+from andreas_TFM_package.frame_shift_correction import *
 import solidspy.postprocesor as pos
 import solidspy.assemutil as ass
 import solidspy.solutil as sol
@@ -23,8 +24,13 @@ class ShapeMismatchError(Exception):
     pass
 
 
-def write_output_file(values,value_type, file_path,with_prefix=False):
-
+def write_output_file(values,value_type, file_path,with_prefix=False,new_file=False):
+    if new_file:
+        if os.path.exists(file_path): # try some other out names when one already exists
+            for i in range(100000):
+                file_path=os.path.join(os.path.split(file_path)[0],"out"+str(i)+".txt")
+                if not os.path.exists(file_path):
+                    break
     if value_type=="parameters":
         with open(file_path, "w+") as f:
             f.write("analysis_paramters\n")
@@ -44,7 +50,7 @@ def write_output_file(values,value_type, file_path,with_prefix=False):
                     warn_empty = (warn != "")
                     f.write(frame + "\t" + name + "\t" + str(round_flexible(res_unpack)) + "\t" + units[
                         name] + "\t" * warn_empty + warn + "\n")
-
+    return file_path
 
 def except_error(func, error,print_error=True, **kwargs):  # take functino and qkwarks
     '''
@@ -204,39 +210,53 @@ def create_layers_on_demand(db,db_info, layer_list):
                 db.getLayer(pl, base_layer=base_layer, create=True)
 
 
+def try_int_strip(string):
+    try:
+        return int(string)
+    except ValueError:
+        return string.strip("'")
+def split_dict_str(string):
+    string=string.strip("{").strip("}")
+    string_list=string.split(",")
+    dict_obj={}
+    for e in string_list:
+        key,value=[sub_str.strip(" ") for sub_str in e.split(":")]
+        dict_obj[try_int_strip(key)]=try_int_strip(value)
+    return dict_obj
 
+def split_list_str(string):
+    string=string.strip("[").strip("]")
+    string_list=string.split(" ")
+    list_obj=[try_int_strip(v) for v in string_list]
+    return list_obj
 
-def get_file_order_and_frames(db):
-
-    # string to search for frame: allows max 4 numbers at the beginning
-    s_frame='^(\d{1,4})'
-    #string to search for sort index (frame in the cdb database)
-    # max for numbers after__
-    s_sid='__(\d{1,4})'
-
-    file_order = defaultdict(list) # name of the image (contains before and after): id in cdb database
-    frames_ref_dict={} #frame of image: frame in cdb database
-
-    for an in db.getAnnotations():
-        img_frame,name,cdb_frame=get_group(re.search(s_frame+'(\w{1,})'+s_sid, an.comment), "all")
-        frames_ref_dict[img_frame]=int(cdb_frame)
-        file_order[img_frame+name].append(an.image_id)
-    unique_frames = np.unique(list(frames_ref_dict.keys()))
-
-    return unique_frames, file_order,frames_ref_dict
-
+def get_option_wrapper(db,key,unpack_funct=None):
+    try:
+        if unpack_funct:
+            return unpack_funct(db.table_option.select().where(db.table_option.key == key).get().value)
+        else:
+            return db.table_option.select().where(db.table_option.key == key).get().value
+    except:
+        return []
 
 
 def get_db_info_for_analysis(db):
 
-    all_frames, file_order, frames_ref_dict = get_file_order_and_frames(db)
+    unique_frames = get_option_wrapper(db,"unique_frames",split_list_str)
+    file_order = get_option_wrapper(db,"file_order",split_dict_str)
+    frames_ref_dict = get_option_wrapper(db,"frames_ref_dict",split_dict_str)
+    id_frame_dict = get_option_wrapper(db,"id_frame_dict",split_dict_str)
     layers=[l.name for l in db.getLayers()]
-    path = db.getPath(id=1).path
+    try:
+        path = get_option_wrapper(db,"folder",None)
+    except:
+        path = db.getPath(id=1).path
     if path==".": # if empty path object in clickpoints use the path where clickpoints is saved
         path=os.path.split(db._database_filename)[0]
     im_shapes={} #exact list of image shapes
-    for frame in all_frames:
-        im_shapes[frame]=db.getImage(frame=frames_ref_dict[frame],layer="membranes").data.shape
+
+    for frame in unique_frames:
+        im_shapes[frame]=db.getImages(frame=frames_ref_dict[frame])[0].data.shape
 
     mask_types=[m.name for m in db.getMaskTypes()] # list mask types
     db_info = {"file_order": file_order,
@@ -244,26 +264,11 @@ def get_db_info_for_analysis(db):
                "path": path,
                "im_shape": im_shapes,
                "mask_types":mask_types,
-               "layers":layers
+               "layers":layers,
+               "unique_frames": unique_frames,
+               "id_frame_dict":id_frame_dict
                }
-
-    return db_info,all_frames
-
-
-
-
-def get_frame_from_annotation(db,cdb_frame):
-    '''
-
-    :param db:
-    :param cdb_frame: number of the frame (sort index in the cdb database
-    :return: str_frame: frame as a string in the typical convention
-    '''
-    annotations=[]
-    for an in db.getAnnotations(frame=cdb_frame):
-        annotations.append(an.comment)
-    str_frame = np.unique([get_group(re.search('(\d{1,4})', x), 0) for x in annotations])
-    return str_frame[0]
+    return db_info, unique_frames
 
 def cut_mask_from_edge(mask,cut_factor):
     sum_mask1=np.sum(mask)
@@ -360,13 +365,51 @@ def sum_on_area(masks,frame,res_dict,parameter_dict, db,db_info,label,x=None,y=N
             res_dict[frame]["%s of %s" % (label, label2)] = area
 
 
+def find_full_im_path(cdb_image,base_folder):
+    rel_path = cdb_image.path.path
+    filename = cdb_image.filename
+    return os.path.join(os.path.join(base_folder,rel_path),filename)
+
+
+def simple_shift_correction(frame, parameter_dict,res_dict, db,db_info=None,**kwargs):
+    #load images from database
+    im_a=db.getImage(id=db_info["file_order"][frame + "images_after"])
+    im_b=db.getImage(id=db_info["file_order"][frame + "images_before"])
+    im_m=db.getImage(id=db_info["file_order"][frame + "membranes"])
+    image_after=im_a.data
+    image_before=im_b.data
+    image_membrane= im_m.data
+    # get paths for saving later
+    im_a_path = find_full_im_path(im_a,db_info["path"])
+    im_b_path = find_full_im_path(im_b,db_info["path"])
+    im_m_path = find_full_im_path(im_m,db_info["path"])
+
+    # find shift with image registration
+    shift_values = register_translation(image_before, image_after, upsample_factor=100)
+    shift_y = shift_values[0][0]
+    shift_x = shift_values[0][1]
+
+    # using interpolation to shift subpixel precision
+    img_shift_b = shift(image_before, shift=(-shift_y, -shift_x), order=5)
+    img_shift_bf = shift(image_membrane, shift=(-shift_y, -shift_x), order=5)
+
+    b = normalizing(croping_after_shift(img_shift_b, shift_x, shift_y))
+    a = normalizing(croping_after_shift(image_after, shift_x, shift_y))
+    bf = normalizing(croping_after_shift(img_shift_bf, shift_x, shift_y))
+    # saving images
+    b_save = Image.fromarray(b * 255)
+    a_save = Image.fromarray(a * 255)
+    bf_save = Image.fromarray(bf * 255)
+    print("save im b:",im_b_path,"save im a:",im_a_path,"save im m:",im_m_path )
+    b_save.save(im_b_path)
+    a_save.save(im_a_path)
+    bf_save.save(im_m_path)
 
 def deformation(frame, parameter_dict,res_dict, db,db_info=None,**kwargs):
 
-
     # deformation for 1 frame
-    im1 = db.getImage(id=db_info["file_order"][frame + "after"]).data  ## thats very slow though
-    im2 = db.getImage(id=db_info["file_order"][frame + "before"]).data
+    im1 = db.getImage(id=db_info["file_order"][frame + "images_after"]).data  ## thats very slow though
+    im2 = db.getImage(id=db_info["file_order"][frame + "images_before"]).data
 
     # overlapp and windowsize in pixels
     window_size_pix=int(np.ceil(parameter_dict["window_size"] / parameter_dict["pixelsize"]))
@@ -699,8 +742,7 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/KOshift/database3.cdb", "r")
-
+        "/home/user/Software/tracktion_force_microscopy/tracktion_force_microscopy/test_images_database_setup/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict=defaultdict(dict)
     db_info, all_frames = get_db_info_for_analysis(db)
@@ -713,7 +755,7 @@ if __name__=="__main__":
     #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
     #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="02", db_info=db_info)
     #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames=all_frames, db_info=db_info)
+    apply_to_frames(db, parameter_dict, simple_shift_correction, res_dict, frames=all_frames, db_info=db_info)
 
     #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
     # calculating the deformation field and adding to data base
