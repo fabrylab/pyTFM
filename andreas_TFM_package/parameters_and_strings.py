@@ -122,6 +122,25 @@ tooltips["overlapp"]="Set the overlapp for calcualting the deformation fiel by P
             "the stress analysis. "
 tooltips["window_size"]="Set the windowsize for calcualting the deormation field by PIV. A could guess is 7 times the radius of a bead."
 tooltips["h"]="set the height of the substrate your cells are growing on"
+tooltips["folder_out_txt"]="select the folder where all output images and files and the database file are saved to"
+tooltips["folder1_txt"]="select the folder with your images after the cells are removed"
+tooltips["folder2_txt"]="select the folder with your images before the cells are removed"
+tooltips["folder3_txt"]="select the folder with your images of your cells"
+tooltips["db_name_text"]="set the name your database. The database will be saved under this name once you clicked 'collect images' button."
+tooltips["folder_out_button"]="click to browse folders"
+tooltips["folder1_button"]="click to browse folders"
+tooltips["folder2_button"]="click to browse folders"
+tooltips["folder3_button"]="click to browse folders"
+tooltips["after"]="set an additional identifier for the image files. You need to provide a regular expression. The file extension is added automatically."
+tooltips["before"]="set an additional identifier for the image files. You need to provide a regular expression."
+tooltips["cells"]="set an additional identifier for the image files. You need to provide a regular expression."
+tooltips["frames"]="set where the number of the frame is provided. You need a regular expression"
+tooltips["colony"]= "choose the type of analysis"
+tooltips["correct drift"]="correct the drift between image pairs"
+tooltips["select images"]=" select images, output folder and name of the database"
+tooltips["fill cell area"]= "Fill areas that are fully encircled by a mask. Use with care, this will not work perfectly " \
+                            "and might overwrite parts of the mask that you have drawn. Function is applied to all frames."
+
 
 
 
