@@ -61,11 +61,11 @@ For general instructions on how to use clickpoints go [here](https://clickpoints
 .
 First open a clickpoints database, e.g by right clicking on an image and "open with" clickpoints. Addons can be activated by pressing on the central right most button. A window listing all available addons will open. Select "TFM_addon" and press activate. You should get a massage that the addon has been succesfully activated. Note that you can also activate other useful addons here. One example is the "Measure Tool", used to measure distances, or for example the size of your beads.
 
-![Analysis plot](images/opening_addon.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/opening_addon.png?raw=true "Optional Title")
 
 After you have activated the Addon a new button appears on the right. Press this button to open the addon window.
 
-![Analysis plot](images/opening_addon2.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/opening_addon2.png?raw=true "Optional Title")
 
 
 
@@ -74,7 +74,7 @@ After you have activated the Addon a new button appears on the right. Press this
 If you have opened a new database you first need to tell the addon where it can find images and where it should put the output files. Press the "select images" button. This will open a new window:
 
 
-![Analysis plot](images/file_selection.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/file_selection.png?raw=true "Optional Title")
 
 In this window you can tell the addon which folders it should search for images before and after bead removal and images of your cells. On the left you can enter a pattern that it used to further identify type of the images in the folders you have selected.
 By using these patterns you can have all your images in the same folder and still correctly sort them in the data base. The patterns you have to enter in the fields are regular expressions. That means for the default settings above: For example Images of the beads after cell removal need to contain 1-4 numbers followed by "after". The images for the beads after cell removal need to contain 1-4 numbers followed by "before" and so on. 
@@ -131,7 +131,7 @@ setup_database_for_tfm(folder,"database.cdb",key1=key1,key2=key2,key3=key3,frame
 Slight movements of the microscopes field of view while removing cells will reuslt in non-zero drift in the deformation field.
 You can use this addon to correct for any shift between the images of the beads before and after the removal of cells. Once you have set up the databse in the "select file" menue, just press the correct drift button below it:
 
-![Analysis plot](images/correct_drift.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/correct_drift.png?raw=true "Optional Title")
 
 This will correct the drift for all frames using image registration. All three images of a frame will be cut to a common field of view. This will permanetly change your image files. Note that this function can not correct for roations.
 
@@ -143,7 +143,7 @@ During the analysis several measures (area of cells, contractile energy and so o
 The field "apply to" allows you to run the analysis on just the current frame or all frames at once. Note that the output file is only generated if you analyze all frames. If another output file exists already, it will be overwritten.
 To start your analysis press the start button on the top left.
 
-![Analysis plot](images/main_window.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/main_window.png?raw=true "Optional Title")
 
 
 
@@ -152,14 +152,14 @@ A fixed area close to the image edges ( default 10% of the image axis length) is
 appears. This button helps you by trying to fill all areas encircled with the mask for cell type1 on all frames. Alternatively clickpoints also provides a tool to fill areas individually.
 has to masks for two cell types.  
 
-![Analysis plot](images/mode1.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/mode1.png?raw=true "Optional Title")
 
 
 In the "colony" mode you can analyze an isolated cell colony. The finite elements analysis will not fix any node (provided you don't mark an area at the image edge). Instead the equilibrium of the system is guaranteed by correcting nodal loads for unbalanced forces and torque. You are supposed to mark the colony edges and internal cell cell borders within the colony. 
 Additionally you can circle an area around the colony to calculate contractillity and contractile energy. "FEM analysis" in this mode will produce stress measures along the cell borders and on the whole colony area. It will also add an image of the cell border stresses to the database. Note that the FEM analysis is only accurate if you have a high resolution in deformation and traction field. This can be achieved by choosing the "piv overlapp" close to the "piv window size". Eventually you should set this difference as low as 5 pixels or less (1 µm at 0.2 µm pixelsize) . Unfortunately this will increase your calculation time. 
 
 
-![Analysis plot](images/mode2.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/mode2.png?raw=true "Optional Title")
 
 
 
@@ -169,7 +169,7 @@ All measured quantities are saved to an output file named "out.txt". This file i
 on all frames of the database. The parameters used for the analysis are written as header. All measured quantities follow with 
 the frame, name of the quantity, it's value, a unit and an additional warning message, each in one column. You should reconsider the results if you see a warning.
 
-![Analysis plot](images/output_file.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/output_file.png?raw=true "Optional Title")
 
 This package provides some functions to read the output file, perform statistical test comparing two output files and plotting these results.
 Check out the analysis in [output_data_analysis](/analysis_and_testing/output_data_analysis.py) for a detailed example on how to
