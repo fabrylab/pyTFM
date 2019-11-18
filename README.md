@@ -56,9 +56,8 @@ This will automaticaly add the an addon to clickpoints if you have clickpoints 1
 # Performing traction force microscopy with clickpoints.
 
 
-## Using the clickpoints addon
+## Opening the clickpoints addon
 For general instructions on how to use clickpoints go [here](https://clickpoints.readthedocs.io/en/latest/).
-.
 First open a clickpoints database, e.g by right clicking on an image and "open with" clickpoints. Addons can be activated by pressing on the central right most button. A window listing all available addons will open. Select "TFM_addon" and press activate. You should get a massage that the addon has been succesfully activated. Note that you can also activate other useful addons here. One example is the "Measure Tool", used to measure distances, or for example the size of your beads.
 
 ![Analysis plot](images_instructions/opening_addon.png?raw=true "Optional Title")
@@ -97,7 +96,7 @@ Note the the file needs to have an extension for common image formats (.png, .jp
 You can also set a folder for all output files and specify a name for the database. The database will be saved to the output folder. Once you have set all options press the "collect images" button. Now the addon searches for images, sorts them to the database and saves the database. The programm will print all images that it found, what frame and what type it identified for them to the console. Also if there are more or less then 3 images per frame you will see a warning in the console.  
 You can also setup your database form the python interpreter if you prefer to do so:
 
-### Generating a data base with the python interpreter: 
+### Generating a data base with the python interpreter
 Either open python in the terminal or use the interpreter for example in PyCharm.
 Import the function to setup a data base:
 ```
@@ -126,7 +125,7 @@ setup_database_for_tfm(folder,"database.cdb",key1=key1,key2=key2,key3=key3,frame
 ```
 
 
-### Drift correction:
+### Drift correction
 
 Slight movements of the microscopes field of view while removing cells will reuslt in non-zero drift in the deformation field.
 You can use this addon to correct for any shift between the images of the beads before and after the removal of cells. Once you have set up the databse in the "select file" menue, just press the correct drift button below it:
@@ -136,7 +135,7 @@ You can use this addon to correct for any shift between the images of the beads 
 This will correct the drift for all frames using image registration. All three images of a frame will be cut to a common field of view. This will permanetly change your image files. Note that this function can not correct for roations.
 
 
-### Performing an anlysis:
+### Performing an anlysis
 
 In the top right you can tick which part of analysis you want to run. The raw output from these analysis, such as the deformation field, is stored as an array in the same folder. That way it can be accessed later by other analysis steps. Deformation and traction fields will also be plotted and added to your database in a new layer. Depending on the analysis mode "FEM analysis" or the "contractillity analysis" will also produce an image and added it to the clickpoints database. You can view the images by simply changing layers in your current frame in clickpoints.
 During the analysis several measures (area of cells, contractile energy and so on) are calculated. They are all stored in an text file called out.txt.
