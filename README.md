@@ -51,54 +51,66 @@ then install this package by
 ```
 pip install git+https://github.com/fabrylab/tracktion_force_microscopy.git
 ```
-This will automaticaly add the an addon to clickpoints if you have clickpoints 1.9.0 or higher. 
+
+To activate the clickpoints addon download or clone this repository. Copy and paste the folder "TFM_addon" to the clickpoints addons subdirectory.If you don' know where clickpoints is installed, simply open a terminal and go into the python interpreter by typing the command "python". Then import clickpoints and get the location with:
+```
+import clickpoints
+clickpoints.__file__
+```
+The addons folder is located directly in this folder.
 
 # Performing traction force microscopy with clickpoints.
 
+## Correction of frame shift in images:
+Slight movements of the microscopes field of view while removing cells will reuslt in non-zero drift in the deformation field.
+You can use the script "correcting_frame_shift.py" to correct for any shift between the images of the beads before and after the removal of cells. You can find it in the analysing_and_testing folder. This script searches a folder tree and finds pairs of images before and after cell removal. Then it uses image registration to find a shift. The common field of view of the image pair is determinied and they are cropped accordingly. If the script finds additional images of the cell, it will also cut these images to the same field of view. 
 
-## Using the clickpoints addon
-For general instructions on how to use clickpoints go [here](https://clickpoints.readthedocs.io/en/latest/).
-.
-First open a clickpoints database, e.g by right clicking on an image and "open with" clickpoints. Addons can be activated by pressing on the central right most button. A window listing all available addons will open. Select "TFM_addon" and press activate. You should get a massage that the addon has been succesfully activated. Note that you can also activate other useful addons here. One example is the "Measure Tool", used to measure distances, or for example the size of your beads.
+The basic folder structure of input and output looks like this:
+![Analysis plot](images/frame_shift_folder_structure.png?raw=true "Optional Title"). 
 
-![Analysis plot](images/opening_addon.png?raw=true "Optional Title")
+On the right you can see variables that you can set.These variables define how images are named and identified (see below). The folder and filenames in this image would work for default values of these variables.
 
-After you have activated the Addon a new button appears on the right. Press this button to open the addon window.
+In general the script searches through the full tree of an input folder. Once it identifies a folder for the images after bead removal and before bead removal in the same subdirectory it stops and enters these folders. There is searches for the corresponding images and identifies their frame. Note that it searches for bright field or other images of the cells in both folders.The output images are saved in directories named the same as the directories the "before" and "after" folder were been found in. These directories are located directly in the input folder.
+If you want to use the script with default settings open a terminal, navigate to the folder that contains your data. 
+Then execute the script with: 
 
-![Analysis plot](images/opening_addon2.png?raw=true "Optional Title")
+```
+python path_to_the_script/correcting_frame_shift.py
+```
+You can also do the frame shift correction inside a python interpreter, e.g. in the pycharm interpreter:
+
+```
+from andreas_TFM_package.frame_shift_correction import correct_frame_shift
+folder= r"/home/user/Desktop/tfm_images/" # the folder with images
+correct_frame_shift(folder)
+```
+
+Alternatively and if you want to change how files are recognized and named check out the correcting_frame_shift.py script.
+There you will also find extensive explanations on all parameters.
+You can for example open it in pycharm and play around with the various parameters 
+
+You can basically change 3 parameters:
+1. How the script finds the correct folders for "before" and "after" images. 
+2. How the script identifies the image files, and the frame an image belongs to.
+3. The filenames for the drift corrected images.
+Inside the script you will find more detailed explanations on how to set the parameters.
 
 
+## Generating a clickpoints database from images
 
-### Selecting images
+Prior to using the addon, you need to generate a clickpoints data base from images. The data base will sort images into layers and frames. For each layer you need to provide 3 images: an image of beads before the cells were removed, an image of beads after the cells where removed and an image that should show the cells themselves. The default way to identify layers and frames is the following:
+The frame is identified by a number at the beginning of the file name. The number can be up to 4 digits long and can be zeropadded. You can leave out frames, e.g provide images for frame 1 and 3, but leave out frame 2. Each frame needs 3 images: one that starts with the frame number followed by "after", one that starts with the frame number followed by "before" and one that starts with the frame number followed by "membrane"."bf_before" is also accepted. These are the images for beads after and before cells wher removed and an image of the cells themselves. You can check out the example_analysis for an example of how to name your image files. You can also provide your own keys to sort the images. See [generating a data base with the python interpreter](#Generating-a-data-base-with-the-python-interpreter) for more details.
 
-If you have opened a new database you first need to tell the addon where it can find images and where it should put the output files. Press the "select images" button. This will open a new window:
-
-
-![Analysis plot](images/file_selection.png?raw=true "Optional Title")
-
-In this window you can tell the addon which folders it should search for images before and after bead removal and images of your cells. On the left you can enter a pattern that it used to further identify type of the images in the folders you have selected.
-By using these patterns you can have all your images in the same folder and still correctly sort them in the data base. The patterns you have to enter in the fields are regular expressions. That means for the default settings above: For example Images of the beads after cell removal need to contain 1-4 numbers followed by "after". The images for the beads after cell removal need to contain 1-4 numbers followed by "before" and so on. 
-You also need to tell the addon where it can identify the frame of the image. With "^(d{1,4})" it uses up to 4 numbers at the beginning of the filename.
-
-Here are some other common things you migth enter in these fields:
-"after"
-
-| search pattern  | meaning |
-| ------------- | ------------- |
-| after  | all files with "after" in the filename |
-| *  | all files  |
-| for the frames  |   |
-| ^(\d{1-4})  | up to 4 numbers at beginning of the filename |
-| (\d{1-4})  | up to 4 consecutive numbers anywhere in the filename |
-| (\d{1-4})$   | up to 4 numbers at end of the filename  |
-
-Note the the file needs to have an extension for common image formats (.png, .jpeg, .tif and so on)
-
-You can also set a folder for all output files and specify a name for the database. The database will be saved to the output folder. Once you have set all options press the "collect images" button. Now the addon searches for images, sorts them to the database and saves the database. The programm will print all images that it found, what frame and what type it identified for them to the console. Also if there are more or less then 3 images per frame you will see a warning in the console.  
-You can also setup your database form the python interpreter if you prefer to do so:
+### Using the build_cdb_database_TFM.py script
+Building the data base can be done in two ways.
+The first possibility is to use the script build_cdb_database_TFM.py. Open a terminal, navigate to the folder your images are located in and call the script with 
+```
+python build_cdb_database_TFM.py
+```
+If the script build_cdb_database_TFM.py is not located in the same folder, your need to provide the full path to the script.
 
 ### Generating a data base with the python interpreter: 
-Either open python in the terminal or use the interpreter for example in PyCharm.
+Alternativly you can build the database from a python interpreter directly. Either open python in the terminal or use the interpreter for example in PyCharm.
 Import the function to setup a data base:
 ```
 from andreas_TFM_package.database_functions import setup_database_for_tfm
@@ -112,7 +124,6 @@ call the setup_database_for_tfm function with default parameters on this folder.
 setup_database_for_tfm(folder,"database.cdb")
 ```
 You can also pass your own keys to sort images as parameters to the function. For each parameter you need to provide a regular expression. The regular expression to identfy a frame needs to contain the actual frame number as a group marked with "()". Don't include the file ending. ".png" or ".tif" and so on is added automatically. 
-
 ```
 # using custom search keys for the data base setup:
 
@@ -125,20 +136,21 @@ frame_key= "(\b\d{1,4})" # finds the first 4 leading numbers of the filename
 setup_database_for_tfm(folder,"database.cdb",key1=key1,key2=key2,key3=key3,frame_key=frame_key)
 ```
 
-
-### Drift correction:
-
-Slight movements of the microscopes field of view while removing cells will reuslt in non-zero drift in the deformation field.
-You can use this addon to correct for any shift between the images of the beads before and after the removal of cells. Once you have set up the databse in the "select file" menue, just press the correct drift button below it:
-
-![Analysis plot](images/correct_drift.png?raw=true "Optional Title")
-
-This will correct the drift for all frames using image registration. All three images of a frame will be cut to a common field of view. This will permanetly change your image files. Note that this function can not correct for roations.
+Note that the images of beads should ideally be corrected for drift and rotation. You can use the script correcting_frame_shift.py for drift correction.
 
 
-### Performing an anlysis:
+## Using the clickpoints addon
+For general instructions on how to use clickpoints go [here](https://clickpoints.readthedocs.io/en/latest/).
 
-In the top right you can tick which part of analysis you want to run. The raw output from these analysis, such as the deformation field, is stored as an array in the same folder. That way it can be accessed later by other analysis steps. Deformation and traction fields will also be plotted and added to your database in a new layer. Depending on the analysis mode "FEM analysis" or the "contractillity analysis" will also produce an image and added it to the clickpoints database. You can view the images by simply changing layers in your current frame in clickpoints.
+Open the clickpoints database. Addons can be activated by pressing on the central right most button. A window listing all available addons will open. Select "TFM_addon" and press activate. You should get a massage that the addon has been succesfully activated. Note that you can also activate other useful addons here. One example is the "Measure Tool", used to measure distances.
+
+![Analysis plot](images/opening_addon.png?raw=true "Optional Title")
+
+After you have activated the Addon a new button appears on the right. Press this button to open the addon window.
+
+![Analysis plot](images/opening_addon2.png?raw=true "Optional Title")
+
+In this window you can set most paramters for your analysis. In the top right you can tick which part of analysis you want to run. The raw output from these analysis, such as the deformation field, is stored as an array in the same folder. That way it can be accessed later by other analysis steps. Deformation and traction fields will also be plotted and added to your database in a new layer. Depending on the analysis mode "FEM analysis" or the "contractillity analysis" will also produce an image and added it to the clickpoints database. You can view the images by simply changing layers in your current frame in clickpoints.
 During the analysis several measures (area of cells, contractile energy and so on) are calculated. They are all stored in an text file called out.txt.
 The field "apply to" allows you to run the analysis on just the current frame or all frames at once. Note that the output file is only generated if you analyze all frames. If another output file exists already, it will be overwritten.
 To start your analysis press the start button on the top left.
