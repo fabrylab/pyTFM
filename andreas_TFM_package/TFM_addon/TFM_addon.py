@@ -1,4 +1,4 @@
-﻿
+
 from __future__ import division, print_function
 from andreas_TFM_package.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
 from andreas_TFM_package.parameters_and_strings import tooltips,default_parameters
@@ -63,8 +63,12 @@ class NewWindow(QtWidgets.QWidget):
         self.setMinimumWidth(600)
         self.setMinimumHeight(300)
         self.main_window=main_window
-        self.main_window.outfile_path=os.path.join(os.getcwd(),"out.txt"),
-        self.db_name ="database.cdb"
+        self.main_window.outfile_path=os.path.join(os.getcwd(),"out.txt")
+      
+        if re.match("tmp\d*\.cdb",os.path.split(self.main_window.db._database_filename)[1]): # check if clickpoints file is temporary file
+            self.db_name ="database.cdb"
+        else:
+            self.db_name =self.main_window.db._database_filename # if not use current filename as default filename
         self.cwd = os.getcwd()
         self.default_folder = self.cwd
         self.folders = {"folder1_txt": os.getcwd(),
@@ -92,7 +96,7 @@ class NewWindow(QtWidgets.QWidget):
             "folder3_button": {"object": None, "properties": [3, 1,30,80,QtCore.Qt.AlignLeft,  "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
 
             "folder_out_txt": {"object": None, "properties": [6, 0, None, 20, None, "textChanged", self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
-            "db_name_text": {"object": None, "properties": [6, 2, None, 20, None, "textChanged", self.update_dirs, QtWidgets.QLineEdit, "database.cdb"]},
+            "db_name_text": {"object": None, "properties": [6, 2, None, 20, None, "textChanged", self.update_dirs, QtWidgets.QLineEdit, self.db_name]},
             "folder_out_button": {"object": None, "properties": [6, 1, 30, 20, QtCore.Qt.AlignLeft, "clicked", self.file_dialog, QtWidgets.QPushButton, "..."]},
             "after": {"object": None, "properties": [1, 2,200,30,None, "textChanged" ,self.update_dirs, QtWidgets.QLineEdit, "default"]},
             "before": {"object": None, "properties": [2, 2,200,30,None,  "textChanged",self.update_dirs, QtWidgets.QLineEdit, "default"]},
@@ -209,18 +213,17 @@ class NewWindow(QtWidgets.QWidget):
 
     def save_database_automatically(self):
         # saving the database in the current folder if a temporary filename
-        if ".clickpoints" in self.main_window.db._database_filename and ".cdb" in self.main_window.db._database_filename:
-            filename = os.path.join(self.folders["folder_out_txt"], self.db_name)
-            if not os.path.exists(filename): # save if no file with same name is around
-                print("saved database to " + filename )
-                self.main_window.cp.window.SaveDatabase(srcpath=filename)
-            else: # try some other filenames
-                for i in range(100000):
-                    filename=os.path.splitext(filename)[0]+str(i)+".cdb"
+        filename = os.path.join(self.folders["folder_out_txt"], self.db_name)
+        if not os.path.exists(filename): # save if no file with same name is around
+            print("saved database to " + filename)
+            self.main_window.cp.window.SaveDatabase(srcpath=filename)
+        else: # try some other filenames
+            for i in range(100000):
+                filename=os.path.splitext(filename)[0]+str(i)+".cdb"
+                if not os.path.exists(filename):
                     print("saved database to " + filename)
-                    if not os.path.exists(filename):
-                        self.main_window.cp.window.SaveDatabase(srcpath=filename)
-                        break
+                    self.main_window.cp.window.SaveDatabase(srcpath=filename)
+                    break
 
 
 
