@@ -683,8 +683,6 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None, **kwargs
     # performing full MSM/finite elements analysis
     #wrapper to flexibly perform FEM analysis
 
-
-
     if parameter_dict["FEM_mode"]=="colony":
         nodes, elements, loads, mats, mask_area, ps_new, warn, borders = FEM_setup_colony(frame, parameter_dict, db,
                                                                                           db_info=db_info, **kwargs)
@@ -742,20 +740,16 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Software/tracktion_force_microscopy/tracktion_force_microscopy/test_images_database_setup/database.cdb", "r")
+        "/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/KOshift/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict=defaultdict(dict)
     db_info, all_frames = get_db_info_for_analysis(db)
-    parameter_dict["overlapp"]=10
+    parameter_dict["overlapp"]=19
     parameter_dict["FEM_mode"] = "colony"
-    #apply_to_frames(db, parameter_dict, deformation, res_dict, frames=all_frames, db_info=db_info)
-    #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames=all_frames, db_info=db_info)
-    #apply_to_frames(db, parameter_dict, deformation,res_dict, frames="04",db_info=db_info)
-    #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="04", db_info=db_info)
-    #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
-    #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="02", db_info=db_info)
-    #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, simple_shift_correction, res_dict, frames=all_frames, db_info=db_info)
+    default_fig_parameters["cmap"]="jet"
+    #apply_to_frames(db, parameter_dict, deformation, res_dict, frames="01", db_info=db_info)
+    apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="11", db_info=db_info)
+    #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
 
     #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
     # calculating the deformation field and adding to data base

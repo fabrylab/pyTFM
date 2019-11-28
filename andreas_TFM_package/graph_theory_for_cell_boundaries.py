@@ -5,7 +5,7 @@ from collections import defaultdict
 from collections import deque, namedtuple
 import copy
 import matplotlib.pyplot as plt
-
+from itertools import chain
 
 
 class FindingBorderError(Exception):
@@ -18,7 +18,33 @@ def graph_to_mask(graph,points,dims):
     m[ps_coord[:,0],ps_coord[:,1]]=1 #writing points
     return m
 
+def find_endpoints(graph,points):
+    '''
+    tries to identify endpoints of lines: current method
+    endpoint if only one neighbour  (in radius of 1 or sqrt(2) pixels)
+    endpoint if two neighbours but the neighbours are directly adjacent
+    :param graph:
+    :return:
+    '''
+    eps1 = np.where(np.array([len(v) for v in graph.values()]) == 1)[0] # all points are endpoints
+    eps_potential=  np.where(np.array([len(v) for v in graph.values()]) == 2)[0] # potential endpoints
+    eps2=[]
+    for ep in eps_potential:
+        p1,p2=graph[ep]
+        if np.isclose(np.linalg.norm(points[p1]-points[p2]),1): # check if the two neighbours are themseves direct neighbours
+            eps2.append(ep)
+    eps2=np.array(eps2,dtype=int)
+    eps=np.concatenate([eps1,eps2])
+    return eps
 
+def remove_endpoints_wrapper(graph,points):
+    end_points = find_endpoints(graph,points)
+    points_2 = np.array(list(graph.keys()))  # all keys as array
+    eps = points_2[end_points]  # keys of endpoints
+    for ep in eps:
+        if ep in list(graph.keys()):
+            remove_endpoint(graph, ep)
+    return end_points
 def remove_endpoint(graph,ep):
     '''
     recursive function to remove dead ends in a graph starting from point ep. Ep has one neighbour.
@@ -29,19 +55,22 @@ def remove_endpoint(graph,ep):
     :return:
     '''
 
-    #print(graph[ep])
+
     new_p = graph[ep]  # neighours of this point
-
-    check_line_break = np.array([len(graph[p])==2 for p in new_p]).any() and len(new_p)>1 #check if any removal of new_p would cause single and
-    # if new_p is not just another loose end, this deals with special cases when the line hit another line
-    if check_line_break:
-        return
+    graph.pop(ep) # try to remove point
+    # check if this causes a line break
     for p in new_p:
-        graph[p].remove(ep)  # remove all further references in the graph
-    graph.pop(ep)  # deleting loose endpoint from graph, gives empty list
+        l1_ps = graph[p]  # first layer of points
+        l2_ps = list(chain.from_iterable([graph[p] for p in l1_ps]))  # second layer of points
+    layers = l1_ps + l2_ps
+    line_break=not all([p in layers for p in new_p])    # all original points must be found either layer
 
-    # check if removing new point would produce line brek
-
+    if line_break:
+        graph[ep]=new_p # restore graph at this point
+        return
+    else:
+        for p in new_p:
+            graph[p].remove(ep)  # remove all further references in the graph
 
     if len(new_p)<2:
         remove_endpoint(graph,new_p[0]) # would stop if it encounters point with three neighbours
@@ -76,17 +105,17 @@ def find_line_segement(graph,start,path=[],left_right=0):
         return newpath # return if recursion is completed
 
 
-def mask_to_graph(mask):
+def mask_to_graph(mask,d=np.sqrt(2)):
     '''
     converts a binary mask to a  graph (dictionary of neighbours)
     Neighbours are identified by cKDTree method
     :param mask:
+    :param d: maximal allowed distance
     :return:
     '''
     graph = defaultdict(list)
     points = np.array(np.where(mask)).T
     point_tree = cKDTree(points)  # look up table for nearest neigbours ??
-    d = np.sqrt(2)  # maximal allowd distance
     for i, p in enumerate(points):
         neighbours = point_tree.query_ball_point(p, d)
         neighbours.remove(i)  # removing the point itself from list of its neighbours

@@ -135,10 +135,8 @@ def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,bf_image=False,fil
 
 def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean") -> object:
     '''
-
      limiting case for h*k==0
     Xavier Trepat, Physical forces during collective cell migration, 2009
-
 
     :param u:deformation field in x direction in pixel of the deformation image
     :param v:deformation field in y direction in pixel of the deformation image
@@ -157,8 +155,6 @@ def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.
      # 0) substracting mean(better name for this step)
     u_shift = (u - np.mean(u))*pixelsize1  # also try without dis
     v_shift = (v - np.mean(v))*pixelsize1
-
-
 
     ## bens algortithm:
 
@@ -367,8 +363,7 @@ def ffttc_traction_old(u,v,young,pixelsize,pixel_factor,sigma=0.49,bf_image=Fals
     k = np.sqrt(kx**2 + ky**2)/(pixelsize*max_ind)    # matrix with "relative" distances??#
     #np.save("/home/user/Desktop/k_test.npy",k)
 
-    #2.) caclulating angle between k and kx with atan 2 function (what is this exactely??)  just if statemments to get
-    # angel from x1 to x2 in fixed direction... (better explanation)
+    #2.) caclulating angle between k and kx with atan 2 function (what is this exactely??)
     alpha= np.arctan2(ky,kx)
     alpha[0,0]=np.pi/2 ## why do i need this?-> arctan2(n,0) n-->0 is pi/2 for n positive and -pi/2 for n negative arctan(0,0) has been defined on 0
     #np.save("/home/user/Desktop/alpha_test.npy",alpha)

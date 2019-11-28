@@ -443,22 +443,17 @@ def prepare_mask(mask,shape,min_cell_size=None):
 
     # generating borders
     mask_boundaries = skeletonize(mask.astype(int))
-
     # converting mask to graph object
     graph,points = mask_to_graph(mask_boundaries)
 
-    # removing dead ends
-    end_points = np.where(np.array([len(v) for v in graph.values()]) < 2)[0]
-    points_2 = np.array(list(graph.keys()))  # all keys as array
-    eps = points_2[end_points]  # keys of endpoints
-    for ep in eps:
-        if ep in list(graph.keys()):
-            remove_endpoint(graph, ep)
+    # applying remove endpoints multiple times to deal with forking dead ends
+    for i in range(20): # this could be solved much better simply by updating the points list
+        end_points=remove_endpoints_wrapper(graph,points)
+        if len(end_points)==0:
+            break
+        mask_boundaries = graph_to_mask(graph, points, mask_boundaries.shape) # rebuilding the mask
+        graph, points = mask_to_graph(mask_boundaries) # updating the points list
 
-
-    # rebuilding the mask, necessary for "cell identification" later
-    mask_boundaries=graph_to_mask(graph,points,mask_boundaries.shape)
-    graph,points=mask_to_graph(mask_boundaries)  # this updartes the points list, now without the previously rtemoved dead ends
     try :
         c_l=Cells_and_Lines(mask_boundaries,mask_int, graph,points)
     except RecursionError as e:
