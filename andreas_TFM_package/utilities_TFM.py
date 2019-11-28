@@ -54,6 +54,29 @@ def round_flexible(n):
     else:
         rounding_decimal=-int(np.floor(np.log10(np.abs(n)))) + 2
     return np.round(n,rounding_decimal)
+def round_flexible_str(n,digits=2,sci_limit=3):
+    '''
+    returns a number rounded to 2 positions after its firs segnificant position
+    7.1242*10**-7 --> 7.12*10**-7
+    7.1242*10**9 --> 7.12*10**9  and so on
+    :param n: float
+    :return:
+    '''
+    if not (isinstance(n,float) or isinstance(n,int)) or n==0 or np.isnan(n):
+        return n
+    else:
+        first_pos=-int(np.floor(np.log10(np.abs(n))))
+        rounding_decimal=first_pos + digits
+        n_round=np.round(n,rounding_decimal)
+        if np.abs(rounding_decimal)> sci_limit:
+            s = "%" + ".%de" % digits
+            string = s % n_round
+        elif rounding_decimal>=0:
+            s="%"+".%df"%rounding_decimal
+            string=s % n_round
+        else:
+            string=str(n_round)
+    return string
 
 def find_prefix(n):
     '''
