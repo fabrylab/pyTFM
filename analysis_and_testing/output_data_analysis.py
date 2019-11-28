@@ -14,7 +14,7 @@ import os
 
 
 # setting the output folder for plots. All plots are saved to this folder.
-folder_plots = "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/lates_analysis"
+folder_plots = "/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/lates_analysis"
 createFolder(folder_plots) # creating the folder if it doesn't already exist
 
 
@@ -25,7 +25,7 @@ createFolder(folder_plots) # creating the folder if it doesn't already exist
 # but two frames in the ko, due to issues with imaging the beads.
 exclude=[]
 # path to the out.txt text file
-file1="/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out.txt"
+file1="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/WTshift/out2.txt"
 parameter_dict1,res_dict1=read_output_file(file1) # reading the file and splitting into parameters and results
 # pooling all frames: values_dict has "name of the quantity": "list of values for each frame".
 # this also returns the number of frames (n_frames) and a list of the label of frame (frame_list). The frame labels are
@@ -36,7 +36,7 @@ n_frames1,values_dict1, frame_list1=prepare_values(res_dict1,exclude)
 # second file
 exclude=["01","10"]  # list of frames to be excluded, thes
 # path to the out.txt text file
-file2="/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/KOshift/out.txt"
+file2="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/KOshift/out3.txt"
 parameter_dict2,res_dict2=read_output_file(file2)# reading the fie and splitting into parameters and results
 n_frames2,values_dict2, frame_list2=prepare_values(res_dict2,exclude) # pooling all frames
 
@@ -60,7 +60,7 @@ values_dict2=normalize_values(values_dict2,norm="area of colony",add_name=" per 
 ## performing statistical analysis
 
 # getting a list of all values that we want to analyze. There is nothing wrong with analyzing using every quantity.
-all_types=[name for name in values_dict2.keys() if not name.startswith("std ")]
+all_types=[name for name in values_dict2.keys() if not name.startswith("std ") and name in values_dict1.keys()]
 # performing a two sided t-test comparing values in values_dict1 with values in values_dict2 by a two sided
 # independent t-test
 t_test_dict=t_test(values_dict1,values_dict2,all_types)
@@ -134,33 +134,33 @@ fig.savefig(os.path.join(folder_plots,"cell area.png"))
 
 
 
-types=["contractile energy on cell colony","avarage line stress per area"]
+types=["contractile energy on colony","avarage line stress per area"]
 #compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]
 fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contractile energy [J]",
                        ylabel="line stress",frame_list1=frame_list1,frame_list2=frame_list2)
 
 
 
-types=["contractile energy on cell colony","avarage cell force per area"]
+types=["contractile energy on colony","avarage cell force per area"]
 #compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]
 fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contractile energy [J]",
                        ylabel="cell froce",frame_list1=frame_list1,frame_list2=frame_list2)
 
 
-types=["contractile energy on cell colony","average normal stress colony per area"]
+types=["contractile energy on colony","average normal stress colony per area"]
 #compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]
 fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contractile energy [J]",
                        ylabel="avg norma stress",frame_list1=frame_list1,frame_list2=frame_list2)
 
 
 # normilizing wiht contractile energy
-values_dict1["average normal stress per contractile energy"]=values_dict1["average normal stress colony"]/values_dict1['contractile energy on cell colony']
-values_dict2["average normal stress per contractile energy"]=values_dict2["average normal stress colony"]/values_dict2['contractile energy on cell colony']
-values_dict1["contractillity per contractile energy"]=values_dict1["contractillity on cell colony"]/values_dict1['contractile energy on cell colony']
-values_dict2["contractillity per contractile energy"]=values_dict2["contractillity on cell colony"]/values_dict2['contractile energy on cell colony']
+values_dict1["average normal stress per contractile energy"]=values_dict1["average normal stress colony"]/values_dict1['contractile energy on colony']
+values_dict2["average normal stress per contractile energy"]=values_dict2["average normal stress colony"]/values_dict2['contractile energy on colony']
+values_dict1["contractillity per contractile energy"]=values_dict1["contractillity on colony"]/values_dict1['contractile energy on colony']
+values_dict2["contractillity per contractile energy"]=values_dict2["contractillity on colony"]/values_dict2['contractile energy on colony']
 
-values_dict1["avarage line stress per contractile energy"] = values_dict1["avarage line stress"]/values_dict1['contractile energy on cell colony']
-values_dict2["avarage line stress per contractile energy"] = values_dict1["avarage line stress"]/values_dict2['contractile energy on cell colony']
+values_dict1["avarage line stress per contractile energy"] = values_dict1["avarage line stress"]/values_dict1['contractile energy on colony']
+values_dict2["avarage line stress per contractile energy"] = values_dict1["avarage line stress"]/values_dict2['contractile energy on colony']
 
 
 all_types=[name for name in values_dict2.keys() if not name.startswith("std ")]

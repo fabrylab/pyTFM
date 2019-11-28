@@ -145,8 +145,9 @@ def t_test(values_dict1, values_dict2, types):
 
     t_test_dict = {}  # output dictionary
     for name in types:  # iterating through the names of all quantities that you want to compare
-        v1, v2 = filter_nans(values_dict1, values_dict2, name)
-        t_test_dict[name] = scipy_ttest_ind(v1, v2)  # performing a two-sided t-test
+        if check_types(values_dict1,values_dict2,name):
+            v1, v2 = filter_nans(values_dict1, values_dict2, name)
+            t_test_dict[name] = scipy_ttest_ind(v1, v2)  # performing a two-sided t-test
     return t_test_dict
 
 
@@ -299,6 +300,18 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
     plt.tight_layout()  # improving the general plot layout
     return fig
 
+def check_types(values_dict1,values_dict2,types):
+    types=make_iterable(types)
+    # checks if any value in the dicts is empty listed in types and throws an appropriate warning
+    checks=[len(values_dict1[t])==0 for t in types]+[len(values_dict2[t])==0 for t in types]
+    warn_messages=[t+" empty in dictionary 1" for t in types] + [t+" empty in dictionary 2" for t in types]
+    for c,warns in zip(checks, warn_messages):
+        if c:
+            warnings.warn(warns)
+    if any(checks):
+        return False
+    else:
+        return True
 
 def compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]):
     """
@@ -335,6 +348,10 @@ def compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,f
     plt.xlabel(xlabel)  # xlabel
     plt.ylabel(ylabel)  # ylabel
     # plotting contractillity vs contractile energy in first experiment
+    if not check_types(values_dict1,values_dict2,types):
+        return
+
+
     plt.plot(values_dict1[types[0]], values_dict1[types[1]], "o", color="C1", label=lables[0])
     # plotting contractillity vs contractile energy in second experiment
     plt.plot(values_dict2[types[0]], values_dict2[types[1]], "o", color="C2", label=lables[1])
