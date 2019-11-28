@@ -32,7 +32,7 @@ def identify_cells(mask_area,mask_boundaries,points):
     cells_area={} # dictionary containg a all pixels belonging to that cell as boolean aray
     # points_to_flatt array map:
     # labeling each cell
-    m = mask_area - mask_boundaries
+    m = mask_area.astype(int) - mask_boundaries.astype(int)
     ml = label(m, connectivity=1)
     # creating a list of point coordinates corresponding to a flattend array
     # this will allow easier identification of the id of a point
