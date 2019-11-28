@@ -368,7 +368,7 @@ def show_quiver(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headlength=3,widt
     return fig
 
 def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,figsize=(6.4, 4.8),cbar_str=""
-                            ,cmap="rainbow",vmin=None,vmax=None,scale=None,cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,**kwargs):
+                            ,cmap="rainbow",vmin=None,vmax=None,scale=None,cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,cbar_style="clickpoints",**kwargs):
 
     fx=fx.astype("float64")
     fy=fy.astype("float64")
@@ -381,19 +381,22 @@ def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headl
     im = ax.imshow(np.sqrt(fx ** 2 + fy ** 2),cmap=cmap,vmin=vmin,vmax=vmax)
 
     # filtering out arrows
-    fx,fy,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1])
+    fx_f,fy_f,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1])
 
     # scaling arrows to be reach a certain fraktion of the length of the longer image axis
     if scale_ratio:
-        fx, fy=scale_for_quiver(fx,fy, dims, scale_ratio=scale_ratio)
+        fx_f, fy_f=scale_for_quiver(fx_f,fy_f, dims, scale_ratio=scale_ratio)
         scale=1
     # plotting the arrows
-    plt.quiver(xs, ys, fx, fy, scale_units="xy",scale=1, angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-
-    cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5,borderpad=cbar_borderpad)
-    cbaxes.set_title(cbar_str,color="white")
-    cbaxes.tick_params(colors="white")
-    plt.colorbar(im,cax=cbaxes)
+    plt.quiver(xs, ys, fx_f, fy_f, scale_units="xy",scale=1, angles="xy",headwidth=headwidth,headlength=headlength,width=width)
+    if cbar_style=="clickpoints":
+        cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5,borderpad=cbar_borderpad)
+        cbaxes.set_title(cbar_str,color="white")
+        cbaxes.tick_params(colors="white")
+        plt.colorbar(im, cax=cbaxes)
+    else:
+        cb=plt.colorbar(im)
+        cb.ax.tick_params(labelsize=20)
     return fig
 
 
@@ -633,6 +636,23 @@ def correct_torque(fx,fy,mask_area):
         q[:, :, 1] = + np.sin(p) * (f[:, :, 0]) + np.cos(p) * (f[:, :, 1])
         torque = np.abs(np.nansum(np.cross(r, q, axisa=2, axisb=2))) ## using nna sum to only look at force values in mask
         return torque.astype("float64")
+
+    # plotting torque angle relation ship
+    #ps=np.arange(-np.pi/2,np.pi/2,0.01)
+    #torques=[get_torque_angle(p)*1000 for p in ps]
+    #plt.figure()
+    #ticks=np.arange(-np.pi/2,np.pi/2+np.pi/6,np.pi/6)
+    #tick_labels=[r"$-\frac{\pi}{2}$",r"$-\frac{\pi}{3}$",r"$-\frac{\pi}{6}$",r"$0$",r"$\frac{\pi}{6}$",r"$\frac{\pi}{3}$",r"$\frac{\pi}{2}$"]
+    #plt.xticks(ticks,tick_labels,fontsize=25)
+    #plt.yticks(fontsize=15)
+    #plt.plot(ps,torques,linewidth=6)
+    #plt.gca().spines['bottom'].set_color('black')
+    #plt.gca().spines['left'].set_color('black')
+    #plt.gca().tick_params(axis='x', colors='black')
+    #plt.gca().tick_params(axis='y', colors='black')
+    #plt.savefig("/home/user/Desktop/results/thesis/figures/torque_angle.png")
+
+
 
     pstart = 0
     #bounds = ([-np.pi], [np.pi])
