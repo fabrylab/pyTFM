@@ -67,7 +67,7 @@ default_fig_parameters={
     "vmax": {"deformation":None,"traction":None,"FEM_borders":None,"stress_map":None,"energy_points":None},  # maximal value displayed in the colormap
     "cbar_width": "2%",  # width of the color bar in % of the main image. Must be string with % at the end.
     "cbar_height": "50%",  # height of the color bar in % of the main image. Must be string with % at the end.
-    "cbar_borderpad": 4,  # distance between the edge of the image and the color bar (in pixels???)
+    "cbar_borderpad": 6,  # distance between the edge of the image and the color bar (in pixels???)
     "scale_ratio": 0.2,  # scale arrows so that the longest arrow is "maximum image dimension" * "scale ratio" long
     "headwidth": 3,  # width of the arrow heads (in pixels?)
     "headlength": 3,  # length of the arrow heads (in pixels?)
@@ -75,14 +75,15 @@ default_fig_parameters={
     "plot_t_vecs":{"FEM_borders":False}, # plotting the stress vectors on the cell border stresses image
     "plot_n_arrows":{"FEM_borders":False}, # plotting normal vectors on the cell border stresses image
     "linewidth":{"FEM_borders":4}, # line width when plotting the cell border stresses
-    "cm_cmap":{"FEM_borders":cm.jet}, # color map for plotting the cell border stresses. Needs a color maps object.
+    #"cm_cmap":{"FEM_borders":cm.rainbow}, # color map for plotting the cell border stresses. Needs a color maps object.
     "border_arrow_filter":{"FEM":1}, # plot only every n'th arrow for on the cell border stresses image
     "cbar_style":"clickpoints", # if "clickpoints" the color bar is plottetd inside of the figure
     "filter_factor": 1, # this factor defines how many arrows are shown in deformation and traction images.
     # low number results in  many arrows, high number results in few arrows
     "file_names":{"deformation":"deformation.png","traction":"traction.png"   # filenames under wich plots are saved
-        ,"FEM_borders":"border_stress_img.png","stress_map":"avg_normal.png","energy_points":"energy_distribution.png"}
-
+        ,"FEM_borders":"border_stress_img.png","stress_map":"avg_normal.png","energy_points":"energy_distribution.png"},
+    "background_color":"cmap_0"# set a color for background values. "cmap_0" fill read the zero color of the colormap. "white" would make the background white...
+    # this doesn't effect images of deformation and traction
 }
 
 

@@ -619,8 +619,6 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,**kwa
 
 
 
-
-
 def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new,borders=None,**kwargs):
 
     # analyzing the FEM results with average stresses
@@ -751,8 +749,10 @@ if __name__=="__main__":
     default_fig_parameters["filter_factor"]=1.5
     default_fig_parameters["scale_ratio"] = 0.15
     default_fig_parameters["cbar_style"] = "outside"
+    default_fig_parameters["background_color"]="white"
+
     #apply_to_frames(db, parameter_dict, deformation, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12", db_info=db_info)
+    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
     #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
 
     #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
