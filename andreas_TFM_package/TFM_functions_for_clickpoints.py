@@ -507,6 +507,8 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,**kwargs):
                                                  sigma=parameter_dict["sigma"],
                                                  filter="gaussian")
 
+
+
     # add a plot of the trackitoon filed to the database
     add_plot("traction", (tx,ty),show_quiver_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db)
 
@@ -747,8 +749,12 @@ if __name__=="__main__":
     parameter_dict["overlapp"]=19
     parameter_dict["FEM_mode"] = "colony"
     default_fig_parameters["cmap"]="jet"
+    default_fig_parameters["vmax"] = 3000
+    default_fig_parameters["filter_factor"]=1.5
+    default_fig_parameters["scale_ratio"] = 0.15
+    #default_fig_parameters["cbar_style"] = "outside"
     #apply_to_frames(db, parameter_dict, deformation, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="11", db_info=db_info)
+    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="12", db_info=db_info)
     #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
 
     #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")

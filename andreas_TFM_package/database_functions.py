@@ -139,7 +139,7 @@ def setup_database_internal(db, keys_dict,folders_dict):
     for l in layer_list[1:]:
         db.getLayer(l, base_layer=base_layer, create=True)
     # sorting images into layers
-
+    db.setPath(folders_dict["folder_out_txt"],id=1)
 
     frames_ref_dict={}
     file_order = {}

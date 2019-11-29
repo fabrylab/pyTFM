@@ -191,7 +191,7 @@ def split_name(name):
     return name_return
 
 
-def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], types=[]):
+def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], types=[],low_ylim=0):
     """
     Comparing a list of quantities from two experiments by plotting boxplots and optionally adding statistical
     significance stars. The list of quantities to display is given in "types". The results of the experiments
@@ -285,7 +285,7 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
             stars = set_significance_stars(t_test_dict[name].pvalue)
             # drawing the stars centrally slightly above the line
             ax.text(m_pos, maxv + v_range * 0.15, stars, verticalalignment='center', horizontalalignment='center')
-
+        ax.set_ylim(bottom=low_ylim)
     # labeling the two different experiments
     # changing the color of the boxes in the boxplots according their experiment
     for bp1, bp2 in bps:

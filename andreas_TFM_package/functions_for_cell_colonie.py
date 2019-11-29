@@ -370,6 +370,8 @@ def show_quiver(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headlength=3,widt
 def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,figsize=(6.4, 4.8),cbar_str=""
                             ,cmap="rainbow",vmin=None,vmax=None,scale=None,cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,cbar_style="clickpoints",**kwargs):
 
+
+
     fx=fx.astype("float64")
     fy=fy.astype("float64")
     dims=fx.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
@@ -378,7 +380,9 @@ def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headl
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     fig.add_axes(ax)
     ax.set_axis_off()
-    im = ax.imshow(np.sqrt(fx ** 2 + fy ** 2),cmap=cmap,vmin=vmin,vmax=vmax)
+    map_values=np.sqrt(fx ** 2 + fy ** 2)
+    vmin=vmax-1 if vmin == None and np.min(map_values)>vmax else None # other wise the program behaves unexpectedly if the automatically set vmin is smaller the vmax
+    im = ax.imshow(map_values,cmap=cmap,vmin=vmin,vmax=vmax)
 
     # filtering out arrows
     fx_f,fy_f,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1])

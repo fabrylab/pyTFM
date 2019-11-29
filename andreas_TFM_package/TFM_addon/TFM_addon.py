@@ -439,7 +439,9 @@ class Addon(clickpoints.Addon):
         self.mode=self.analysis_mode.currentText() # only current frame or all frames
         if self.mode == "current frame": # only current frame
             frames=self.frame
+            self.outfile_path = write_output_file(self.parameter_dict, "parameters", self.outfile_path, new_file=True)
             print("analyzing current frame = ", frames)
+
         if self.mode == "all frames": # all frames
             frames=self.all_frames
             print("analyzing frames = ", frames)
@@ -456,11 +458,9 @@ class Addon(clickpoints.Addon):
         if self.check_box_contract.isChecked():
             self.calculate_contractile_measures(frames)
 
-        if self.mode == "all frames":  # all frames
-            self.outfile_path=write_output_file(self.res_dict, "results", self.outfile_path,new_file=False)  # writing to output file
-        else:
-            self.outfile_path = write_output_file(self.res_dict, "results", self.outfile_path,
-                                                  new_file=True)  # writing to output file
+
+        self.outfile_path = write_output_file(self.res_dict, "results", self.outfile_path,
+                                                  new_file=False)  # writing to output file
 
         print("calculation complete")
 
