@@ -77,6 +77,7 @@ default_fig_parameters={
     "linewidth":{"FEM_borders":4}, # line width when plotting the cell border stresses
     "cm_cmap":{"FEM_borders":cm.jet}, # color map for plotting the cell border stresses. Needs a color maps object.
     "border_arrow_filter":{"FEM":1}, # plot only every n'th arrow for on the cell border stresses image
+    "cbar_style":"clickpoints", # if "clickpoints" the color bar is plottetd inside of the figure
     #"filter":[0,4],
     #"figsize":(10,10),
     "file_names":{"deformation":"deformation.png","traction":"traction.png"   # filenames under wich plots are saved

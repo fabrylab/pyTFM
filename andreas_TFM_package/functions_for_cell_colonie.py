@@ -395,8 +395,9 @@ def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headl
         cbaxes.tick_params(colors="white")
         plt.colorbar(im, cax=cbaxes)
     else:
-        cb=plt.colorbar(im)
+        cb=plt.colorbar(im,aspect=20,shrink=0.8)
         cb.ax.tick_params(labelsize=20)
+
     return fig
 
 
