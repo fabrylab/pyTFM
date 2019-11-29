@@ -137,8 +137,8 @@ This will correct the drift for all frames using image registration. All three i
 ### Performing an anlysis
 
 In the top right you can tick which part of analysis you want to run. The raw output from these analysis, such as the deformation field, is stored as an array in the same folder. That way it can be accessed later by other analysis steps. Deformation and traction fields will also be plotted and added to your database in a new layer. Depending on the analysis mode "FEM analysis" or the "contractillity analysis" will also produce an image and added it to the clickpoints database. You can view the images by simply changing layers in your current frame in clickpoints.
-During the analysis several measures (area of cells, contractile energy and so on) are calculated. They are all stored in an text file called out.txt.
-The field "apply to" allows you to run the analysis on just the current frame or all frames at once. Note that the output file is only generated if you analyze all frames. If another output file exists already, it will be overwritten.
+During the analysis several measures (area of cells, contractile energy and so on) are calculated. They are all stored in an text file called out.txt. If there is already an out.txt file from aprevious analysis, the new file will be named out0.txt, out1.txt and so on.
+The field "apply to" allows you to run the analysis on just the current frame or all frames at once.
 To start your analysis press the start button on the top left.
 
 ![Analysis plot](images_instructions/main_window.png?raw=true "Optional Title")
