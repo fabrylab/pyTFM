@@ -168,4 +168,5 @@ t_test_dict=t_test(values_dict1,values_dict2,all_types)
 types=["average normal stress per contractile energy","contractillity per contractile energy","avarage line stress per contractile energy"]
 
 ylabels=[ty+"\n"+units[ty] for ty in types]
-fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
+fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels,low_ylim=0)
+fig.savefig(os.path.join(folder_plots,"some_normailzations.png"))
