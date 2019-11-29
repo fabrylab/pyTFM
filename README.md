@@ -75,11 +75,10 @@ If you have opened a new database you first need to tell the addon where it can 
 
 ![Analysis plot](images_instructions/file_selection.png?raw=true "Optional Title")
 
-In this window you can tell the addon which folders it should search for images before and after bead removal and images of your cells. On the left you can enter a pattern that it used to further identify type of the images in the folders you have selected.
-By using these patterns you can have all your images in the same folder and still correctly sort them in the data base. The patterns you have to enter in the fields are regular expressions. That means for the default settings above: For example Images of the beads after cell removal need to contain 1-4 numbers followed by "after". The images for the beads after cell removal need to contain 1-4 numbers followed by "before" and so on. 
-You also need to tell the addon where it can identify the frame of the image. With "^(d{1,4})" it uses up to 4 numbers at the beginning of the filename.
+In this window (left side), you can tell the addon which folders it should go through in order to search for images that are taken before and after cell removal.  On the right, you can enter a regular expression pattern to identify specific images in the folders you have selected, for example flurescent images of the beads, or bright field images of the cells. For example (see the screen snapshot above), images of the beads after cell removal need to contain a number with 1-4 digists, followed by the word "after". The images for the beads after cell removal also need to contain a number with 1-4 digists, followed by the word "before", and so on. 
+You also need to tell the addon where in the filename it can find the frame number of the image. For example, "^(d{1,4})" means the frame number is at the very beginning of the file name, and it contains between 1-4 digits. 
 
-Here are some other common things you migth enter in these fields:
+Here are some other common regular expressions you migth enter in these fields:
 "after"
 
 | search pattern  | meaning |
