@@ -614,9 +614,7 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,**kwa
     E_nodes, S_nodes = pos.strain_nodes(nodes, elements, mats, UC)  # stresses and strains
     stress_tensor = calculate_stress_tensor(S_nodes, nodes, dims=mask_area.shape)  # assembling the stress tensor
 
-    plot_fields(nodes, fields=[S_nodes[:, 0], S_nodes[:, 1], S_nodes[:, 2]], dims=mask_area.shape,
-                titles=["x_stress", "y_stress", "xy_stress"], cbar_str="stress in N/pixel", origin="upper",
-                mask=mask_area)  # ,mask_overlay=mask_int)
+
     return  UG_sol,stress_tensor
 
 
@@ -749,12 +747,12 @@ if __name__=="__main__":
     parameter_dict["overlapp"]=19
     parameter_dict["FEM_mode"] = "colony"
     default_fig_parameters["cmap"]="jet"
-    default_fig_parameters["vmax"] = 3000
+    #default_fig_parameters["vmax"] = 3000
     default_fig_parameters["filter_factor"]=1.5
     default_fig_parameters["scale_ratio"] = 0.15
-    #default_fig_parameters["cbar_style"] = "outside"
+    default_fig_parameters["cbar_style"] = "outside"
     #apply_to_frames(db, parameter_dict, deformation, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="12", db_info=db_info)
+    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12", db_info=db_info)
     #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
 
     #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
