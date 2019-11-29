@@ -78,10 +78,11 @@ default_fig_parameters={
     "cm_cmap":{"FEM_borders":cm.jet}, # color map for plotting the cell border stresses. Needs a color maps object.
     "border_arrow_filter":{"FEM":1}, # plot only every n'th arrow for on the cell border stresses image
     "cbar_style":"clickpoints", # if "clickpoints" the color bar is plottetd inside of the figure
-    #"filter":[0,4],
-    #"figsize":(10,10),
+    "filter_factor": 1, # this factor defines how many arrows are shown in deformation and traction images.
+    # low number results in  many arrows, high number results in few arrows
     "file_names":{"deformation":"deformation.png","traction":"traction.png"   # filenames under wich plots are saved
         ,"FEM_borders":"border_stress_img.png","stress_map":"avg_normal.png","energy_points":"energy_distribution.png"}
+
 }
 
 
@@ -89,7 +90,7 @@ default_fig_parameters={
 def set_fig_parameters(shape, fig_shape,dpi, default_fig_parameters,figtype):
     fig_parameters = {
         # filtering: 1.minimal length of arrow, 2. draw only every n'th arrow (in x and y direction)
-        "filter": [0, int(np.ceil(shape[0] / 50))],
+        "filter": [0, int(int(np.ceil(shape[0] / 50))*default_fig_parameters["filter_factor"])],
         # figsize, so that saving the figure with dpi=dpi, gives an image of the shape fig_shape[0]
         # used to match the other images in the database
         "figsize": (fig_shape[1] / dpi, fig_shape[0] / dpi),
