@@ -129,7 +129,7 @@ setup_database_for_tfm(folder,"database.cdb",key1=key1,key2=key2,key3=key3,frame
 Slight movements of the microscopes field of view while removing cells will reuslt in non-zero drift in the deformation field.
 You can use this addon to correct for any shift between the images of the beads before and after the removal of cells. Once you have set up the databse in the "select file" menue, just press the correct drift button below it:
 
-![Analysis plot](images_instructions/correct_drift.png?raw=true "Optional Title")
+![Analysis plot](images_instructions/drift_correction.png?raw=true "Optional Title")
 
 This will correct the drift for all frames using image registration. All three images of a frame will be cut to a common field of view. This will permanetly change your image files. Note that this function can not correct for roations.
 
