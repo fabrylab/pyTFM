@@ -82,8 +82,11 @@ default_fig_parameters={
     # low number results in  many arrows, high number results in few arrows
     "file_names":{"deformation":"deformation.png","traction":"traction.png"   # filenames under wich plots are saved
         ,"FEM_borders":"border_stress_img.png","stress_map":"avg_normal.png","energy_points":"energy_distribution.png"},
-    "background_color":"cmap_0"# set a color for background values. "cmap_0" fill read the zero color of the colormap. "white" would make the background white...
+    "background_color":"cmap_0",# set a color for background values. "cmap_0" fill read the zero color of the colormap. "white" would make the background white...
     # this doesn't effect images of deformation and traction
+    "cbar_tick_label_size":15, # size of the tick labels on the color bar
+    "cbar_axes_fraction":0.2 #fraction of the axes in horrizontal direction, that the colorbar takes up, when colorbar is plotted outside
+    # of the graph
 }
 
 

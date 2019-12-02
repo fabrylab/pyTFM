@@ -10,6 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind as scipy_ttest_ind
 import warnings
+from scipy.ndimage import binary_erosion
+
+
 plt.rcParams["axes.edgecolor" ]="#696969"
 plt.rcParams["axes.labelcolor" ]="#696969"
 plt.rcParams["xtick.color" ]="#696969"
@@ -373,6 +376,53 @@ def compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,f
     plt.legend()  # adding a legend
     plt.tight_layout()
     return fig
+
+
+def edge_erosion(stress_tensor,n=7):
+    '''
+    returns stress tensor with nans replacing n pixels at the cell edge
+    :param stress_tensor:
+    :param n: ignoring n pixels form the edge of the cell area
+    :return:
+    '''
+    cell_area=stress_tensor[:,:,0,0]!=0
+    cell_area = binary_erosion(cell_area, iterations=n)
+    stress_tensor[~cell_area]=np.nan
+    return stress_tensor
+
+
+def cv_folder(folder,exclude,n=6):
+    '''
+    reads stress tensors from a folder and calculates the coefficient of variation of the mean normal stress. frames listed
+    in exclude will be excluded.
+    :param folder: folder with the stress tensors
+    :param n: ignore n pixels form the colony edge for the calculation
+    :param exclude:  list of frames. Must be the exact string at the begin of the stress tensor filename. E.g ["05","12"]
+
+    :return
+    '''
+    files = [os.path.join(folder, f) for f in os.listdir(folder) if "stress_tensor.npy" in f]
+    cvs=[]
+    for f in files:
+        if not any([os.path.split(f)[1].startswith(e) for e in exclude]): # checking if frame is in exclude list
+            stress_tensor = np.load(f)
+            stress_tensor=edge_erosion(stress_tensor, n=n) # erosion of the edges
+            mean_normal_stress = (stress_tensor[:, :, 0, 0] + stress_tensor[:, :, 1, 1]) / 2 # mean normal stress
+            cvs.append(np.nanstd(mean_normal_stress)/np.nanmean(mean_normal_stress)) # standard deviation of a single colony
+    return np.array(cvs)
+
+
+def add_mean_normal_stress_cv(values_dict1,exclude,folder,n=6):
+    '''
+    adds the coefficeint of variation to the results dictionary
+    :param values_dict1: dictionary, where to which the values are added
+    :param folder: folder of the output. This Folder needs to contain the stress tensor files
+    :param n: ignore n pixels form the colony edge for the calculation
+    :param exclude:  list of frames. Must be the exact string at the begin of the stress tensor filename. E.g ["05","12"]
+    :return:
+    '''
+    values_dict1["coefficient of variation mean normal stress"]=cv_folder(folder,exclude,n=n)
+
 
 
 def full_standard_analysis(res_file1, res_file2, label1, label2, out_folder,units):
