@@ -23,7 +23,7 @@ createFolder(folder_plots) # creating the folder if it doesn't already exist
 # reading the first output file
 # list of frames to be excluded. values from these frames are not read in. We don't exclude anything for the wildtype,
 # but two frames in the ko, due to issues with imaging the beads.
-exclude=[]
+exclude1=[]
 # path to the out.txt text file
 file1="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/WTshift/out2.txt"
 parameter_dict1,res_dict1=read_output_file(file1) # reading the file and splitting into parameters and results
@@ -31,14 +31,14 @@ parameter_dict1,res_dict1=read_output_file(file1) # reading the file and splitti
 # this also returns the number of frames (n_frames) and a list of the label of frame (frame_list). The frame labels are
 # ultimately derived from the number at the beginning of the image file names in your database.
 # n_frames is the same for all quantities
-n_frames1,values_dict1, frame_list1=prepare_values(res_dict1,exclude)
+n_frames1,values_dict1, frame_list1=prepare_values(res_dict1,exclude1)
 
 # second file
-exclude=["01","10"]  # list of frames to be excluded, thes
+exclude2=["01","10"]  # list of frames to be excluded, thes
 # path to the out.txt text file
 file2="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/KOshift/out3.txt"
 parameter_dict2,res_dict2=read_output_file(file2)# reading the fie and splitting into parameters and results
-n_frames2,values_dict2, frame_list2=prepare_values(res_dict2,exclude) # pooling all frames
+n_frames2,values_dict2, frame_list2=prepare_values(res_dict2,exclude2) # pooling all frames
 
 
 ## normalizing the quantities by the area of the cell colony
@@ -55,6 +55,14 @@ units = add_to_units(units, add_name=" per area", add_unit="/m2",exclude=["area"
 # all suitable values are devided by values_dict[norm] and get a new name by adding add_name.
 values_dict1=normalize_values(values_dict1,norm="area of colony",add_name=" per area",exclude=["area", "cells"]) # calculating measures per area
 values_dict2=normalize_values(values_dict2,norm="area of colony",add_name=" per area",exclude=["area", "cells"])# calculating measures per area
+
+
+
+# adding coefficeint of variation
+folder1=os.path.split(file1)[0]
+folder2=os.path.split(file2)[0]
+add_mean_normal_stress_cv(values_dict1,exclude1,folder1,n=6)
+add_mean_normal_stress_cv(values_dict2,exclude2,folder2,n=6)
 
 
 ## performing statistical analysis
@@ -114,7 +122,7 @@ fig.savefig(os.path.join(folder_plots,"stress_measures_at_cell_borders.png"))
 # contractillity and contractile energy
 types=['contractillity on colony per area','contractile energy on colony per area']
 ylabels=[ty+"\n"+units[ty] for ty in types]
-fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
+fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels,plot_legend=False)
 fig.savefig(os.path.join(folder_plots,"contractility_contractile_energy.png"))
 
 # only the colony area
@@ -122,6 +130,20 @@ types=['area of colony']
 ylabels=[ty+"\n"+units[ty] for ty in types]
 fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
 fig.savefig(os.path.join(folder_plots,"cell area.png"))
+
+
+# coefficeint of variation
+types=["coefficient of variation mean normal stress"]
+ylabels=[ty+"\n"+units[ty] for ty in types]
+fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels,plot_legend=False)
+fig.savefig(os.path.join(folder_plots,"cv.png"))
+
+# plotting the coefficeint of variation of mean normal stress: this is a measure for stress fluctions on the
+# whole cell colony area, including both areas inside and between cells
+
+
+
+
 
 
 

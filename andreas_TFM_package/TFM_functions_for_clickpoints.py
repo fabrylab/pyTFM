@@ -750,9 +750,11 @@ if __name__=="__main__":
     default_fig_parameters["scale_ratio"] = 0.15
     default_fig_parameters["cbar_style"] = "outside"
     default_fig_parameters["background_color"]="white"
-
+    default_fig_parameters["cbar_tick_label_size"] = 35
+    default_fig_parameters["cbar_axes_fraction"] = 0.25
     #apply_to_frames(db, parameter_dict, deformation, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
+    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12", db_info=db_info)
+    #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="12", db_info=db_info)
     #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
 
     #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")

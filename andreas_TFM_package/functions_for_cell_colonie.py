@@ -20,7 +20,7 @@ from scipy.sparse.csr import csr_matrix
 from scipy.sparse.linalg import spsolve,lsqr
 import os
 from collections import defaultdict
-
+from scipy.ndimage import binary_erosion
 
 
 def make_discrete_colorbar():
@@ -98,7 +98,7 @@ def plot_line_stresses(mask,coords,n_stress,shear_stress):
 
 def plot_continous_boundary_stresses(shape,edge_lines,lines_interpol,min_v,max_v,mask_boundaries=None,plot_t_vecs=False,plot_n_arrows=False,figsize=(10,7),
                                      scale_ratio=0.2,border_arrow_filter=1,cbar_str="line stress in N/µm",vmin=None,vmax=None,
-                                    cbar_width="2%",cbar_height="50%",background_color="white",cbar_borderpad=2.5,linewidth=4,cmap="jet",cbar_style="clickpoints",**kwargs):
+                                    cbar_width="2%",cbar_height="50%",cbar_axes_fraction=0.2,cbar_tick_label_size=20,background_color="white",cbar_borderpad=2.5,linewidth=4,cmap="jet",cbar_style="clickpoints",**kwargs):
 
 
     '''
@@ -185,19 +185,20 @@ def plot_continous_boundary_stresses(shape,edge_lines,lines_interpol,min_v,max_v
     if cbar_style == "clickpoints":
         cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad)
         cbaxes.set_title(cbar_str, color="white")
-        cbaxes.tick_params(colors="white")
+        cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
         cb1 = matplotlib.colorbar.ColorbarBase(cbaxes, cmap=matplotlib.cm.get_cmap(cmap),
                                                # overrides previours colorbar
                                                norm=norm,
                                                orientation='vertical')
     else:
-        cb0=plt.colorbar(im, aspect=20, shrink=0.8) # just exploint the axis generaton by a colorbar
+        cb0=plt.colorbar(im, aspect=20, shrink=0.8,fraction=cbar_axes_fraction) # just exploiting the axis generation by a plt.colorbar
         cb0.outline.set_visible(False)
+        cb0.ax.tick_params(labelsize=cbar_tick_label_size)
         cb1 = matplotlib.colorbar.ColorbarBase(cb0.ax, cmap=matplotlib.cm.get_cmap(cmap),
                                                # overrides previours colorbar
                                                norm=norm,
                                                orientation='vertical')
-        cb1.ax.tick_params(labelsize=20)
+        cb1.ax.tick_params(labelsize=cbar_tick_label_size)
         cb1.ax.set_title(cbar_str, color="black")
     return fig
 
@@ -389,7 +390,7 @@ def show_quiver(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headlength=3,widt
     return fig
 
 def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,figsize=(6.4, 4.8),cbar_str=""
-                            ,cmap="rainbow",vmin=None,vmax=None,background_color="cmap_0",scale=None,cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,cbar_style="clickpoints",**kwargs):
+                            ,cmap="rainbow",vmin=None,vmax=None,cbar_axes_fraction=0.2,cbar_tick_label_size=15,background_color="cmap_0",scale=None,cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,cbar_style="clickpoints",**kwargs):
 
 
 
@@ -418,18 +419,53 @@ def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headl
     if cbar_style=="clickpoints":
         cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5,borderpad=cbar_borderpad)
         cbaxes.set_title(cbar_str,color="white")
-        cbaxes.tick_params(colors="white")
+        cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
         plt.colorbar(im, cax=cbaxes)
     else:
-        cb=plt.colorbar(im,aspect=20,shrink=0.8)
-        cb.ax.tick_params(labelsize=20)
+        cb=plt.colorbar(im,aspect=20,shrink=0.8,fraction=cbar_axes_fraction)
+        cb.ax.tick_params(labelsize=cbar_tick_label_size)
 
     return fig
+
+def show_edgeline(mask, ax, color="#696969", alpha=0.5 , n=6,plot_inner_line=False):
+    '''
+    colors a region close to the edge of mask.
+    :param values: boolean mask
+    :param ax: matplotlib axis object
+    :param color: color of the edge coloring
+    :param alpha: imshow alpha
+    :param n: pixels distance from the ask edge
+    :return:
+    '''
+    colony_area = mask != 0
+    edge_area = np.logical_and(colony_area, ~binary_erosion(colony_area, iterations=n))
+    edge_show = np.zeros(edge_area.shape)
+    edge_show.fill(np.nan)
+    edge_show[edge_area] = 1
+
+
+
+    cmap_custom1 = matplotlib.colors.ListedColormap([color for i in range(3)])
+    bounds = [0, 1, 2]
+    norm = matplotlib.colors.BoundaryNorm(bounds, cmap_custom1.N)
+    ax.imshow(edge_show, cmap=cmap_custom1, norm=norm, alpha=alpha)
+
+    if plot_inner_line:
+        edge_line_inner=np.logical_and(~binary_erosion(colony_area, iterations=n), binary_erosion(colony_area, iterations=n-1))
+        edge_inner_show = np.zeros(edge_line_inner.shape)
+        edge_inner_show.fill(np.nan)
+        edge_inner_show[edge_line_inner] = 1
+
+        cmap_custom2 = matplotlib.colors.ListedColormap(["black" for i in range(3)])
+        bounds = [0, 1, 2]
+        norm = matplotlib.colors.BoundaryNorm(bounds, cmap_custom2.N)
+        ax.imshow(edge_inner_show, cmap=cmap_custom2, norm=norm)
 
 
 
 def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str=""
-                            ,cmap="rainbow",vmin=None,vmax=None,background_color = "cmap_0",cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,cbar_style="clickpoints",**kwargs):
+                            ,cmap="rainbow",vmin=None,vmax=None,background_color = "cmap_0",cbar_width="2%",cbar_height="50%",
+                         cbar_borderpad=2.5,cbar_tick_label_size=15,cbar_axes_fraction=0.2,cbar_style="clickpoints",**kwargs):
 
     values=values.astype("float64")
     dims=values.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
@@ -457,11 +493,16 @@ def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str=""
     if cbar_style == "clickpoints":
         cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad)
         cbaxes.set_title(cbar_str, color="white")
-        cbaxes.tick_params(colors="white")
+        cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
         plt.colorbar(im, cax=cbaxes)
     else:
-        cb = plt.colorbar(im, aspect=20, shrink=0.8)
-        cb.ax.tick_params(labelsize=20)
+        cb = plt.colorbar(im, aspect=20, shrink=0.8,fraction=cbar_axes_fraction)
+        cb.ax.tick_params(labelsize=cbar_tick_label_size)
+
+    # showing the border edge
+    #mask = values != 0
+    #show_edgeline(mask, ax, color="#696969", alpha=0.7, n=6)
+
     return fig
 
 
