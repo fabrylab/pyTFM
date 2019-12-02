@@ -10,6 +10,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind as scipy_ttest_ind
 import warnings
+plt.rcParams["axes.edgecolor" ]="#696969"
+plt.rcParams["axes.labelcolor" ]="#696969"
+plt.rcParams["xtick.color" ]="#696969"
+plt.rcParams["ytick.color" ]="#696969"
 
 def read_output_file(file_path):
     """
@@ -191,7 +195,7 @@ def split_name(name):
     return name_return
 
 
-def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], types=[],low_ylim=0):
+def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], types=[],low_ylim=0,plot_legend=True):
     """
     Comparing a list of quantities from two experiments by plotting boxplots and optionally adding statistical
     significance stars. The list of quantities to display is given in "types". The results of the experiments
@@ -267,6 +271,7 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
         ax.set_xticklabels([name_refined], rotation=60, horizontalalignment="center", multialignment="center")
         # show numbers on y axis in scientific notation if they are outside of 10**3 to 10**-3
         ax.ticklabel_format(axis='y', style="sci", scilimits=(-3, 3))
+        ax.tick_params(axis="y", labelsize=20)
 
         # display statistical significance if t_test_dict was provided
         if isinstance(t_test_dict, dict):
@@ -296,7 +301,8 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
     plt.plot(0, 0, color="C2", label=lables[1])
     if len (types)==1:
         plt.xlim((0,2)) # work around to get a nicer legend position if only onw type is plotted
-    plt.legend(loc="upper right")  # fixing legend to upper right corner
+    if plot_legend:
+        plt.legend(loc="upper right")  # fixing legend to upper right corner
     plt.tight_layout()  # improving the general plot layout
     return fig
 
@@ -352,9 +358,9 @@ def compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,f
         return
 
 
-    plt.plot(values_dict1[types[0]], values_dict1[types[1]], "o", color="C1", label=lables[0])
+    plt.plot(values_dict1[types[0]], values_dict1[types[1]], "o", color="C1", label=lables[0],markersize=10,markeredgewidth=1,markeredgecolor="black")
     # plotting contractillity vs contractile energy in second experiment
-    plt.plot(values_dict2[types[0]], values_dict2[types[1]], "o", color="C2", label=lables[1])
+    plt.plot(values_dict2[types[0]], values_dict2[types[1]], "o", color="C2", label=lables[1],markersize=10,markeredgewidth=1,markeredgecolor="black")
     # optionally labeling the data points with their corresponding string
     if isinstance(frame_list1, list) and isinstance(frame_list2, list):
         for f, v1, v2 in zip(frame_list1, values_dict1[types[0]], values_dict1[types[1]]):
@@ -363,7 +369,9 @@ def compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,f
             plt.text(v1, v2, f, color="C2")
     # show numbers on y axis in scientific notation if they are outside of 10**3 to 10**-3
     plt.gca().ticklabel_format(axis='both', style="sci", scilimits=(-3, 3))
+    plt.gca().tick_params(axis="both",labelsize=20)
     plt.legend()  # adding a legend
+    plt.tight_layout()
     return fig
 
 
