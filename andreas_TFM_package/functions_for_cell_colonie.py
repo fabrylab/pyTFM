@@ -191,19 +191,14 @@ def plot_continous_boundary_stresses(shape,edge_lines,lines_interpol,min_v,max_v
                                                norm=norm,
                                                orientation='vertical')
     else:
-        cbaxes=plt.colorbar(im, aspect=20, shrink=0.8).ax # just exploint the axis generaton by a colorbar
-        for pos in ["right","top","bottom","left"]:
-            cbaxes.spines[pos].set_visible(False)
-        cb1 = matplotlib.colorbar.ColorbarBase(cbaxes, cmap=matplotlib.cm.get_cmap(cmap),
+        cb0=plt.colorbar(im, aspect=20, shrink=0.8) # just exploint the axis generaton by a colorbar
+        cb0.outline.set_visible(False)
+        cb1 = matplotlib.colorbar.ColorbarBase(cb0.ax, cmap=matplotlib.cm.get_cmap(cmap),
                                                # overrides previours colorbar
                                                norm=norm,
                                                orientation='vertical')
         cb1.ax.tick_params(labelsize=20)
-
-
-
-
-
+        cb1.ax.set_title(cbar_str, color="black")
     return fig
 
 

@@ -95,6 +95,9 @@ def find_prefix(n):
     symbol=dicct[exponent]
     return np.round(n_new,2),symbol
 
+
+
+
 def convert_to_int(a):
 
     '''
