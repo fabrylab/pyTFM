@@ -1,4 +1,4 @@
-﻿### function integrating Traktion force microscopy into a clcikpoints database
+### function integrating Traktion force microscopy into a clcikpoints database
 
 from andreas_TFM_package.grid_setup_solids_py import *
 from andreas_TFM_package.functions_for_cell_colonie import *
@@ -105,17 +105,17 @@ def warn_small_FEM_area(mask_area,threshold):
     return warn
 
 
-def check_small_or_empty_mask(mask,frame, mtype,warn_thresh,raise_error):
+def check_small_or_empty_mask(mask,frame, mtype,warn_thresh=None,raise_error=True, add_str_error="",add_str_warn=""):
     # checking if mask is empty
     warn=""
     if np.sum(mask)==0:
         if raise_error:
-            raise Mask_Error("mask empty for mask type %s found in frame %s " % (mtype,str(frame)))
+            raise Mask_Error("mask empty for mask type %s in frame %s" % (mtype,str(frame)) + " " + add_str_error)
     # checking if mask is suspiciously small
     elif isinstance(warn_thresh,(int,float)):
         if np.sum(binary_fill_holes(mask))<warn_thresh:
-            print("mask for %s is very small"%mtype)
-            warn= "selected area is very small"
+            print("mask for %s is very small"%mtype + add_str_error)
+            warn= "selected area is very small" + " " + add_str_error
     return warn
 
 
@@ -246,6 +246,8 @@ def get_db_info_for_analysis(db):
     file_order = get_option_wrapper(db,"file_order",split_dict_str)
     frames_ref_dict = get_option_wrapper(db,"frames_ref_dict",split_dict_str)
     id_frame_dict = get_option_wrapper(db,"id_frame_dict",split_dict_str)
+    cbd_frames_ref_dict = {value:key for key, value in frames_ref_dict.items()} # inverse of frames_ref_dict
+
     layers=[l.name for l in db.getLayers()]
     try:
         path = get_option_wrapper(db,"folder",None)
