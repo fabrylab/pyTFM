@@ -1,14 +1,18 @@
 
 from __future__ import division, print_function
+import andreas_TFM_package
 from andreas_TFM_package.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
 from andreas_TFM_package.parameters_and_strings import tooltips,default_parameters
 from andreas_TFM_package.database_functions import *
+
 #from TFM_functions_for_clickpoints import * local import
 
 #from utilities import  get_group,createFolder
 import os
+import sys
 from functools import partial
 from qtpy import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import pyqtSignal
 import qtawesome as qta
 import clickpoints
 import asyncio
@@ -235,6 +239,8 @@ class Addon(clickpoints.Addon):
 
     def __init__(self, *args, **kwargs):
         clickpoints.Addon.__init__(self, *args, **kwargs)
+
+        #super().__init__(self.db)  # makein this class the parent class?? important for qthread
         try:
             self.folder=self.db.getOption("folder")
         except:
@@ -254,7 +260,7 @@ class Addon(clickpoints.Addon):
 
         """ GUI Widgets"""
         # set the title and layout
-        self.setWindowTitle("TFM")
+        self.setWindowTitle("TFM"+"-"+andreas_TFM_package.__version__)
         self.setWindowIcon(qta.icon("fa.compress"))
         self.setMinimumWidth(400)
         self.setMinimumHeight(200)
@@ -363,9 +369,20 @@ class Addon(clickpoints.Addon):
         self.parameters_changed() # initialize parameters dict
 
 
-    def select_images(self):
+
+
+
+
+    def select_images(self): # for what do i need this??
         self._new_window = NewWindow(self)
         self._new_window.show()
+
+    def reload_all(self):  # reloading entire display ## could be optimized
+        sys.stdout = open(os.devnull, 'w')
+        for frame in self.db_info["cbd_frames_ref_dict"].keys():
+            for layer in self.db_info["layers"]:
+                self.cp.reloadImage(frame_index=frame,layer_id=self.db.getLayer(layer).id)
+        sys.stdout = sys.__stdout__
 
     # reading paramteres and updating the dictionary
     def parameters_changed(self):
@@ -377,22 +394,22 @@ class Addon(clickpoints.Addon):
     # decorator functions to handle diffrent outputs and writing to text file
     def calculate_general_properties(self,frames):
         apply_to_frames(self.db, self.parameter_dict, analysis_function=general_properties, res_dict=self.res_dict,
-                        frames=frames, db_info=self.db_info)  # calculation of colony area, number of cells in colony
+                        frames=frames, db_info=self.db_info,cp=self.cp)  # calculation of colony area, number of cells in colony
     def calculate_deformation(self,frames):
             apply_to_frames(self.db, self.parameter_dict,analysis_function=deformation,res_dict=self.res_dict,
-                                frames=frames,db_info=self.db_info)  # calculation of deformations
+                                frames=frames,db_info=self.db_info,cp=self.cp)  # calculation of deformations
 
     def calculate_traction(self,frames):
             apply_to_frames(self.db, self.parameter_dict,analysis_function=traction_force,res_dict=self.res_dict,
-                                frames=frames,db_info=self.db_info)  # calculation of traction forces
+                                frames=frames,db_info=self.db_info,cp=self.cp)  # calculation of traction forces
 
     def calculate_FEM_analysis(self,frames):
             apply_to_frames(self.db, self.parameter_dict, analysis_function=FEM_full_analysis,res_dict=self.res_dict,
-                            frames=frames,db_info=self.db_info)  # calculation of various stress measures
+                            frames=frames,db_info=self.db_info,cp=self.cp)  # calculation of various stress measures
 
     def calculate_contractile_measures(self,frames):
             apply_to_frames(self.db, self.parameter_dict,analysis_function=get_contractillity_contractile_energy,
-                 res_dict=self.res_dict,frames=frames,db_info=self.db_info)  # calculation of contractility and contractile energy
+                 res_dict=self.res_dict,frames=frames,db_info=self.db_info,cp=self.cp)  # calculation of contractility and contractile energy
 
     def drift_correction(self):
         apply_to_frames(self.db, self.parameter_dict, analysis_function=simple_shift_correction,
@@ -429,26 +446,25 @@ class Addon(clickpoints.Addon):
                         res_dict=self.res_dict, frames=self.all_frames, db_info=self.db_info)
         self.cp.reloadMask()
         self.cp.save()
-
-    def start(self): # perform all checked calculations
-        cdb_frame = self.cp.getCurrentFrame()+1
+    def start(self):
+        cdb_frame = self.cp.getCurrentFrame()
+        print(cdb_frame)
         print(self.outfile_path)
-        self.frame = self.db_info["id_frame_dict"][cdb_frame]# current frame (?? why +1 ??)
+        self.frame = self.db_info["cbd_frames_ref_dict"][cdb_frame]
 
-        print("parameters:\n",self.parameter_dict)
-        self.mode=self.analysis_mode.currentText() # only current frame or all frames
-        if self.mode == "current frame": # only current frame
-            frames=self.frame
+        print("parameters:\n", self.parameter_dict)
+        self.mode = self.analysis_mode.currentText()  # only current frame or all frames
+        if self.mode == "current frame":  # only current frame
+            frames = self.frame
             self.outfile_path = write_output_file(self.parameter_dict, "parameters", self.outfile_path, new_file=True)
             print("analyzing current frame = ", frames)
 
-        if self.mode == "all frames": # all frames
-            frames=self.all_frames
+        if self.mode == "all frames":  # all frames
+            frames = self.all_frames
             print("analyzing frames = ", frames)
-            self.outfile_path=write_output_file(self.parameter_dict, "parameters", self.outfile_path,new_file=True)
+            self.outfile_path = write_output_file(self.parameter_dict, "parameters", self.outfile_path, new_file=True)
 
-
-        if self.check_box_def.isChecked():     
+        if self.check_box_def.isChecked():
             self.calculate_deformation(frames)
         if self.check_box_tra.isChecked():
             self.calculate_traction(frames)
@@ -458,23 +474,31 @@ class Addon(clickpoints.Addon):
         if self.check_box_contract.isChecked():
             self.calculate_contractile_measures(frames)
 
-
         self.outfile_path = write_output_file(self.res_dict, "results", self.outfile_path,
-                                                  new_file=False)  # writing to output file
-
-        print("calculation complete")
+                                              new_file=False)  # writing to output file
 
 
-    def start_thread(self): ## run in a sepearte thread to keep clickpoints gui responsive (ask richie about this)
-        x = threading.Thread(target=self.start)
-        x.start()
+
+    def start_thread(self): ## run in a sepearte thread to keep clickpoints gui responsive  # now using QThread and stuff
+        self.thread=Worker(self)
+        self.thread.start() # starting thread
+        self.thread.finished.connect(self.reload_all) # connecting function on thread finish
+
+
         #x.join()
     def buttonPressedEvent(self):
         # show the addon window when the button in ClickPoints is pressed
         self.show()
+
     async def run(self): # disable running in other thread other wise "figsize" is somehow overloaded
         pass
 
+class Worker(QtCore.QThread):
 
+    output = pyqtSignal()
 
-
+    def __init__(self,main ,parent = None):
+        QtCore.QThread.__init__(self, parent)
+        self.main=main
+    def run(self):
+        self.main.start()
