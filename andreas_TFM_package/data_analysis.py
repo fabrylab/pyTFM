@@ -4,6 +4,7 @@
 from andreas_TFM_package.TFM_functions_for_clickpoints import units
 from andreas_TFM_package.utilities_TFM import *
 from collections import defaultdict
+from functools import partial
 import numpy as np
 # import matplotlib
 # matplotlib.use("Agg")  # uncomment if you want to avoid plots showing up while you are working
@@ -91,7 +92,7 @@ def normalize_values(values_dict, norm, add_name, exclude=["area","cells"]):
     :return:
     """
 
-    new_values=defaultdict(str)
+    new_values=defaultdict(partial(np.ndarray,0))
     for key, value in values_dict.items():
         new_values[key]=value # copying to new dict
         if not key.startswith("std ") and not any([e in key for e in exclude]) and not key==norm:
@@ -99,21 +100,25 @@ def normalize_values(values_dict, norm, add_name, exclude=["area","cells"]):
 
     return new_values
 
-
 def filter_nans(values_dict1,values_dict2,name):
     '''
-    filters nans and warns
+    filters nans and warns if nans encountered. Also checks if either of the values is empty.
     :return:
     '''
     v1 = values_dict1[name]
     v2 = values_dict2[name]
-    # warning if nans are encountered. This should usually not be the case.
+    # warning if and stoping if array is empty
+    if v1.size==0 or v2.size==0:
+        warnings.warn("No values in %s. Check output file or calculations." % name)
+        return v1,v2, True
+    # filtering out nans
+    # warning if nans are encountered. This should usually not be the case
     if np.isnan(np.concatenate([v1, v2])).any():
         warnings.warn("nans encounterd in %s. There could be something wrong with the calcualtion." % name)
     # filtering out nans
     v1 = v1[~np.isnan(v1)]
     v2 = v2[~np.isnan(v2)]
-    return v1,v2
+    return v1,v2,False
 
 def add_to_units(units_dict, add_name, add_unit, exclude=["area","cells"]):
     """
@@ -153,7 +158,7 @@ def t_test(values_dict1, values_dict2, types):
     t_test_dict = {}  # output dictionary
     for name in types:  # iterating through the names of all quantities that you want to compare
         if check_types(values_dict1,values_dict2,name):
-            v1, v2 = filter_nans(values_dict1, values_dict2, name)
+            v1, v2, empty = filter_nans(values_dict1, values_dict2, name)
             t_test_dict[name] = scipy_ttest_ind(v1, v2)  # performing a two-sided t-test
     return t_test_dict
 
@@ -198,7 +203,7 @@ def split_name(name):
     return name_return
 
 
-def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], types=[],low_ylim=0,plot_legend=True):
+def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], types=[],low_ylim=None,plot_legend=True):
     """
     Comparing a list of quantities from two experiments by plotting boxplots and optionally adding statistical
     significance stars. The list of quantities to display is given in "types". The results of the experiments
@@ -254,6 +259,8 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
     fig = box_plots(values_dict1, values_dict2, lables, t_test_dict=t_test_dict, types=types, ylabels=ylabels)
     """
 
+
+
     fig, axs = plt.subplots(1, len(types))  # creating subplot with one row and one column per quantity in types
     fig.set_figwidth(len(types) * 3)  # roughly choosing the correct width for the figure
     axs = make_iterable(axs)  # returns [axs] if axs is a single object and not a list. This allows iteration.
@@ -261,7 +268,12 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
     bps = []  # list of boxplot objects. We need this to adjust the color of the boxes.
     # generating boxplots for each quantity in types
     for i, (name, ax, label) in enumerate(zip(types, axs, ylabels)):
-        v1, v2 = filter_nans(values_dict1, values_dict2, name)
+        v1, v2, empty = filter_nans(values_dict1, values_dict2, name)
+        maxv = np.max(np.hstack([v1, v2]))  # maximum value from both experiments
+        minv = np.min(np.hstack([v1, v2]))  # minimum value from both experiments
+        v_range = maxv - minv  # range of values from both experiments
+        if empty:
+            continue
         bp1 = ax.boxplot(v1, positions=[0.5], patch_artist=True)  # boxlpot of first experiment
         bp2 = ax.boxplot(v2, positions=[0.8], patch_artist=True)  # boxlpot of second experiment
         bps.append([bp1, bp2])  # saving boxplot
@@ -280,9 +292,6 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
         if isinstance(t_test_dict, dict):
             # plotting a line connecting both boxplots
             # finding suitable y values for the edges of this lines
-            maxv = np.max(np.hstack([v1, v2]))  # maximum value from both experiments
-            minv = np.min(np.hstack([v1, v2]))  # minimum value from both experiments
-            v_range = maxv - minv  # range of values from both experiments
             # drawing the lines
             ax.plot([0.5, 0.5, 0.8, 0.8],
                     [maxv + v_range * 0.05, maxv + v_range * 0.1, maxv + v_range * 0.1, maxv + v_range * 0.05],
@@ -293,7 +302,8 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
             stars = set_significance_stars(t_test_dict[name].pvalue)
             # drawing the stars centrally slightly above the line
             ax.text(m_pos, maxv + v_range * 0.15, stars, verticalalignment='center', horizontalalignment='center')
-        ax.set_ylim(bottom=low_ylim)
+        low_ylim1=minv if low_ylim==None else low_ylim
+        ax.set_ylim(bottom=low_ylim1)
     # labeling the two different experiments
     # changing the color of the boxes in the boxplots according their experiment
     for bp1, bp2 in bps:
