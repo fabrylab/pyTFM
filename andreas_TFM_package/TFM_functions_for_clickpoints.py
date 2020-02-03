@@ -1,4 +1,4 @@
-### function integrating Traktion force microscopy into a clcikpoints database
+﻿### function integrating Traktion force microscopy into a clcikpoints database
 
 from andreas_TFM_package.grid_setup_solids_py import *
 from andreas_TFM_package.functions_for_cell_colonie import *
@@ -285,14 +285,14 @@ def cut_mask_from_edge(mask,cut_factor):
 
     sum_mask2 = np.sum(mask)
     if sum_mask2<sum_mask1:
-        warn="mask was cut becuase close to image edge"
+        warn="mask was cut because close to image edge"
     else:
         warn=""
     return mask, warn
 
 
 
-def add_plot(plot_type, values,plot_function,frame,db_info,default_fig_parameters,parameter_dict,db):
+def add_plot(plot_type, values,plot_function,frame,db_info,default_fig_parameters,parameter_dict,db,cp=None):
     #values: values (args) that are needed as input for the plotting functions
 
     values=make_iterable_args(values) # returns list if input is not a list or other iterable
@@ -310,7 +310,9 @@ def add_plot(plot_type, values,plot_function,frame,db_info,default_fig_parameter
         fig = plot_function(*values, **fig_parameters)
 
         # saving the the plot
+        print("saving to "+os.path.join(db_info["path"], frame + file_name))
         fig.savefig(os.path.join(db_info["path"], frame + file_name), dpi=200)
+
         plt.close(fig)
 
         # adding the plot to the database
@@ -409,7 +411,7 @@ def simple_shift_correction(frame, parameter_dict,res_dict, db,db_info=None,**kw
     a_save.save(im_a_path)
     bf_save.save(im_m_path)
 
-def deformation(frame, parameter_dict,res_dict, db,db_info=None,**kwargs):
+def deformation(frame, parameter_dict,res_dict, db,db_info=None,cp=None,**kwargs):
 
     # deformation for 1 frame
     im1 = db.getImage(id=db_info["file_order"][frame + "images_after"]).data  ## thats very slow though
@@ -425,7 +427,7 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,**kwargs):
     res_dict[frame]["sum deformations"] = np.sum(np.sqrt(u ** 2 + v** 2))
 
     # adding plot of derformation field to the database
-    add_plot("deformation", (u,v),show_quiver_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db)
+    add_plot("deformation", (u,v),show_quiver_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db,cp=cp)
 
     # saving raw files
     np.save(os.path.join(db_info["path"], frame + "u.npy"), u)
@@ -440,7 +442,7 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,**kwargs):
 
 
 
-def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_info=None,
+def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_info=None,cp=None,
                                           **kwargs):
 
     u, v = try_to_load_deformation(db_info["path"], frame, warn=True)
@@ -454,7 +456,7 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
     if isinstance(u, np.ndarray):
         energy_points = contractile_energy_points(u, v, t_x, t_y, parameter_dict["pixelsize"], ps_new)  # contractile energy at any point
         # plotting contractile energy (only happens if enable in default_fig_parameters
-        add_plot("energy_points",energy_points,show_map_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db)
+        add_plot("energy_points",energy_points,show_map_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db,cp=cp)
 
         # iterating though mask that are selected for summation
     for mtype in mtypes:
@@ -465,8 +467,9 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
         # removing some fraction of the mask close to the border
         # interpolation to size of traction force array
         mask_int = interpolation(mask, t_x.shape)
-
         mask_int,warn_edge=cut_mask_from_edge(mask_int,parameter_dict["edge_padding"])
+        check_small_or_empty_mask(mask_int, frame, mtype, warn_thresh=None,
+                                  raise_error=True, add_str_error="after interpolation")  # check if mask is empty after interpolation
         # calculate contractillity only in "colony" mode
         if mtype=="contractillity_colony":
             warn+=" "*(len(warn_edge)>0) +warn_edge
@@ -486,13 +489,17 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
 
 
 
-def traction_force(frame, parameter_dict,res_dict, db, db_info=None,**kwargs):
+def traction_force(frame, parameter_dict,res_dict, db, db_info=None,cp=None,**kwargs):
 
     # trying to laod deformation
     u,v=try_to_load_deformation(db_info["path"], frame, warn=False)
     db_info["defo_shape"] = u.shape
     ps_new = parameter_dict["pixelsize"] * np.mean(  # should be equivalent to "pixelsize_def_image"
-        np.array(u.shape) / np.array(u.shape))  # pixelsize of fem grid in µm
+<<<<<<< Updated upstream
+        np.array(db_info["im_shape"][frame]) / np.array(u.shape))  # pixelsize of fem grid in µm
+=======
+        np.array(db_info["im_shape"][frame]) / np.array(u.shape))
+>>>>>>> Stashed changes
     # using tfm with or without finite thickness correction
     if parameter_dict["TFM_mode"] == "finite_thickness":
         tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=parameter_dict["pixelsize"],
@@ -514,7 +521,7 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,**kwargs):
 
 
     # add a plot of the trackitoon filed to the database
-    add_plot("traction", (tx,ty),show_quiver_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db)
+    add_plot("traction", (tx,ty),show_quiver_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db,cp=cp)
 
     # saving raw files
     np.save(os.path.join(db_info["path"], frame + "tx.npy"), tx)
@@ -526,7 +533,7 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,**kwargs):
     return None, frame
 
 
-def FEM_setup_cell_layer(frame,parameter_dict,db,db_info=None,**kwargs):
+def FEM_grid_setup(frame,parameter_dict,db,db_info=None,**kwargs):
     '''
 
     :param frame:
@@ -536,63 +543,47 @@ def FEM_setup_cell_layer(frame,parameter_dict,db,db_info=None,**kwargs):
     :param kwargs:
     :return:
     '''
+    warn = None
+    borders = None
+
     t_x, t_y = try_to_load_traction(db_info["path"], frame, warn=False)
     db_info["defo_shape"] = t_x.shape
-    ps_new = parameter_dict["pixelsize"] * np.mean(
-        np.array(db_info["im_shape"][frame]) / np.array(t_x.shape))  # pixelsize of fem grid in µm
-
-    # preparing forces/ dont apply any further correction here
-    f_x = t_x * ((ps_new * (10 ** -6)) ** 2)  # point force for each node from tractions
-    f_y = t_y * ((ps_new * (10 ** -6)) ** 2)
-    # use the full field of few for fem grid
-    mask_area = np.ones(t_x.shape).astype(bool)
-    # grid setup
-    nodes, elements, loads, mats = grid_setup(mask_area, -f_x, -f_y, 1, sigma=0.5)  # note the negative signe
-
-    # see if we can find any borders##
-    #mask, warn = load_mask(db, db_info["frames_ref_dict"][frame], raise_error=False, mtype="cell colony",
-    #                              warn_thresh=1500 / (ps_new / parameter_dict["pixelsize"]))
-    #
-    #
-    warn,borders=None,None
-
-    return nodes, elements, loads, mats,mask_area, ps_new, warn, borders
-
-
-def FEM_setup_colony(frame,parameter_dict,db,db_info=None,**kwargs):
-
-    # trying to traction forces, raise error if not found
-    t_x, t_y = try_to_load_traction(db_info["path"], frame, warn=False)
-    db_info["defo_shape"]=t_x.shape
     ps_new = parameter_dict["pixelsize"] * np.mean(
         np.array(db_info["im_shape"][frame]) / np.array(t_x.shape))  # pixelsize of fem grid in µm
 
     # preparing forces
     f_x = t_x * ((ps_new * (10 ** -6)) ** 2)  # point force for each node from tractions
     f_y = t_y * ((ps_new * (10 ** -6)) ** 2)
+    if parameter_dict["FEM_mode"]=="colony":
+        # using mask for grid setup
+        # trying to load cell colony mask, raise error if not found
+        mask, warn = load_mask(db, db_info["frames_ref_dict"][frame],raise_error=True, mtype="membrane",
+                                               warn_thresh=1500 / (ps_new/parameter_dict["pixelsize"]),fill_holes=False)
+        # preparation of mask data
+        mask_area, borders = prepare_mask(mask,t_x.shape, min_cell_size=500) # min_cell_size at least 2 or none
+        warn=warn_small_FEM_area(mask_area,threshold=1000)
 
-    # trying to load cell colony mask, raise error if not found
-    mask, warn = load_mask(db, db_info["frames_ref_dict"][frame],raise_error=True, mtype="membrane",
-                                           warn_thresh=1500 / (ps_new/parameter_dict["pixelsize"]),fill_holes=False)
+       # coorecting force for torque and net force
+        f_x[~mask_area] = np.nan  # setting all values outside of maske area to zero
+        f_y[~mask_area] = np.nan
+        f_x_c1 = f_x - np.nanmean(f_x)  # normalizing traction force to sum up to zero (no displacement)
+        f_y_c1 = f_y - np.nanmean(f_y)
+        f_x_c2, f_y_c2, p = correct_torque(f_x_c1, f_y_c1, mask_area)
+        # get_torque1(f_y,f_x,mask_area)
+        nodes, elements, loads, mats = grid_setup(mask_area, -f_x_c2, -f_y_c2, 1, sigma = parameter_dict["sigma"])  # note the negative signe
 
-    # preparation of mask data
-    mask_area, borders = prepare_mask(mask,t_x.shape, min_cell_size=500) # min_cell_size at least 2 or none
-    warn=warn_small_FEM_area(mask_area,threshold=1000)
+    if parameter_dict["FEM_mode"] == "cell layer":
+        # use the full field of few for fem grid
+        mask_area = np.ones(t_x.shape).astype(bool)
+        # grid setup
+        nodes, elements, loads, mats = grid_setup(mask_area, -f_x, -f_y, 1, sigma = parameter_dict["sigma"])  # note the negative signe
 
-   # coorecting force for torque and net force
-    f_x[~mask_area] = np.nan  # setting all values outside of maske area to zero
-    f_y[~mask_area] = np.nan
-    f_x_c1 = f_x - np.nanmean(f_x)  # normalizing traction force to sum up to zero (no displacement)
-    f_y_c1 = f_y - np.nanmean(f_y)
-    f_x_c2, f_y_c2, p = correct_torque(f_x_c1, f_y_c1, mask_area)
-    # get_torque1(f_y,f_x,mask_area)
 
-    # setup of the grid
-    nodes, elements, loads, mats = grid_setup(mask_area, -f_x_c2, -f_y_c2, 1, sigma=0.5) # note the negative signe
+    return nodes, elements, loads, mats,mask_area, ps_new, warn, borders
 
-    return nodes, elements, loads, mats, mask_area, ps_new, warn, borders
 
-def FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,**kwargs):
+
+def FEM_simulation(nodes, elements, loads, mats, mask_area, system_type, **kwargs):
 
     DME, IBC, neq = ass.DME(nodes, elements)  # boundary conditions asembly??
     print("Number of elements: {}".format(elements.shape[0]))
@@ -603,12 +594,12 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,**kwa
     RHSG = ass.loadasem(loads, IBC, neq)
 
     # System solution with custom conditions
-    if parameter_dict["FEM_mode"]=="colony":
+    if system_type=="colony":
         # solver with constraints to zero translation and zero rotation
         UG_sol, rx = custom_solver(KG, RHSG, mask_area, verbose=False)
 
     # System solution with default solver
-    if parameter_dict["FEM_mode"] == "cell layer":
+    if system_type == "cell layer":
         UG_sol = sol.static_sol(KG, RHSG)  # automatically detect sparce matrix
 
     if not (np.allclose(KG.dot(UG_sol) / KG.max(), RHSG / KG.max())):
@@ -623,7 +614,7 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,**kwa
 
 
 
-def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new,borders=None,**kwargs):
+def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new,borders=None,cp=None,**kwargs):
 
     # analyzing the FEM results with average stresses
     shear=stress_tensor[:,:,0,1] # shear component of the stress tensor
@@ -631,7 +622,7 @@ def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stre
     shear=shear/(ps_new*10**-6)# conversion to N/m
     mean_normal_stress=mean_normal_stress/(ps_new*10**-6)# conversion to N/m
     add_plot("stress_map", mean_normal_stress, show_map_clickpoints, frame, db_info, default_fig_parameters,
-             parameter_dict,db)
+             parameter_dict,db,cp=cp)
 
     if parameter_dict["FEM_mode"]=="cell layer":
         mtypes=[m for m in db_info["mask_types"] if m in parameter_dict["area masks"]]
@@ -648,7 +639,7 @@ def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stre
      #                                                                                dims=mask_area.shape)
     #sigma_max_abs = np.maximum(np.abs(sigma_min), np.abs(sigma_max))  ### highest possible norm of the stress tensor
 
-def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tensor, ps_new, warn, borders=None,
+def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tensor, ps_new, warn, borders=None,cp=None,
                              **kwargs):
 
     # retrieving spline representation of bourders
@@ -661,7 +652,7 @@ def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tens
                                                                               interpol_factor=1)
     # plotting the stress at cell borders
     add_plot("FEM_borders", (borders.mask_area.shape,borders.edge_lines, lines_interpol, min_v, max_v), plot_continous_boundary_stresses, frame,
-             db_info, default_fig_parameters, parameter_dict, db)
+             db_info, default_fig_parameters, parameter_dict, db,cp=cp)
 
     avg_line_stress=mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_vecs")
     avg_cell_force=mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="t_vecs")
@@ -677,36 +668,30 @@ def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tens
     res_dict[frame]["std cell pressure"] = avg_cell_pressure[2]
     res_dict[frame]["std cell shear"] = avg_cell_shear[2]
 
-
-
     return None, frame
 
-def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None, **kwargs):
+def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,cp=None, **kwargs):
     # performing full MSM/finite elements analysis
     #wrapper to flexibly perform FEM analysis
 
-    if parameter_dict["FEM_mode"]=="colony":
-        nodes, elements, loads, mats, mask_area, ps_new, warn, borders = FEM_setup_colony(frame, parameter_dict, db,
-                                                                                          db_info=db_info, **kwargs)
-        UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area,parameter_dict)
-        np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor)
+    nodes, elements, loads, mats, mask_area, ps_new, warn, borders = FEM_grid_setup(frame, parameter_dict, db,
+                                                                                      db_info=db_info, **kwargs)
+    UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict["FEM_mode"], frame=frame)
+    np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor)
 
-        FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new,borders)
-        FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tensor, ps_new, warn, borders=borders,
+    if parameter_dict["FEM_mode"]=="colony":
+        FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new,borders,cp=None)
+        FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tensor, ps_new, warn, borders=borders,cp=None,
                              **kwargs)
 
     if parameter_dict["FEM_mode"]=="cell layer":
-        nodes, elements, loads, mats, mask_area, ps_new, warn, borders = FEM_setup_cell_layer(frame, parameter_dict, db,
-                                                                               db_info=db_info, **kwargs)
-        UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict,frame=frame)
-        np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor)
         #if isinstance(borders,Cells_and_Lines):
         #    FEM_analysis_borders(frame, res_dict, db,db_info, stress_tensor, ps_new, warn, mask_area, borders=borders,
         #                          **kwargs)
-        FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new)
+        FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new,cp=None)
 
 
-def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_info=None,**kwargs):
+def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_info=None,cp=None,**kwargs):
     '''
     wrapper to apply analysis function on all frames
     :param db: clickpoints database
@@ -727,7 +712,7 @@ def apply_to_frames(db, parameter_dict, analysis_function,res_dict,frames=[],db_
     print(calculation_messages[analysis_function.__name__] % str(frames))
     for frame in tqdm(frames,total=len(frames)):
         try:
-            analysis_function(frame, parameter_dict,res_dict, db=db,db_info=db_info,**kwargs)
+            analysis_function(frame, parameter_dict,res_dict, db=db,db_info=db_info,cp=cp,**kwargs)
         except Exception as e:
             if type(e) in (Mask_Error,FileNotFoundError,FindingBorderError,ShapeMismatchError):
                 print(e)
@@ -742,24 +727,35 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/KOshift/database.cdb", "r")
+        "/media/user/GINA1-BK/data_traction_force_microscopy/data_03_02_2020/WT3shift/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict=defaultdict(dict)
     db_info, all_frames = get_db_info_for_analysis(db)
-    parameter_dict["overlapp"]=19
-    parameter_dict["FEM_mode"] = "colony"
-    default_fig_parameters["cmap"]="jet"
-    #default_fig_parameters["vmax"] = 3000
-    default_fig_parameters["filter_factor"]=1.5
-    default_fig_parameters["scale_ratio"] = 0.15
-    default_fig_parameters["cbar_style"] = "outside"
-    default_fig_parameters["background_color"]="white"
-    default_fig_parameters["cbar_tick_label_size"] = 35
-    default_fig_parameters["cbar_axes_fraction"] = 0.25
-    #apply_to_frames(db, parameter_dict, deformation, res_dict, frames="01", db_info=db_info)
-    apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12", db_info=db_info)
-    #apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="12", db_info=db_info)
-    #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
+    parameter_dict["overlapp"]=12
+    parameter_dict["window_size"] = 25
 
-    #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
-    # calculating the deformation field and adding to data base
+
+
+        #parameter_dict["FEM_mode"] = "colony"
+        #default_fig_parameters["cmap"]="jet"
+        #default_fig_parameters["vmax"] = {"traction":500,"FEM_borders":0.03}
+        #default_fig_parameters["filter_factor"]=1.5
+        #default_fig_parameters["scale_ratio"] = 0.15
+        #default_fig_parameters["cbar_style"] = "clickpoints"
+        #default_fig_parameters["background_color"]="white"
+        #default_fig_parameters["plots"]["colony"].append("energy_points")
+
+        #default_fig_parameters["headwidth"] = 3
+        #default_fig_parameters["width"] = 0.003
+        #default_fig_parameters["cbar_tick_label_size"] = 35
+        #default_fig_parameters["cbar_axes_fraction"] = 0.25
+    apply_to_frames(db, parameter_dict, deformation, res_dict, frames="02", db_info=db_info)
+    apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="02", db_info=db_info)
+    apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="02", db_info=db_info)
+    print(res_dict)
+        #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12", db_info=db_info)
+
+        #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames=all_frames, db_info=db_info)
+
+        #write_output_file(res_dict, "results", "/media/user/GINA1-BK/data_traktion_force_microscopy/WT_vs_KO_images_10_09_2019/wt_vs_ko_images_Analyzed/WTshift/out_test.txt")
+        # calculating the deformation field and adding to data base
