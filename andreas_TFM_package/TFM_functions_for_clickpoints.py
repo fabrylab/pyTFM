@@ -495,11 +495,8 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,cp=None,**kw
     u,v=try_to_load_deformation(db_info["path"], frame, warn=False)
     db_info["defo_shape"] = u.shape
     ps_new = parameter_dict["pixelsize"] * np.mean(  # should be equivalent to "pixelsize_def_image"
-<<<<<<< Updated upstream
-        np.array(db_info["im_shape"][frame]) / np.array(u.shape))  # pixelsize of fem grid in µm
-=======
-        np.array(db_info["im_shape"][frame]) / np.array(u.shape))
->>>>>>> Stashed changes
+            np.array(db_info["im_shape"][frame]) / np.array(u.shape))
+
     # using tfm with or without finite thickness correction
     if parameter_dict["TFM_mode"] == "finite_thickness":
         tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=parameter_dict["pixelsize"],
