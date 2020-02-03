@@ -12,6 +12,7 @@ import solidspy.assemutil as ass
 import solidspy.solutil as sol
 from peewee import IntegrityError
 import clickpoints
+from clickpoints.Addon import Command
 import os
 import re
 import warnings
@@ -268,7 +269,8 @@ def get_db_info_for_analysis(db):
                "mask_types":mask_types,
                "layers":layers,
                "unique_frames": unique_frames,
-               "id_frame_dict":id_frame_dict
+               "id_frame_dict":id_frame_dict,
+               "cbd_frames_ref_dict":cbd_frames_ref_dict
                }
     return db_info, unique_frames
 
