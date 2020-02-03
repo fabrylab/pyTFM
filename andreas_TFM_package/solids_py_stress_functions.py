@@ -142,11 +142,11 @@ def interpolation_for_stress_and_normal_vector(lines_splines, lines_points,stres
         n_vecs = normal_vectors_from_splines(u_new,tck)  # new normal_vectors, using the derivative at interpolation points
 
         # traction vectors using interpolation of the stress tensor
-        t_vecs, t_norm = stress_vector_from_tensor_interpolation(p_new, n_vecs, sig_xx_inter, sig_yx_inter,
+        t_vecs, t_norm,t_vecs_n,t_vecs_shear = stress_vector_from_tensor_interpolation(p_new, n_vecs, sig_xx_inter, sig_yx_inter,
                                                                  sig_yy_inter, inter_ranges)
 
-
-        t_vecs, t_norm=t_vecs/(pixel_length*10**-6), t_norm/(pixel_length*10**-6) # conversion to N/m (height not included)
+        # conversion to N/m (height not included)
+        t_vecs, t_norm,t_vecs_n,t_vecs_shear=[x/(pixel_length*10**-6) for x in [t_vecs, t_norm,t_vecs_n,t_vecs_shear]]
 
 
         # udating minimal value to find global minimum eventually
@@ -156,7 +156,9 @@ def interpolation_for_stress_and_normal_vector(lines_splines, lines_points,stres
         lines_interpol[i] = {"points_new": p_new,  # array of new points from interpolation
                              "t_vecs": t_vecs,  # stress vectors at the new points
                              "t_norm": t_norm,  # norm of stress vectors at the new points
-                             "n_vecs": n_vecs}  # normal vectors at the new points
+                             "n_vecs": n_vecs, # normal vectors at the new points
+                             "t_normal":t_vecs_n,# normal component of stress vectors at the new points
+                             "t_shear":t_vecs_shear} # shear component of stress vectors at the new points
 
     return lines_interpol, min_v, max_v
 
@@ -188,9 +190,12 @@ def stress_vector_from_tensor_interpolation(ps,n_vecs,sig_xx_inter,sig_yx_inter,
         t_vec = [sig_xx_inter(u[i][0],u[i][1])*n_vecs[i][0]+sig_yx_inter(u[i][0],u[i][1])*n_vecs[i][1],
                  sig_yx_inter(u[i][0], u[i][1]) * n_vecs[i][0] + sig_yy_inter(u[i][0], u[i][1]) * n_vecs[i][1]]
         t_vecs.append(t_vec)
+
     t_vecs=np.array(t_vecs).squeeze() # removing unused array dimension
     t_norm=np.linalg.norm(t_vecs,axis=1) # calculating norm of the stressvector
-    return t_vecs,t_norm
+    t_vec_n = np.abs(np.sum(t_vecs * n_vecs,axis=1))  # length of the normal component of the line tension
+    t_vec_shear = np.sqrt(t_norm**2 - t_vec_n**2)  # shear component of the line tension
+    return t_vecs,t_norm,t_vec_n,t_vec_shear
 
 def calculate_stress_vector(n_array,stress_tensor):
 
@@ -436,7 +441,14 @@ def mean_stress_vector_norm(lines_interpolation,borders,exclude_colony_edge=True
 
     if norm_level == "points":
         vtype = "t_norm" if vtype == "t_vecs" else vtype  # use the norm of t vectors immediately
-        all_norms = np.hstack([np.abs(sub_dict[vtype]) for sub_dict in lines_interpolation.values()])
+        if vtype=="t_norm":
+            all_norms = np.hstack([np.abs(sub_dict[vtype]) for sub_dict in lines_interpolation.values()])
+        if vtype == "t_vecs":
+            all_norms = np.hstack([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
+        if vtype == "t_normal":
+            all_norms = np.hstack([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
+        if vtype == "t_shear":
+            all_norms = np.hstack([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
 
     if norm_level == "lines":
         if vtype == "t_vecs":
