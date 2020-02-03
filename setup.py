@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 
 from setuptools import setup
+import os
+
+version='0.1' # adding a version file automatically
+file_path=os.path.join(os.getcwd(),os.path.join("andreas_TFM_package","_version.py"))
+with open(file_path,"w") as f:
+	f.write("__version__ = '0.1.2'")
+
 setup(
     name='andreas_TFM_package',
     packages=['andreas_TFM_package'],
@@ -16,3 +23,6 @@ setup(
     classifiers = [],
     include_package_data=True,
     )
+
+
+	
