@@ -159,6 +159,7 @@ def setup_database_internal(db, keys_dict,folders_dict):
         file_order[frame+layer]=image_object.id
         id_frame_dict[image_object.id]=frame
     unique_frames = np.unique(list(frames_ref_dict.keys()))
+
     db._AddOption(key="frames_ref_dict", value=frames_ref_dict)
     db.setOption(key="frames_ref_dict", value=frames_ref_dict)
     db._AddOption(key="file_order", value=file_order)
