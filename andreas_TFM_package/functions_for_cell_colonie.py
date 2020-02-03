@@ -775,6 +775,17 @@ def get_torque1(fx,fy,mask_area,return_map=False):
     else:
         return np.nansum(np.cross(r, f, axisa=2, axisb=2))
 
+def check_unbalanced_forces(fx,fy,mask=None,raise_error=False):
+    if not isinstance(mask, np.ndarray):
+        mask=np.logical_or(fy!=0,fx!=0)
+    torque=get_torque1(fx, fy, mask, return_map=False) # torque of the system
+    net_force=np.array([np.sum(fx),np.sum(fy)])
+    print("torque = "+ str(torque))
+    print("net force = " + str(net_force))
+    if raise_error and (torque==0 or np.sum(net_force==0)>0):
+        raise Exception("torque or net force is not zero")
+
+
 
 def calculate_rotation(a1, a2, mask):
     '''

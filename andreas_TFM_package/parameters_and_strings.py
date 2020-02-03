@@ -58,7 +58,6 @@ default_fig_parameters={
     "plots_layers":{"deformation":"deformation","traction":"traction","FEM_borders":"FEM_borders"
         ,"stress_map":"stress_map","energy_points":"energy_points"}, #
 
-
     "cbar_str": {"deformation":"deformation\n[pixel]","traction":"traction\n[Pa]","FEM_borders":"line stress\n[N/m]",
                  "stress_map":"avg. normal stress\nin N/m","energy_points":"contractile energy\nJ/pixel\n"
                  },  # label of the color bar

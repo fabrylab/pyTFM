@@ -30,9 +30,9 @@ def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,bf_image=False,fil
     :param u:deformation field in x direction in pixel of the deformation image
     :param v:deformation field in y direction in pixel of the deformation image
     :param young: youngs modulus in Pa
-    :param pixelsize1: pixelsize of the original image, needed because u and v is given as displacment of these pixels
+    :param pixelsize1: pixelsize of the original image, needed because u and v is given as displacement of these pixels
     :param pixelsize2: pixelsize of the deformation image
-    :param sigma: posiion ratio of the gel
+    :param sigma: posson ratio of the gel
     :param bf_image: give the brightfield image as an array before cells where removed
     :param filter: str, values: "mean","gaussian","median". Diffrent smoothing methods for the traction field
     :return: tx_filter,ty_filter: traction forces in x and y direction in Pa
@@ -440,11 +440,11 @@ def calculate_deformation(im1,im2,window_size=64,overlapp=32,std_factor=20):
     '''
     #accepting either path to file or image data directly
     if isinstance(im1,str):
-        frame_a  = np.array(openpiv.tools.imread( im1 ),dtype="int32")
+        frame_a  = np.array(openpiv.tools.imread(im1),dtype="int32")
     elif isinstance(im1,np.ndarray):
         frame_a=im1
     if isinstance(im2, str):
-        frame_b  = np.array(openpiv.tools.imread( im2) ,dtype="int32")
+        frame_b  = np.array(openpiv.tools.imread(im2) ,dtype="int32")
     elif isinstance(im2, np.ndarray):
         frame_b = im2
 
@@ -607,6 +607,8 @@ def contractile_energy_points_old(u,v,tx,ty,pixelsize1,pixelsize2):
 def contractile_energy_points(u,v,tx,ty,pixelsize1,pixelsize2):
     pixelsize2*=10**-6 # conversion to m
     pixelsize1*=10**-6
+    # u is given in pixels/minutes where a pixel is from the original image (pixelsize1)
+    # tx is given in forces/pixels**2 where a pixel is from the deformation/traction field (pixelsize2)
     energy_points =  0.5 * (pixelsize2 ** 2) * (tx * u * pixelsize1 + ty * v * pixelsize1)
 
 
