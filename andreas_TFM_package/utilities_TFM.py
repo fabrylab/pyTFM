@@ -1,8 +1,17 @@
 # general usefull function
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import os
-import copy
+import warnings
+
+class suppress_warnings():
+    def __init__(self,warning_type):
+        self.warning_type=warning_type
+    def __enter__(self):
+        warnings.filterwarnings("ignore",category= self.warning_type)
+    def __exit__(self, type, value, traceback):
+        warnings.filterwarnings("default",category= self.warning_type)
+
 
 def make_iterable(value):
     if not hasattr(value, '__iter__') or isinstance(value,str):
@@ -41,7 +50,7 @@ def make_rank_list(values,dtype=int):
     rank_list = [unique_values_dict[value] for value in values_conv]
     return rank_list
 
-def round_flexible(n):
+def round_flexible(n,digits=2):
     '''
     returns a number rounded to 2 positions after its firs segnificant position
     7.1242*10**-7 --> 7.12*10**-7
@@ -49,11 +58,12 @@ def round_flexible(n):
     :param n: float
     :return:
     '''
-    if not (isinstance(n,float) or isinstance(n,int)) or n==0 or np.isnan(n):
+    if not (isinstance(n,float) or isinstance(n,int)) or n==0 or np.isnan(n) or np.isinf(n):
         return n
     else:
-        rounding_decimal=-int(np.floor(np.log10(np.abs(n)))) + 2
+        rounding_decimal=-int(np.floor(np.log10(np.abs(n)))) + digits
     return np.round(n,rounding_decimal)
+
 def round_flexible_str(n,digits=2,sci_limit=3):
     '''
     returns a number rounded to 2 positions after its firs segnificant position
@@ -62,7 +72,7 @@ def round_flexible_str(n,digits=2,sci_limit=3):
     :param n: float
     :return:
     '''
-    if not (isinstance(n,float) or isinstance(n,int)) or n==0 or np.isnan(n):
+    if not (isinstance(n,float) or isinstance(n,int)) or n==0 or np.isnan(n) or np.isinf(n):
         return n
     else:
         first_pos=-int(np.floor(np.log10(np.abs(n))))
