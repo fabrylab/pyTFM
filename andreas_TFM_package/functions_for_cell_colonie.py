@@ -356,37 +356,24 @@ def plot_grid(nodes,elements,inverted_axis=False,symbol_size=4,arrows=False,imag
 
 
 
-def show_quiver(fx,fy,filter=False,scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,cmap="rainbow"):
+def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headlength=3,headaxislength=1,width=0.002,cmap="rainbow"):
+    # list of all necessary quiver parameters
+    quiver_parameters={"headwidth":headwidth,"headlength":headlength,"headaxislength":headaxislength,
+                       "width":width,"scale_units":"xy","angles":"xy","scale":None}
     fx=fx.astype("float64")
     fy=fy.astype("float64")
-    dims=fx.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
-
+    dims=fx.shape#  needed for scaling
     fig=plt.figure()
-    im = plt.imshow(np.sqrt(fx ** 2 + fy ** 2),cmap=cmap)
-
-
-
-    if isinstance(filter,list):
-        fx,fy,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1])
-        if scale_ratio:#
-            fx, fy=scale_for_quiver(fx,fy, dims, scale_ratio=scale_ratio)
-            plt.quiver(xs, ys, fx, fy, scale_units="xy",scale=1, angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-        else:
-            plt.quiver(xs, ys, fx, fy, scale_units="xy", angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-    #elif np.isnan(np.sum(fx)): ## fastest way to check if any nan in this array (or so they say)
-     #   ys,xs=np.where(~np.isnan(fx))
-    #    plt.quiver(xs, ys, fx[~np.isnan(fx)], fy[~np.isnan(fx)], scale_units="xy", angles="xy")
-    else:
-        if scale_ratio:  #
-            fx, fy = scale_for_quiver(fx, fy, dims, scale_ratio=scale_ratio)
-            plt.quiver(fx, fy, scale_units="xy",scale=1, angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-        else:
-            plt.quiver(fx, fy, scale_units="xy", angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-
-
-
-
+    im = plt.imshow(np.sqrt(fx ** 2 + fy ** 2),cmap=cmap) # imshowing and plotting a colorbar
     plt.colorbar(im)
+
+    # plotting arrows
+    fx,fy,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1]) # filtering every n-th value and every value smaller then x
+    if scale_ratio: # optional custom scaling with the image axis lenght
+        fx, fy=scale_for_quiver(fx,fy, dims, scale_ratio=scale_ratio)
+        quiver_parameters["scale"]=None # disabeling the auto scaling behavior of quiver
+    plt.quiver(xs, ys, fx, fy, **quiver_parameters) # plotting the arrows
+
     return fig
 
 def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,figsize=(6.4, 4.8),cbar_str=""
