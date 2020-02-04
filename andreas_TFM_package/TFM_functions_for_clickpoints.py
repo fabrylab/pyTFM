@@ -231,22 +231,23 @@ def split_list_str(string):
     list_obj=[try_int_strip(v) for v in string_list]
     return list_obj
 
-def get_option_wrapper(db,key,unpack_funct=None):
+def get_option_wrapper(db,key,unpack_funct=None,empty_return=list):
     try:
         if unpack_funct:
             return unpack_funct(db.table_option.select().where(db.table_option.key == key).get().value)
         else:
             return db.table_option.select().where(db.table_option.key == key).get().value
     except:
-        return []
+        return empty_return()
 
 
 def get_db_info_for_analysis(db):
 
     unique_frames = get_option_wrapper(db,"unique_frames",split_list_str)
     file_order = get_option_wrapper(db,"file_order",split_dict_str)
-    frames_ref_dict = get_option_wrapper(db,"frames_ref_dict",split_dict_str)
-    id_frame_dict = get_option_wrapper(db,"id_frame_dict",split_dict_str)
+    frames_ref_dict = get_option_wrapper(db,"frames_ref_dict",split_dict_str,empty_return=dict)
+    id_frame_dict = get_option_wrapper(db,"id_frame_dict",split_dict_str,empty_return=dict)
+
     cbd_frames_ref_dict = {value:key for key, value in frames_ref_dict.items()} # inverse of frames_ref_dict
 
     layers=[l.name for l in db.getLayers()]
@@ -506,7 +507,6 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,cp=None,**kw
                                                      filter="gaussian")
         # unit is N/m**2
         if np.isnan(tx).all():
-            warnings.warn("falling back to inifinte thickness assumption due to nummerical issues")
             parameter_dict["TFM_mode"] = "infinite_thickness"
     if parameter_dict["TFM_mode"] == "infinite_thickness":
         tx, ty = ffttc_traction(u, v, pixelsize1=parameter_dict["pixelsize"],
