@@ -12,13 +12,13 @@ from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.ndimage import zoom
 from scipy.ndimage.filters import uniform_filter
+from andreas_TFM_package.utilities_TFM import suppress_warnings
 
 
 
 
 
-
-def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,bf_image=False,filter="mean"):
+def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="mean"):
     '''
     fourier transform based calculation of the traction force. U and v must be given  as deformations in pixel. Size of
     these pixels must be the pixelsize (size of a pixel in the deformation field u or v). Note that thePiv deformation
@@ -121,19 +121,13 @@ def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,bf_image=False,fil
         ty_filter = ty_cut
     #show_quiver(tx_filter,ty_filter)
 
-    #5.x) zooming out for represetnation purposes exactly to bf_image size
-    if bf_image:
-        zoom_factors=[np.shape(bf_image)[0]/np.shape(tx_cut)[0],np.shape(bf_image)[1]/np.shape(tx_cut)[1]]
-        tx_zoom_out=zoom(tx_filter,zoom_factors)
-        ty_zoom_out=zoom(ty_filter,zoom_factors)
-        return (tx_filter, ty_filter,tx_zoom_out,ty_zoom_out)
-
-
-
     return (tx_filter,ty_filter)
 
 
-def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean") -> object:
+
+
+
+def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean"):
     '''
      limiting case for h*k==0
     Xavier Trepat, Physical forces during collective cell migration, 2009
@@ -221,7 +215,7 @@ def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.
     return (tx_filter, ty_filter)
 
 
-def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean") -> object:
+def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean"):
     '''
     FTTC with correction for finite substrate thikness according to
     Xavier Trepat, Physical forces during collective cell migration, 2009
@@ -269,11 +263,10 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
 
     c = np.cosh(k * h)
     s = np.sinh(k * h)
-    #gamma = ((3 - 4 * sigma) * (c ** 2) + (1 - 2 * sigma) ** 2 + (k * h * 2 * np.pi) ** 2) / (
-                #(3 - 4 * sigma) * s * c + k * h * 2 * np.pi)  ## inf values here because k goes to zero
     gamma = ((3 - 4 * sigma) * (c ** 2) + (1 - 2 * sigma) ** 2 + (k * h) ** 2) / (
                 (3 - 4 * sigma) * s * c + k * h)  ## inf values here because k goes to zero
-    # 4) calculate fourrier transform of displacements
+
+    # 4) calculate fourier transform of displacements
 
     u_ft = np.fft.fft2(u_expand)
     v_ft = np.fft.fft2(v_expand)
@@ -321,6 +314,31 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
         ty_filter = ty_cut
     #show_quiver(tx_filter,ty_filter)
     return (tx_filter, ty_filter)
+
+def ffttc_traction_finite_thickness_wrapper(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean"):
+    '''
+    height correction breaks down due to numerical reasons at large gel height and small wavelengths of deformations.
+    In this case the height corrected ffttc-function returns Nans. THis function falls back to the non height-corrected ffttc
+    function if this happens
+
+
+    :return:
+    '''
+    with suppress_warnings(RuntimeWarning):
+        tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, h=h, young=young,
+                                                         sigma=sigma, filter=filter)    # unit is N/m**2
+
+    if np.isnan(tx).all() and np.isnan(ty).all():
+        tx, ty = ffttc_traction(u, v, pixelsize1 = pixelsize1, pixelsize2 = pixelsize2, young=young, sigma=sigma,
+                                filter=filter)
+    return tx, ty
+
+
+
+
+
+
+
 
 def ffttc_traction_old(u,v,young,pixelsize,pixel_factor,sigma=0.49,bf_image=False,filter="mean"):
 
