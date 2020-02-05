@@ -9,8 +9,6 @@ andreas_TFM_package.egg-info/SOURCES.txt
 
 andreas_TFM_package.egg-info/top_level.txt
 
-andreas_TFM_package/__init__.py
-
 andreas_TFM_package/__pycache__/__init__.cpython-37.pyc
 
 andreas_TFM_package/__pycache__/database_functions.cpython-37.pyc
