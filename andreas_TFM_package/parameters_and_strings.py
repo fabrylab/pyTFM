@@ -58,7 +58,7 @@ default_fig_parameters={
     "plots_layers":{"deformation":"deformation","traction":"traction","FEM_borders":"FEM_borders"
         ,"stress_map":"stress_map","energy_points":"energy_points"}, #
 
-    "cbar_str": {"deformation":"deformation\n[pixel]","traction":"traction\n[Pa]","FEM_borders":"line stress\n[N/m]",
+    "cbar_str": {"deformation":"deformation\n[pixel]","traction":"traction\n[Pa]","FEM_borders":"line tension\n[N/m]",
                  "stress_map":"avg. normal stress\nin N/m","energy_points":"contractile energy\nJ/pixel\n"
                  },  # label of the color bar
     "cmap": "rainbow",  # colormap for displaying magnitudes in deformation and traction fields
@@ -160,11 +160,11 @@ calculation_messages["general_properties"]="getting colony properties on frames 
 
 # units of the returned stress and energy measures:
 units=defaultdict(lambda: "")
-units["avarage line stress"]="N/m"
+units["avarage line tension"]="N/m"
 units["avarage cell force"]="N"
 units["avarage cell pressure"]="N/m"
 units["avarage cell shear"]="N/m"
-units["std line stress"]="N/m"
+units["std line tension"]="N/m"
 units["std cell force"]="N"
 units["std cell pressure"]="N/m"
 units["std cell shear"]="N/m"

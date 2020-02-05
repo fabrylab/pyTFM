@@ -656,11 +656,11 @@ def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tens
     avg_cell_pressure=mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="tn")
     avg_cell_shear=mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="ts")
 
-    res_dict[frame]["avarage line stress"]=[avg_line_stress[1],warn]
+    res_dict[frame]["avarage line tension"]=[avg_line_stress[1],warn]
     res_dict[frame]["avarage cell force"] =[avg_cell_force[1],warn]
     res_dict[frame]["avarage cell pressure"] =[avg_cell_pressure[1],warn]
     res_dict[frame]["avarage cell shear"] =[avg_cell_shear[1],warn]
-    res_dict[frame]["std line stress"] = avg_line_stress[2]
+    res_dict[frame]["std line tension"] = avg_line_stress[2]
     res_dict[frame]["std cell force"] = avg_cell_force[2]
     res_dict[frame]["std cell pressure"] = avg_cell_pressure[2]
     res_dict[frame]["std cell shear"] = avg_cell_shear[2]
