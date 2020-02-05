@@ -14,7 +14,7 @@ import os
 
 
 # setting the output folder for plots. All plots are saved to this folder.
-folder_plots = "/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/lates_analysis"
+folder_plots = "/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/latest_analysis"
 createFolder(folder_plots) # creating the folder if it doesn't already exist
 
 
@@ -25,7 +25,7 @@ createFolder(folder_plots) # creating the folder if it doesn't already exist
 # but two frames in the ko, due to issues with imaging the beads.
 exclude1=[]
 # path to the out.txt text file
-file1="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/WTshift/out2.txt"
+file1="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/WTshift/out8.txt"
 parameter_dict1,res_dict1=read_output_file(file1) # reading the file and splitting into parameters and results
 # pooling all frames: values_dict has "name of the quantity": "list of values for each frame".
 # this also returns the number of frames (n_frames) and a list of the label of frame (frame_list). The frame labels are
@@ -36,7 +36,7 @@ n_frames1,values_dict1, frame_list1=prepare_values(res_dict1,exclude1)
 # second file
 exclude2=["01","10"]  # list of frames to be excluded, thes
 # path to the out.txt text file
-file2="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/KOshift/out3.txt"
+file2="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/KOshift/out16.txt"
 parameter_dict2,res_dict2=read_output_file(file2)# reading the fie and splitting into parameters and results
 n_frames2,values_dict2, frame_list2=prepare_values(res_dict2,exclude2) # pooling all frames
 
@@ -94,7 +94,7 @@ fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contrac
 #                       ylabel="contractillity [N]",frame_list1=frame_list1,frame_list2=frame_list2)
 # fig=plot_contractillity_correlation(values_dict1,values_dict2,lables,frame_list1,frame_list2)
 # saving to output folder
-fig.savefig(os.path.join(folder_plots,"coordinated_contractillity_vs_contractile_energy.png"))
+#fig.savefig(os.path.join(folder_plots,"coordinated_contractillity_vs_contractile_energy.png"))
 
 # boxplots for the other measures
 # choosing which measures should be displayed in this plot
@@ -106,9 +106,21 @@ ylabels=[ty+"\n"+units[ty] for ty in types]
 
 # plotting box plots, with statistical information. Meaning of the stars:
 # ***-> p<0.001 **-> 0.01>p>0.001 *-> 0.05>p>0.01 ns-> p>0.05
-fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
+fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,low_ylim=None,ylabels=ylabels,plot_legend=False)
 # saving to output folder
 fig.savefig(os.path.join(folder_plots,"stress_measures_on_the_cell_area.png"))
+
+
+
+types=['average normal stress magnitude colony','average shear stress magnitude colony']
+ylabels=[ty+"\n"+units[ty] for ty in types]
+values_dict1[types[0]]=values_dict1[types[0]]*1000
+values_dict2[types[0]]=values_dict2[types[0]]*1000
+values_dict1[types[1]]=values_dict1[types[1]]*1000
+values_dict2[types[1]]=values_dict2[types[1]]*1000
+fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,low_ylim=0,ylabels=ylabels,plot_legend=False)
+fig.savefig(os.path.join(folder_plots,"stress_measures_on_the_cell_area_magnitude.png"))
+
 
 
 # same procedure for some other quantities
@@ -116,7 +128,7 @@ fig.savefig(os.path.join(folder_plots,"stress_measures_on_the_cell_area.png"))
 types=['avarage line stress','avarage cell force',
        'avarage cell pressure','avarage cell shear']
 ylabels=[ty+"\n"+units[ty] for ty in types]
-fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
+fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,low_ylim=0,types=types,ylabels=ylabels)
 fig.savefig(os.path.join(folder_plots,"stress_measures_at_cell_borders.png"))
 
 # contractillity and contractile energy
@@ -151,10 +163,25 @@ fig.savefig(os.path.join(folder_plots,"cv.png"))
 #######
 types=['avarage line stress per area']
 ylabels=[ty+"\n"+units[ty] for ty in types]
-fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels)
-fig.savefig(os.path.join(folder_plots,"cell area.png"))
+fig=box_plots(values_dict1,values_dict2,lables,low_ylim=0,t_test_dict=t_test_dict,types=types,ylabels=ylabels,plot_legend=False)
+fig.savefig(os.path.join(folder_plots,"avg linestress per cell area.png"))
+types=['avarage line stress per area','avarage normal line stress per area','avarage shear line stress per area']
+ylabels=[ty+"\n"+units[ty] for ty in types]
+fig=box_plots(values_dict1,values_dict2,lables,low_ylim=0,t_test_dict=t_test_dict,types=types,ylabels=ylabels,plot_legend=False)
+fig.savefig(os.path.join(folder_plots,"avg linestresses per cell area.png"))
 
 
+######
+types=['avarage line stress','avarage normal line stress','avarage shear line stress']
+ylabels=[ty+"\n"+units[ty] for ty in types]
+values_dict1[types[0]]=values_dict1[types[0]]*1000
+values_dict2[types[0]]=values_dict2[types[0]]*1000
+values_dict1[types[1]]=values_dict1[types[1]]*1000
+values_dict2[types[1]]=values_dict2[types[1]]*1000
+values_dict1[types[2]]=values_dict1[types[2]]*1000
+values_dict2[types[2]]=values_dict2[types[2]]*1000
+fig=box_plots(values_dict1,values_dict2,lables,low_ylim=0,t_test_dict=t_test_dict,types=types,ylabels=ylabels,plot_legend=False)
+fig.savefig(os.path.join(folder_plots,"avg linestresses.png"))
 
 types=["contractile energy on colony","avarage line stress per area"]
 #compare_two_values(values_dict1, values_dict2,types, lables, xlabel,ylabel,frame_list1=[], frame_list2=[]

@@ -168,10 +168,10 @@ def stress_vector_from_tensor_interpolation(ps,n_vecs,sig_xx_inter,sig_yx_inter,
     stress tensor is calculated. This function uses 2-interpolation functions for the individual stress components,
     to calculate the stress vector at any point x,y.
 
-    :param ps: list of xy(!) coordinates of points. (reversed oreintation as compared to some otehr points lists)
+    :param ps: list of xy(!) coordinates of points. (reversed orientation as compared to some otehr points lists)
     :param n_vecs: list of normal vectors at each point x,y (usually the result from spline interpolation)
     :param sig_xx_inter: 2d interpolation function of the xx-normal stress components generated from
-    scipy.interpolation.interp2d . The function has been genarated on the intervals [0,1](x) and [0,1](y)
+    scipy.interpolation.interp2d . The function has been generated on the intervals [0,1](x) and [0,1](y)
     corresponding to the actual pixel indices [0,inter_ranges[0]] and[0,inter_ranges[1]]. (see below)
     :param sig_yx_inter: see above
     :param sig_yy_inter: see above
@@ -187,7 +187,7 @@ def stress_vector_from_tensor_interpolation(ps,n_vecs,sig_xx_inter,sig_yx_inter,
     t_vecs=[]
     for i in range(len(u)):
         # stress vectors according to cauhy theorem
-        t_vec = [sig_xx_inter(u[i][0],u[i][1])*n_vecs[i][0]+sig_yx_inter(u[i][0],u[i][1])*n_vecs[i][1],
+        t_vec = [sig_xx_inter(u[i][0],u[i][1]) * n_vecs[i][0] + sig_yx_inter(u[i][0],u[i][1]) * n_vecs[i][1],
                  sig_yx_inter(u[i][0], u[i][1]) * n_vecs[i][0] + sig_yy_inter(u[i][0], u[i][1]) * n_vecs[i][1]]
         t_vecs.append(t_vec)
 
