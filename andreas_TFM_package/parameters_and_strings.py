@@ -1,7 +1,8 @@
 # contains the default parameters, parameters for plotting, messages that are printed while the programming is executed
 # and tooltips for the tfm addon
-
+from andreas_TFM_package.utilities_TFM import make_iterable,squeeze_list
 from collections import defaultdict
+from itertools import chain
 from matplotlib import cm  # making list from colormap
 import numpy as np
 
@@ -18,26 +19,51 @@ default_parameters={
     "std_factor":15,  # additional filter for extreme values in deformation field
     "h":300, # height of the substrate in µm
     "edge_padding":0.1, # fraction of the image close to the borders that is ignored for any analyzed value
+"padding_cell_layer":0.05,  # additional region ignored for stress analysis in "cell layer" mode. Average stresses and line
+    # tension is only calculated on the area that is "edge_padding"+"padding_cell_layer" away from the image edge
     "TFM_mode":"finite_thickness",  # mode of traction force microscopy ("finite_thickness" or "infinite_thcikness")
     "FEM_mode":"colony",  # mode for FEM type. Either perform FEM on a single colony (mode: "colony") or on the whole
                         # filed of view (mode: "cell layer"). In "cell layer you select two areas and calculate stress and
                         # contractile energy on them. In "colony" you select the area of a colony and draw cell borders. These
                         # borders are used to analyze stresses along these borders.
-    "area masks":["cell type1","cell type2","membrane"] # use these mask to evaluate quantities only on this area.
-                        # (mostly use full for sum of deformation...)
+    "min_obj_size":1500 # all objects (cell pathches/ isolated cells) below this size (in pixel) will be ignored
 }
 
 # dictionary setting a sting label for some calcualtions on mask. (summing deormations, finding the areas,
 # averaging stresses
-mask_label_dict={"cell type1":"cell type 1",
-"cell type2":"cell type 2",
-"membrane": "colony",
-"contractillity_colony":"colony"
-                }
+#mask_label_dict={"cell type1":"cell type 1",
+#"cell type2":"cell type 2",
+#"membrane": "colony",
+#"contractillity_colony":"colony"
+#                }
 
 # adding to the parameters dict
-default_parameters["mask_labels"]=mask_label_dict
+#default_parameters["mask_labels"]=mask_label_dict
+default_parameters["cut_instruction"]={"colony":True,"cell layer":True} # maybe remove
 
+default_parameters["mask_properties"]={"cell type1":{"use":["defo","forces","area_layer","FEM_layer","stress_layer"],"FEM_mode":["cell layer"],"color":"#1322ff","index":1,"label":"cell type 1","name":"cell type1"},
+                                      "cell type2":{"use":["defo","forces","area_layer","FEM_layer","stress_layer"],"FEM_mode":["cell layer"],"color":"#ebff05","index":2,"label":"cell type 2","name":"cell type2"},
+                                      "membrane":{"use":["area_colony","borders","FEM_layer","stress_colony"],"FEM_mode":["cell layer","colony"],"color":"#ff7402","index":3,"label":"colony","name":"membrane"},
+                                     "force measures":{"use":["defo","forces"],"FEM_mode":["colony"],"color":"#ff0b23","index":1,"label":"colony","name":"force measures"},
+                                     "FEM_area":{"use":["FEM_colony"],"FEM_mode":["colony"],"color":"#30ff0c","index":2,"label":"colony","name":"FEM_area"}}
+# use: calculations this mask is used in
+# FEM_mode: mode the mask is used in
+# color: color of the mask in clickpoints
+# index: index of the mask in clickpoints; FEM_mode and index mst be a unique pair.
+# name: name of the mask in the clickpoints database
+# label: string used for the output file
+
+
+def get_masks_by_key(default_parameters,key,prop):
+    '''extracting lists of mask withat certain properties'''
+    return [m for m,mdict in default_parameters["mask_properties"].items() if prop in mdict[key]]
+
+def get_properties_masks(default_parameters,masks,props):
+    props,masks=make_iterable(props),make_iterable(masks)
+    props_list=[]
+    for p in props:
+        props_list.append([default_parameters["mask_properties"][m][p] for m in masks])
+    return squeeze_list(props_list)
 
 
 
@@ -52,7 +78,7 @@ default_parameters["mask_labels"]=mask_label_dict
 default_fig_parameters={
     # list of which plots to generate depending on which analysis mode is chosen
     # available plots are ["deformation","traction","FEM_borders","stress_map","energy_points"]
-    "plots":{"cell layer":["deformation","traction","energy_points","stress_map"],
+    "plots":{"cell layer":["deformation","traction","FEM_borders","energy_points","stress_map"],
             "colony":["deformation","traction","FEM_borders","stress_map"]},
     # dictionary specifying the name of the layer (in the cdb database) a lot is written to // you dont need to change this
     "plots_layers":{"deformation":"deformation","traction":"traction","FEM_borders":"FEM_borders"
@@ -77,6 +103,7 @@ default_fig_parameters={
     #"cm_cmap":{"FEM_borders":cm.rainbow}, # color map for plotting the cell border stresses. Needs a color maps object.
     "border_arrow_filter":{"FEM":1}, # plot only every n'th arrow for on the cell border stresses image
     "cbar_style":"clickpoints", # if "clickpoints" the color bar is plottetd inside of the figure
+    "plot_style":"clickpoints",
     "filter_factor": 1, # this factor defines how many arrows are shown in deformation and traction images.
     # low number results in  many arrows, high number results in few arrows
     "file_names":{"deformation":"deformation.png","traction":"traction.png"   # filenames under wich plots are saved
@@ -84,8 +111,9 @@ default_fig_parameters={
     "background_color":"cmap_0",# set a color for background values. "cmap_0" fill read the zero color of the colormap. "white" would make the background white...
     # this doesn't effect images of deformation and traction
     "cbar_tick_label_size":15, # size of the tick labels on the color bar
-    "cbar_axes_fraction":0.2 #fraction of the axes in horrizontal direction, that the colorbar takes up, when colorbar is plotted outside
+    "cbar_axes_fraction":0.2, #fraction of the axes in horrizontal direction, that the colorbar takes up, when colorbar is plotted outside
     # of the graph
+    "boundary_resolution":6 # resolution when plotting the line tension. Highest is 1. Increase for lower resolution,
 }
 
 

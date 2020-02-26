@@ -8,6 +8,7 @@ from andreas_TFM_package.database_functions import *
 #from TFM_functions_for_clickpoints import * local import
 
 #from utilities import  get_group,createFolder
+import importlib
 import os
 import sys
 from functools import partial
@@ -45,24 +46,153 @@ def add_parameter_from_list(labels, dict_keys, default_parameters, layout,grid_l
 def read_all_paramters(parameter_widgets,parameter_dict):
     for p_name,p_widget in parameter_widgets.items():
         if isinstance(p_widget,QtWidgets.QLineEdit):
-            parameter_dict[p_name]=float(p_widget.text())
+            if p_widget.text() != "":
+                parameter_dict[p_name]=float(p_widget.text())
         if isinstance(p_widget, QtWidgets.QComboBox):
             parameter_dict[p_name] = p_widget.currentText()
+
     return parameter_dict
 
-class NewWindow(QtWidgets.QWidget):
+def print_parameters(parameters): # printing only selected parts of the parameter dict
+    print("paramters:\n")
+    for key,value in parameters.items():
+        if key not in ["cut_instruction","mask_properties","FEM_mode_id"]:
+            print(key,": ",value)
+def print_db_info(db_info): # printing only selected parts of the db_info dict
+    print("image information:\n")
+    for key, value in db_info.items():
+        if key not in ["id_frame_dict", "cbd_frames_ref_dict","file_order"]:
+            print(key,": ", value)
+
+
+
+class SegSlider(QtWidgets.QWidget):
     def __init__(self,main_window):
-        super(NewWindow, self).__init__()
+        super(SegSlider, self).__init__()
+        self.im_filter_membrane=None
+        self.im_filter_area = None
+
+        self._new_window = None
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(100)
+        self.main_window=main_window
+        self.setWindowTitle("segmentation")
+        # button for very simple segmentation
+        self.button_seg_area = QtWidgets.QPushButton("segment cell area")
+        self.button_seg_area.setToolTip(tooltips["segmentation_area"])
+        self.button_seg_area.clicked.connect(partial(self.segmentation,self.main_window.all_frames,seg_type="cell_area"))  # update parameters
+
+        # button for very simple segmentation
+        self.button_seg_mem = QtWidgets.QPushButton("segment membrane")
+        self.button_seg_mem.setToolTip(tooltips["segmentation_membrane"])
+        self.button_seg_mem.clicked.connect(partial(self.segmentation,self.main_window.all_frames,seg_type="membrane"))  # update parameters
+        # slider1
+        self.slider_area = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.slider_area.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.slider_area.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        self.im_filter_area=gaussian_filter(self.main_window.db.getImage(id=self.main_window.db_info["file_order"][main_window.frame + "membranes"]).data,sigma=10)
+        max_area=np.max(self.im_filter_area)
+        min_area=np.min(self.im_filter_area)
+        step_size_area=(max_area-min_area)/100
+        self.slider_area.setMinimum(min_area)
+        self.slider_area.setMaximum(max_area)
+        self.slider_area.setSingleStep(step_size_area)
+
+        self.slider_area.valueChanged.connect(partial(self.segmentation_single,frames= self.main_window.frame,seg_type="cell_area"))
+        slider_area_vbox = QtWidgets.QVBoxLayout()
+        slider_area_hbox = QtWidgets.QHBoxLayout()
+        slider_area_hbox.setContentsMargins(0, 0, 0, 0)
+        slider_area_vbox.setContentsMargins(0, 0, 0, 0)
+        slider_area_vbox.setSpacing(0)
+        label_minimum_area = QtWidgets.QLabel(str(int(min_area)),alignment=QtCore.Qt.AlignLeft)
+        label_maximum_area = QtWidgets.QLabel(str(int(max_area)),alignment=QtCore.Qt.AlignRight)
+        label_value_area = QtWidgets.QLabel(str(self.slider_area.value()), alignment=QtCore.Qt.AlignCenter)
+        self.slider_area.valueChanged.connect(label_value_area.setNum) # this actually works!!
+        slider_area_vbox.addWidget(self.slider_area)
+        slider_area_vbox.addLayout(slider_area_hbox)
+        slider_area_hbox.addWidget(label_minimum_area, QtCore.Qt.AlignLeft)
+        slider_area_hbox.addWidget(label_value_area, QtCore.Qt.AlignCenter)
+        slider_area_hbox.addWidget(label_maximum_area, QtCore.Qt.AlignRight)
+
+        # slider2
+        self.slider_mem = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.slider_mem.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.slider_mem.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        im = self.main_window.db.getImage(
+            id=self.main_window.db_info["file_order"][main_window.frame + "membranes"]).data.astype(float)
+        self.im_filter_membrane =gaussian_filter(im, sigma=2)-gaussian_filter(im, sigma=10)
+        max_mem = np.max(self.im_filter_membrane)
+        min_mem = np.min(self.im_filter_membrane)
+        step_size_mem = (max_mem - min_mem) / 200
+        self.slider_mem.setMinimum(min_mem)
+        self.slider_mem.setMaximum(max_mem)
+        self.slider_mem.setSingleStep(1) # only takes int??
+        self.slider_mem.setTickInterval(1)  # only takes int??
+        self.slider_mem.valueChanged.connect(partial(self.segmentation_single, frames=self.main_window.frame,seg_type="membrane"))
+        slider_mem_vbox = QtWidgets.QVBoxLayout()
+        slider_mem_hbox = QtWidgets.QHBoxLayout()
+        slider_mem_hbox.setContentsMargins(0, 0, 0, 0)
+        slider_mem_vbox.setContentsMargins(0, 0, 0, 0)
+        slider_mem_vbox.setSpacing(0)
+        label_minimum_mem = QtWidgets.QLabel(str(int(min_mem)), alignment=QtCore.Qt.AlignLeft)
+        label_maximum_mem = QtWidgets.QLabel(str(int(max_mem)), alignment=QtCore.Qt.AlignRight)
+        label_value_mem = QtWidgets.QLabel(str(self.slider_mem.value()), alignment=QtCore.Qt.AlignCenter)
+        self.slider_mem.valueChanged.connect(label_value_mem.setNum)  # this actually works!!
+        slider_mem_vbox.addWidget(self.slider_mem)
+        slider_mem_vbox.addLayout(slider_mem_hbox)
+        slider_mem_hbox.addWidget(label_minimum_mem, QtCore.Qt.AlignLeft)
+        slider_mem_hbox.addWidget(label_value_mem, QtCore.Qt.AlignCenter)
+        slider_mem_hbox.addWidget(label_maximum_mem, QtCore.Qt.AlignRight)
+
+        grid=QtWidgets.QGridLayout(self)
+
+        grid.addWidget(self.button_seg_area,0,0)
+        grid.addLayout(slider_area_vbox, 0, 2)
+        grid.addWidget(self.button_seg_mem, 1, 0)
+        grid.addLayout(slider_mem_vbox,1, 2)
+
+
+
+
+
+    def segmentation(self,frames="",seg_type="cell_area"):
+        if seg_type =="cell_area":
+            seg_threshold=self.slider_area.value()
+        if seg_type =="membrane":
+            seg_threshold = self.slider_mem.value()
+        self.main_window.db_info, self.main_window.masks, self.main_window.res_dict = apply_to_frames(self.main_window.db,
+            self.main_window.parameter_dict, analysis_function=simple_segmentation, masks=self.main_window.masks,leave_basics=True,
+                res_dict=self.main_window.res_dict, frames=frames,db_info=self.main_window.db_info,
+                        seg_threshold=seg_threshold,seg_type=seg_type)
+        self.main_window.cp.reloadMask()
+
+    def segmentation_single(self, frames="", seg_type="cell_area"):
+        if seg_type == "cell_area":
+            seg_threshold = self.slider_area.value()
+            self.im_filter_area=simple_segmentation(frames, self.main_window.parameter_dict, self.main_window.res_dict,
+                                self.main_window.db,self.main_window.db_info, seg_threshold=seg_threshold,
+                                seg_type=seg_type, im_filter=self.im_filter_area)
+        if seg_type == "membrane":
+            seg_threshold = self.slider_mem.value()
+            print(type(self.im_filter_membrane))
+            self.im_filter_membrane = simple_segmentation(frames, self.main_window.parameter_dict,
+                         self.main_window.res_dict,  self.main_window.db,  self.main_window.db_info,
+             seg_threshold=seg_threshold, seg_type=seg_type, im_filter=self.im_filter_membrane)
+
+        self.main_window.cp.reloadMask()
+
+
+class FileSelectWindow(QtWidgets.QWidget):
+    def __init__(self,main_window):
+        super(FileSelectWindow, self).__init__()
         self._new_window = None
 
         self.setStyleSheet("""
                 QPushButton#collect_images {background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                       stop: 0 #f6f7fa, stop: 1 #dadbde)}
-                   
                 QLabel#text_file_selection {font-size:10pt;font-weight: bold}
                 QLabel#text_output_options {font-size:10pt;font-weight: bold}
                 """)
-
         self.setWindowTitle("file selection")
         self.setMinimumWidth(600)
         self.setMinimumHeight(300)
@@ -188,49 +318,46 @@ class NewWindow(QtWidgets.QWidget):
 
     def collect_files(self):
 
-        # save database
-        self.save_database_automatically()
-
+       ## maybe make a backup somewhere??
         # clearing database
         self.main_window.db.deleteImages()  # delete existing images
         self.main_window.db.deleteLayers()  # delete existing layers
         self.main_window.db.deletePaths() # removes existing paths
 
-        # searching,sorting and adding new images
+        filename=self.save_database_automatically()
+
+        # searching,sorting and adding new images// also updating the options
         setup_database_internal(self.main_window.db,self.search_keys,self.folders)# sort in images
         # update display
-        print(self.main_window.db.getOption("frames_ref_dict"))
+        print(self.main_window.db.getOption("frames_ref_dict")) ## reduce the output here...
         self.main_window.cp.updateImageCount()  # reload the image bar
 
         # update output folder
         self.main_window.outfile_path = os.path.join(self.folders["folder_out_txt"], "out.txt")
         self.folder = self.main_window.db.setOption("folder",self.folders["folder_out_txt"])
         # update db info
-        self.main_window.db_info, self.main_window.all_frames = get_db_info_for_analysis(self.main_window.db) # updat meta info
-        # reinitiate masks
-        self.main_window.parameter_dict["FEM_mode"], undetermined = guess_TFM_mode(self.main_window.db_info, self.main_window.parameter_dict)
-        if undetermined:
-            setup_masks(self.main_window.db,self.main_window.db_info, self.main_window.parameter_dict,delete_all=True)
-            self.main_window.cp.reloadMaskTypes()
-
+        self.main_window.db_info, self.main_window.all_frames = get_db_info_for_analysis(self.main_window.db) # update meta info
+        self.main_window.res_dict = defaultdict(lambda: defaultdict(list))  #reseting res dict and masks just to be sure
+        self.main_window.masks = None
+        # reinitiate masks (deletes the old masks)
+        setup_mask_wrapper(self, self.main_window.db,self.main_window.db_info, self.main_window.parameter_dict, delete_all=True)
+        self.main_window.cp.reloadMaskTypes()
+        self.main_window.cp.window.SaveDatabase(srcpath=filename)
 
 
     def save_database_automatically(self):
         # saving the database in the current folder if a temporary filename
         filename = os.path.join(self.folders["folder_out_txt"], self.db_name)
         if not os.path.exists(filename): # save if no file with same name is around
-            print("saved database to " + filename)
-            self.main_window.cp.window.SaveDatabase(srcpath=filename)
+            filename_new=filename
         else: # try some other filenames
             for i in range(100000):
-                filename=os.path.splitext(filename)[0]+str(i)+".cdb"
-                if not os.path.exists(filename):
-                    print("saved database to " + filename)
-                    self.main_window.cp.window.SaveDatabase(srcpath=filename)
+                filename_new=os.path.splitext(filename)[0]+str(i)+".cdb"
+                if not os.path.exists(filename_new):
                     break
-
-
-
+        print("saved database to " + filename)
+        self.main_window.cp.window.SaveDatabase(srcpath=filename_new)
+        return filename_new
 
 
 
@@ -241,22 +368,14 @@ class Addon(clickpoints.Addon):
         clickpoints.Addon.__init__(self, *args, **kwargs)
 
         #super().__init__(self.db)  # makein this class the parent class?? important for qthread
-        try:
-            self.folder=self.db.getOption("folder")
-        except:
-            self.folder = os.getcwd()
-            self.db._AddOption(key="folder", value=self.folder)
-            self.db.setOption(key="folder",value=self.folder)
-
-        self.outfile_path=os.path.join(self.folder,"out.txt") # path for output text file
-
         self.frame_number=self.db.getImageCount()
         self.db_info, self.all_frames = get_db_info_for_analysis(self.db) # information about the path, image dimensions
-        self.res_dict=defaultdict(dict) # dictionary that catches all results
+        print_db_info(self.db_info)
+        self.res_dict=defaultdict(list) # dictionary that catches all results
+        self.masks=None
         self.parameter_dict = default_parameters # loading default parameters
-        # guessing the curent analysis mode
-        self.parameter_dict["FEM_mode"],undetermined=guess_TFM_mode(self.db_info,self.parameter_dict)
-        self.colony_type_old_id =int(self.parameter_dict["FEM_mode"] == "cell layer")
+        self.read_or_set_options() # reading the database folder and the previous FEM_mode, or fill in defualt values
+        self.outfile_path = os.path.join(self.folder, "out.txt")  # path for output text file
 
         """ GUI Widgets"""
         # set the title and layout
@@ -264,9 +383,9 @@ class Addon(clickpoints.Addon):
         self.setWindowIcon(qta.icon("fa.compress"))
         self.setMinimumWidth(400)
         self.setMinimumHeight(200)
-
-
         self.layout = QtWidgets.QGridLayout(self)
+        self.layout.setColumnMinimumWidth(0,150)
+
 
         # button to start calculation
         self.button_start = QtWidgets.QPushButton("start")
@@ -293,38 +412,11 @@ class Addon(clickpoints.Addon):
         self.sub_layout2.addStretch()
         self.layout.addLayout(self.sub_layout2, 2, 0)
 
-        # choosing type of cell system
-        self.colony_type = QtWidgets.QComboBox()
-        self.colony_type.addItems(["colony", "cell layer"])
-        self.colony_type.setToolTip(tooltips["colony"])
-        self.colony_type.setCurrentIndex(self.colony_type_old_id)
-        self.colony_type.activated.connect(self.switch_colony_type_mode)  # activated when user changes the the selected text
-
-        self.sub_layout3=QtWidgets.QHBoxLayout()
-        self.sub_layout3.addWidget(self.colony_type)
-        self.sub_layout3.addStretch()
-        self.layout.addLayout(self.sub_layout3, 3, 0)
-
-        # filling areas for cell patches
-        self.fill_patches_button = QtWidgets.QPushButton("fill cell area")
-        self.fill_patches_button.setToolTip(tooltips["fill cell area"])
-        self.fill_patches_button.clicked.connect(self.fill_patches)
-
-        self.sub_layout4 = QtWidgets.QHBoxLayout()
-        self.sub_layout4.addWidget(self.fill_patches_button)
-        self.sub_layout4.addStretch()
-        self.layout.addLayout(self.sub_layout2, 4, 0)
-        self.fill_patches_button.setVisible(self.colony_type_old_id) # ide button for now
-
-        #if undetermined: # only when selecting images now
-        #    self.switch_colony_type_mode(first=True) # initializing masks according to the first value of "FEM_mode"
-
-
-         # check_boxes
+        # check_boxes
         self.check_box_def = QtWidgets.QCheckBox("deformation")
         self.check_box_tra = QtWidgets.QCheckBox("traction forces")
-        self.check_box_FEM = QtWidgets.QCheckBox("FEM analysis")
-        self.check_box_contract = QtWidgets.QCheckBox("contractillity_measures")
+        self.check_box_FEM = QtWidgets.QCheckBox("stress analysis")
+        self.check_box_contract = QtWidgets.QCheckBox("force generation")
 
         self.check_box_def.setToolTip(tooltips["check_box_def"])
         self.check_box_tra.setToolTip(tooltips["check_box_tra"])
@@ -336,45 +428,86 @@ class Addon(clickpoints.Addon):
         self.layout.addWidget(self.check_box_FEM, 2, 1)
         self.layout.addWidget(self.check_box_contract, 3, 1)
 
+        # a gap
+        self.layout.setRowMinimumHeight(4,20)
 
         # # choosing single or all frames
         self.analysis_mode=QtWidgets.QComboBox()
         self.analysis_mode.addItems(["current frame", "all frames"])
         self.analysis_mode.setToolTip(tooltips["apply to"])
-        self.layout.addWidget(self.analysis_mode, 4, 1)
+        self.layout.addWidget(self.analysis_mode, 5, 1)
         self.analysis_mode_descript = QtWidgets.QLabel()
         self.analysis_mode_descript.setText("apply to")
-        self.layout.addWidget(self.analysis_mode_descript, 4, 0)
+        self.layout.addWidget(self.analysis_mode_descript, 5, 0)
 
 
 
         #### parameters
-        self.parameter_labels=["youngs modulus [Pa]","possion ratio","pixel size [µm]","piv overlapp [µm]","piv window size [µm]","gel hight [µm]"]
+        self.parameter_labels=["Youngs modulus [Pa]","Possion's ratio","pixel size [µm]","PIV overlapp [µm]","PIV window size [µm]","gel height [µm]"]
         self.param_dict_keys=["young","sigma","pixelsize","overlapp","window_size","h"]
         self.parameter_widgets,self.parameter_lables,last_line=add_parameter_from_list(self.parameter_labels,
                                                             self.param_dict_keys,self.parameter_dict,self.layout
-                                                                                       ,5,self.parameters_changed)
-        # drop down for choosing wether to use height correction
-        self.use_h_correction = QtWidgets.QComboBox()
-        self.use_h_correction.addItems(["finite_thickness", "infinite_thickness"])
-        self.use_h_correction.currentTextChanged.connect(self.parameters_changed) # update self.paramter_dict everytime smethong changed
-        self.use_h_correction_descr = QtWidgets.QLabel()
-        self.use_h_correction_descr.setText("enable height correction")
-        self.layout.addWidget(self.use_h_correction,  last_line+1, 1)
-        self.layout.addWidget(self.use_h_correction_descr,   last_line + 1, 0)
-        self.parameter_widgets["TFM_mode"]=self.use_h_correction # adding to parameters dict
-        self.parameter_lables["TFM_mode"] =  self.use_h_correction_descr  # adding to parameters dict
+                                                                                       ,6,self.parameters_changed)
+        # drop down for choosing whether to use height correction
+        # self.use_h_correction = QtWidgets.QComboBox()
+        # self.use_h_correction.addItems(["finite_thickness", "infinite_thickness"])
+        # self.use_h_correction.currentTextChanged.connect(self.parameters_changed) # update self.paramter_dict everytime smethong changed
+        # self.use_h_correction_descr = QtWidgets.QLabel()
+        # self.use_h_correction_descr.setText("enable height correction")
+        # self.layout.addWidget(self.use_h_correction,  last_line+1, 1)
+        # self.layout.addWidget(self.use_h_correction_descr,   last_line + 1, 0)
+        # self.parameter_widgets["TFM_mode"] = self.use_h_correction # adding to parameters dict
+        # self.parameter_lables["TFM_mode"] =  self.use_h_correction_descr  # adding to parameters dict
         # adding to layout
         self.setLayout(self.layout)
         self.parameters_changed() # initialize parameters dict
 
 
+        # choosing type of cell system
+        self.colony_type = QtWidgets.QComboBox()
+        self.colony_type.addItems(["colony", "cell layer"])
+        self.colony_type.setToolTip(tooltips["switch mode"])
+        self.colony_type.setCurrentIndex(self.parameter_dict["FEM_mode_id"])
+        self.colony_type.currentTextChanged.connect(self.parameters_changed) # update parameters
+        self.colony_type.currentTextChanged.connect(self.switch_colony_type_mode)  # swith the colony mode
+        self.parameter_widgets["FEM_mode"] = self.colony_type  # adding to parameters dict
+        self.parameter_lables["FEM_mode"] = ""  # label
+        self.sub_layout3=QtWidgets.QHBoxLayout()
+        self.sub_layout3.addWidget(self.colony_type)
+
+
+        # button for simple segmentation of membranes and cell area
+        self.button_seg = QtWidgets.QPushButton("segmentation")
+        self.button_seg.setToolTip(tooltips["segmentation"])
+        self.button_seg.clicked.connect(self.segmentation)  # update parameters
+        self.sub_layout3.addWidget(self.button_seg)
+        self.sub_layout3.addStretch()
+        self.layout.addLayout(self.sub_layout3, 3, 0)
 
 
 
+
+
+
+
+    def read_or_set_options(self):
+        try:
+            self.folder = get_option_wrapper(db,"folder",unpack_funct=None,empty_return=list)
+        except:
+            self.folder = os.getcwd()
+            self.db._AddOption(key="folder", value=self.folder)
+            self.db.setOption(key="folder", value=self.folder)
+        try:
+            self.parameter_dict["FEM_mode"] = get_option_wrapper(self.db,"FEM_mode")
+            self.parameter_dict["FEM_mode_id"] = 0 if self.parameter_dict["FEM_mode"] == "colony" else 1
+        except:
+            self.parameter_dict["FEM_mode"] = default_parameters["FEM_mode"]
+            self.parameter_dict["FEM_mode_id"] = 0 if self.parameter_dict["FEM_mode"] == "colony" else 1
+            self.db._AddOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
+            self.db.setOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
 
     def select_images(self): # for what do i need this??
-        self._new_window = NewWindow(self)
+        self._new_window = FileSelectWindow(self)
         self._new_window.show()
 
     def reload_all(self):  # reloading entire display ## could be optimized
@@ -388,82 +521,75 @@ class Addon(clickpoints.Addon):
     def parameters_changed(self):
         self.parameter_dict = read_all_paramters(self.parameter_widgets,self.parameter_dict)
 
-       
-        #write_output_file(self.parameter_dict, None, "parameters", self.outfile_path) # writes paramters to output file..
 
     # decorator functions to handle diffrent outputs and writing to text file
-    def calculate_general_properties(self,frames):
-        apply_to_frames(self.db, self.parameter_dict, analysis_function=general_properties, res_dict=self.res_dict,
-                        frames=frames, db_info=self.db_info,cp=self.cp)  # calculation of colony area, number of cells in colony
-    def calculate_deformation(self,frames):
-            apply_to_frames(self.db, self.parameter_dict,analysis_function=deformation,res_dict=self.res_dict,
-                                frames=frames,db_info=self.db_info,cp=self.cp)  # calculation of deformations
+    def calculate_general_properties(self,frames):# calculation of colony area, number of cells in colony
+        self.db_info, self.masks, self.res_dict = apply_to_frames(self.db, self.parameter_dict,
+                            analysis_function=general_properties, res_dict=self.res_dict,
+                        masks=self.masks,frames=frames, db_info=self.db_info)
+    def calculate_deformation(self,frames):# calculation of deformations
 
-    def calculate_traction(self,frames):
-            apply_to_frames(self.db, self.parameter_dict,analysis_function=traction_force,res_dict=self.res_dict,
-                                frames=frames,db_info=self.db_info,cp=self.cp)  # calculation of traction forces
+        self.db_info, self.masks, self.res_dict = apply_to_frames(self.db, self.parameter_dict,
+                            analysis_function=deformation,res_dict=self.res_dict,
+                            masks=self.masks,frames=frames,db_info=self.db_info)
 
-    def calculate_FEM_analysis(self,frames):
-            apply_to_frames(self.db, self.parameter_dict, analysis_function=FEM_full_analysis,res_dict=self.res_dict,
-                            frames=frames,db_info=self.db_info,cp=self.cp)  # calculation of various stress measures
+    def calculate_traction(self,frames):# calculation of traction forces
+        self.db_info, self.masks, self.res_dict = apply_to_frames(self.db, self.parameter_dict,
+                        analysis_function=traction_force,res_dict=self.res_dict,
+                            masks=self.masks,frames=frames,db_info=self.db_info)
 
-    def calculate_contractile_measures(self,frames):
-            apply_to_frames(self.db, self.parameter_dict,analysis_function=get_contractillity_contractile_energy,
-                 res_dict=self.res_dict,frames=frames,db_info=self.db_info,cp=self.cp)  # calculation of contractility and contractile energy
+    def calculate_FEM_analysis(self,frames):# calculation of various stress measures
+        self.db_info, self.masks, self.res_dict = apply_to_frames(self.db, self.parameter_dict,
+                            analysis_function=FEM_full_analysis,res_dict=self.res_dict,
+                        masks=self.masks,frames=frames,db_info=self.db_info)
 
-    def drift_correction(self):
-        apply_to_frames(self.db, self.parameter_dict, analysis_function=simple_shift_correction,
-                        res_dict=self.res_dict, frames=self.all_frames,
-                        db_info=self.db_info)  # calculation of contractility and contractile energy
+    def calculate_contractile_measures(self,frames):# calculation of contractility and contractile energy
+        self.db_info, self.masks, self.res_dict = apply_to_frames(self.db, self.parameter_dict,
+                                    analysis_function=get_contractillity_contractile_energy,
+             masks=self.masks,res_dict=self.res_dict,frames=frames,db_info=self.db_info)
+
+    def drift_correction(self):# calculation of contractility and contractile energy
+        self.db_info, self.masks, self.res_dict = apply_to_frames(self.db, self.parameter_dict,
+                                        analysis_function=simple_shift_correction,
+                        masks=self.masks,res_dict=self.res_dict, frames=self.all_frames,db_info=self.db_info)
+
+    def segmentation(self):# calculation of contractility and contractile energy
+        self.cdb_frame = self.cp.getCurrentFrame()
+        self.frame = self.db_info["cbd_frames_ref_dict"][self.cdb_frame]
+        self._new_window_slider = SegSlider(self)
+        self._new_window_slider.show()
+
 
     # switching the type of cell colony
     def switch_colony_type_mode(self,first=False):
-        if not first:
-            choice = QtWidgets.QMessageBox.question(self, 'continue',
-                                                "This will delete all previous mask. Do you want to coninue?",
-                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-        else:
-            choice=QtWidgets.QMessageBox.Yes
+        setup_mask_wrapper(self, self.db, self.db_info, self.parameter_dict, delete_all=False)
+        self.cp.reloadMaskTypes()  # reloading mask to display in clickpoints window
+        self.db.setOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
 
-        if choice == QtWidgets.QMessageBox.Yes:
-            # new mask types
-            self.parameter_dict["FEM_mode"] =self.colony_type.currentText()
-            self.colony_type_old_id=self.colony_type.currentIndex()
-            if self.colony_type.currentText()=="cell layer":
-                setup_masks(self.db,self.db_info, self.parameter_dict) # deletes and add masktyes
-                self.fill_patches_button.setVisible(True)
-            if self.colony_type.currentText()=="colony":
-                setup_masks(self.db,self.db_info, self.parameter_dict)
-                self.fill_patches_button.setVisible(False)
-            self.cp.reloadMaskTypes()  # reloading mask to display in clickpoints window
-        else:
-            self.colony_type.setCurrentIndex(self.colony_type_old_id) #reverting to old index
+    #def fill_patches(self):
 
-
-    def fill_patches(self):
-
-        apply_to_frames(self.db, self.parameter_dict, analysis_function=fill_patches_for_cell_layer,
-                        res_dict=self.res_dict, frames=self.all_frames, db_info=self.db_info)
-        self.cp.reloadMask()
-        self.cp.save()
+    #    apply_to_frames(self.db, self.parameter_dict, analysis_function=fill_patches_for_cell_layer,
+     #                   res_dict=self.res_dict, frames=self.all_frames, db_info=self.db_info)
+     #   self.cp.reloadMask()
+     #   self.cp.save()
     def start(self):
-        cdb_frame = self.cp.getCurrentFrame()
-        print(cdb_frame)
-        print(self.outfile_path)
-        self.frame = self.db_info["cbd_frames_ref_dict"][cdb_frame]
+        if "figures" in list(plt.figure.__globals__.keys()):
+            importlib.reload(plt) # workaround because plt.figure() sometimes gets overloaded when other addons are imported
 
-        print("parameters:\n", self.parameter_dict)
+        # generating objects needed for the following calculation, if they are not exisiting already
+        print_parameters(self.parameter_dict)
+        print("output file: ",self.outfile_path)
+        cdb_frame = self.cp.getCurrentFrame()
+        self.frame = self.db_info["cbd_frames_ref_dict"][cdb_frame]
         self.mode = self.analysis_mode.currentText()  # only current frame or all frames
         if self.mode == "current frame":  # only current frame
             frames = self.frame
-            self.outfile_path = write_output_file(self.parameter_dict, "parameters", self.outfile_path, new_file=True)
-            print("analyzing current frame = ", frames)
-
         if self.mode == "all frames":  # all frames
             frames = self.all_frames
-            print("analyzing frames = ", frames)
-            self.outfile_path = write_output_file(self.parameter_dict, "parameters", self.outfile_path, new_file=True)
-
+        print("analyzing frames = ", frames)
+        self.db_info, self.masks, self.res_dict = provide_basic_objects(self.db,frames, self.parameter_dict, self.db_info,
+                                                                        self.masks, self.res_dict)
+        self.outfile_path = write_output_file(self.parameter_dict, "parameters", self.outfile_path, new_file=True)
         if self.check_box_def.isChecked():
             self.calculate_deformation(frames)
         if self.check_box_tra.isChecked():
@@ -476,6 +602,7 @@ class Addon(clickpoints.Addon):
 
         self.outfile_path = write_output_file(self.res_dict, "results", self.outfile_path,
                                               new_file=False)  # writing to output file
+        print("calculation complete")
 
 
 
@@ -502,3 +629,13 @@ class Worker(QtCore.QThread):
         self.main=main
     def run(self):
         self.main.start()
+
+def setup_mask_wrapper(window,db,db_info,parameter_dict,delete_all=False):
+    other_masks=check_existing_masks(db, parameter_dict)
+    del_str="all previous masks" if delete_all else "the masks "+str(other_masks)[1:-1]
+    if len(other_masks)>0 or delete_all:
+        choice = QtWidgets.QMessageBox.question(window, 'continue',
+                                                "This will delete %s. Do you want to continue?"%del_str,
+                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if choice == QtWidgets.QMessageBox.Yes:
+            setup_masks(db, db_info, parameter_dict, delete_all=delete_all, delete_specific=other_masks)

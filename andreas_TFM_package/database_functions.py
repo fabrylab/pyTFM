@@ -4,6 +4,7 @@ import warnings
 import clickpoints
 import os
 from andreas_TFM_package.utilities_TFM import *
+from andreas_TFM_package.parameters_and_strings import *
 from skimage.morphology import label,binary_dilation
 import itertools
 
@@ -17,7 +18,7 @@ class Mask_Error(Exception):
 
 
 def guess_TFM_mode(db_info,parameter_dict):
-
+    # enter type in ass add_option
     cl_cond1= len(db_info["mask_types"])==2 and  "cell type1" in db_info["mask_types"] and  "cell type2" in db_info["mask_types"]
     cl_cond2= len(db_info["mask_types"])==1 and  ("cell type1" in db_info["mask_types"] or  "cell type2" in db_info["mask_types"])
 
@@ -75,7 +76,7 @@ def setup_database_for_tfm(folder, name):
     setup_database_internal(db, search_keys, folders)
 
 
-def setup_database_internal(db, keys_dict,folders_dict):
+def setup_database_internal(db, keys_dict,folders_dict,TFM_mode=""):
 
     '''
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
@@ -170,25 +171,25 @@ def setup_database_internal(db, keys_dict,folders_dict):
     db.setOption(key="id_frame_dict", value=id_frame_dict)
 
 
-def setup_masks(db,db_info,parameter_dict,delete_all=False):
-    if delete_all:
-        db.deleteMaskTypes() # add some sort of a warning here
-   #mask_type=[m.name for m in db.getMaskTypes()]
-    if parameter_dict["FEM_mode"]=="colony":
-        db.deleteMaskTypes("cell type1")
-        db.deleteMaskTypes("cell type2")
-        if "membrane" not in db_info["mask_types"]:
-            db.setMaskType("membrane", color="#99EA44",index=1)
-        if "contractillity_colony" not in db_info["mask_types"]:
-            db.setMaskType("contractillity_colony", color="#ff0000",index=2)
-    if parameter_dict["FEM_mode"] == "cell layer":
-        db.deleteMaskTypes("membrane", color="#99EA44", index=1)
-        db.deleteMaskTypes("contractillity_colony", color="#ff0000", index=2)
-        if "cell type1"  not in db_info["mask_types"]:
-            db.setMaskType("cell type1", color="#1322ff", index=1)
-        if "cell type2" not in db_info["mask_types"]:
-            db.setMaskType("cell type2",color="#ebff05",index=2)
-    db_info["mask_types"]=[m.name for m in db.getMaskTypes()] # update db info
+def check_existing_masks(db,parameter_dict):
+    current_mask_types = [m.name for m in db.getMaskTypes()]
+    FEM_mode = parameter_dict["FEM_mode"]
+    other_masks = [m for m in current_mask_types if m not in get_masks_by_key(default_parameters,"FEM_mode",FEM_mode)]
+    return other_masks
+
+def setup_masks(db,db_info,parameter_dict,delete_all=False,delete_specific=[]):
+
+    if delete_all: # delete every existing mask
+        db.deleteMaskTypes()
+    for m_type in delete_specific:  # delete a specific set of mask, usually provided by "check_exisiting_masks"
+        db.deleteMaskTypes(m_type)
+    # setting new masks
+    FEM_mode = parameter_dict["FEM_mode"]
+    mtypes=get_masks_by_key(default_parameters,"FEM_mode",FEM_mode)
+    for mask_name,color,index in zip(*get_properties_masks(default_parameters, mtypes, ["name","color","index"])):
+        db.setMaskType(mask_name, color=color, index=index)
+    # update db info
+    db_info["mask_types"]=[m.name for m in db.getMaskTypes()]
 
 def fill_patches_for_cell_layer(frame, parameter_dict,res_dict, db,db_info=None,**kwargs):
     # trying to load the mask from clickpoints

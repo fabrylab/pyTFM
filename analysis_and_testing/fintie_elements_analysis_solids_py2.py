@@ -36,7 +36,7 @@ mask = remove_small_objects(label(mask), 1000) > 0  # removing other small bits
 # interpolation to size of traction force array
 mask_int = interpolation(mask, t_x_resize.shape)
 # further preparatio of mask data
-mask_area, mask_boundaries,borders = prepare_mask(mask_int)
+mask_area = prepare_mask_FEM(mask_int)
 #mask_area=np.ones(mask_area.shape).astype(bool)
 #mask_area=binary_dil(mask_area,iterations=40)
 #plt.figure();plt.imshow(mask_area)

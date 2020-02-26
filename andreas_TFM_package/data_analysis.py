@@ -43,7 +43,7 @@ def read_output_file(file_path):
             elements = line.strip().split("\t")  # removing tailing "\n" and splitting at "\t"
             if len(elements) > 1:  # skip if no values can be separated
                 if is_int(elements[0]):  # adding to output results if the line starts with the frame
-                    res_dict[elements[0]][elements[1]] = float(elements[2])
+                    res_dict[elements[0]][elements[2]] = [elements[1],float(elements[3])]
                 else:  # else add to parameters dict
                     parameter_dict[elements[0]] = try_float_convert(elements[1])
     return parameter_dict, res_dict
@@ -70,7 +70,8 @@ def prepare_values(res_dict, exclude=[]):
         if frame not in exclude:  # ignoring any frame you want ot exclude
             frames.append(frame)  # save the frame
             for name, value in subdict.items():  # iterating through the measured quantities
-                values_dict[name].append(value)  # appending the value for every frame to values_dict
+                values_dict[name].append(value[1])  # appending the value for every frame to values_dict
+                # cells are just thrown in together
     for key, value in values_dict.items():  # conversion to array. This is necessary to simplify subsequent calculations.
         values_dict[key] = np.array(value)
     n_frames = len(frames)  # number of frames

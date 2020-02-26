@@ -3,7 +3,7 @@
 from setuptools import setup
 import os
 
-version='1.0.2' # adding a version file automatically
+version='1.1' # adding a version file automatically
 file_path=os.path.join(os.getcwd(),os.path.join("andreas_TFM_package","_version.py"))
 with open(file_path,"w") as f:
 	f.write("__version__ = '%s'"%version)

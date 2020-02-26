@@ -7,7 +7,11 @@ import copy
 import matplotlib.pyplot as plt
 from itertools import chain
 
+inf = float('inf')
+Edge = namedtuple('Edge', 'start, end, cost')
 
+class path_error(Exception):
+    pass
 class FindingBorderError(Exception):
     pass
 
@@ -18,34 +22,48 @@ def graph_to_mask(graph,points,dims):
     m[ps_coord[:,0],ps_coord[:,1]]=1 #writing points
     return m
 
-def find_endpoints(graph,points):
-    '''
-    tries to identify endpoints of lines: current method
-    endpoint if only one neighbour  (in radius of 1 or sqrt(2) pixels)
-    endpoint if two neighbours but the neighbours are directly adjacent
-    :param graph:
-    :return:
-    '''
-    eps1 = np.where(np.array([len(v) for v in graph.values()]) == 1)[0] # all points are endpoints
-    eps_potential=  np.where(np.array([len(v) for v in graph.values()]) == 2)[0] # potential endpoints
-    eps2=[]
-    for ep in eps_potential:
-        p1,p2=graph[ep]
-        if np.isclose(np.linalg.norm(points[p1]-points[p2]),1): # check if the two neighbours are themseves direct neighbours
-            eps2.append(ep)
-    eps2=np.array(eps2,dtype=int)
-    eps=np.concatenate([eps1,eps2])
-    return eps
+
+
+
+
+
+
 
 def remove_endpoints_wrapper(graph,points):
-    end_points = find_endpoints(graph,points)
-    points_2 = np.array(list(graph.keys()))  # all keys as array
-    eps = points_2[end_points]  # keys of endpoints
-    for ep in eps:
-        if ep in list(graph.keys()):
-            remove_endpoint(graph, ep)
-    return end_points
-def remove_endpoint(graph,ep):
+    graph_cp = copy.deepcopy(graph)
+    eps_id = find_endpoints(graph_cp) # keys of endpoints, this fast and efficient
+    removed=[]
+    for ep in eps_id: # removing the endpoint and its connections from the graph
+        remove_endpoints(graph_cp, ep,removed)
+    return graph_cp,points,removed
+
+
+def check_connectivity(graph,ep):
+    '''
+    checking if removing a node from a graph changes the connectivity of the neighbouring nodes.
+    in other words: are the neighbouring nodes still connected to one another even if I remove the original node.
+    The neighouring points must be connected via maximally one other node. (more would represent ana actual hole in the
+    sceletonized mask)
+    This classifies loose ends and points that can be removed.
+    :return:
+    '''
+    # this works for points 1,2 or nneighbours
+    # identifying an endpoint by checking if removing this point changes the connectivity of its neighbouring nodes
+    # i.e. if i break a connection between two points by removing ep
+    l1_ps = graph[ep]  # first layer of points
+    # check if this causes a line break
+    l2_ps = [[pi for pi in graph[p] if pi != ep] for p in l1_ps]  # second layer of points if original point was removed
+    # third layer of points // don't need to go deeper due to properties of skeletonize
+    # also adding points form secnod layer
+    l3_ps = [np.unique(list(chain.from_iterable([graph[p] for p in l2_p] + [l2_p]))) for l2_p in l2_ps]
+    # check if all points in l1_ps are connected even if ep is removed
+    connectivity = all([all([p in sub_group for p in l1_ps]) for sub_group in l3_ps])
+    # check for connection between points in layer 1--> no connection means
+    # that removing ep introduces a line break
+    return connectivity
+
+
+def remove_endpoints(graph, ep,removed=[]):
     '''
     recursive function to remove dead ends in a graph starting from point ep. Ep has one neighbour.
     Function stops if it hits a point with 3 neigbours or the removal of a point would cause the appearence of two more
@@ -54,28 +72,130 @@ def remove_endpoint(graph,ep):
     :param ep: start point
     :return:
     '''
-
-
-    new_p = graph[ep]  # neighours of this point
-    graph.pop(ep) # try to remove point
-    # check if this causes a line break
-    for p in new_p:
-        l1_ps = graph[p]  # first layer of points
-        l2_ps = list(chain.from_iterable([graph[p] for p in l1_ps]))  # second layer of points
-    layers = l1_ps + l2_ps
-    line_break=not all([p in layers for p in new_p])    # all original points must be found either layer
-
-    if line_break:
-        graph[ep]=new_p # restore graph at this point
-        return
-    else:
-        for p in new_p:
-            graph[p].remove(ep)  # remove all further references in the graph
-
-    if len(new_p)<2:
-        remove_endpoint(graph,new_p[0]) # would stop if it encounters point with three neighbours
+    connectivity=check_connectivity(graph, ep)
+    if connectivity:
+        nps=graph[ep]
+        remove_point_from_graph(graph, ep) # removes the point and all connections form the graph
+        removed.append(ep)
     else:
         return
+    for p in nps: # iterating through further points
+        remove_endpoints(graph, p,removed)
+
+
+    return
+
+def remove_point_from_graph(graph, point):
+    '''
+    removes a point and all connections to this point from a graph
+    :param graph:
+    :param point:
+    :return:
+    '''
+    nps=graph[point] # neighbouring points/nddes
+    graph.pop(point) # removing the node of the graph
+    for p in nps: # removing all connections to this node
+        graph[p].remove(point)
+
+
+
+def find_endpoints(graph):
+    '''
+    identifies "loose ends":
+     goes through all points and checks if removing them would introduce a line break.
+    this is just as fast as checking for the number  of neighbours and then checking the distance of these neighbours
+    :param graph:
+    :return:
+    '''
+    eps = [ep for ep in graph.keys() if check_connectivity(graph, ep)]
+    return np.array(eps)
+
+
+def find_dead_end_lines(graph,non_dead_end_points,max_id):
+    '''
+    finds dead end line segments from their start to the point where they hit a none dead end line.
+    The point in the none dead edn line is included
+    :param graph:
+    :param non_dead_end_points:
+    :param points:
+    :return:
+    '''
+
+    eps_id = find_endpoints(graph) # keys of endpoints, this fast and efficient
+    dead_end_lines={}
+    for ep in eps_id:
+        lps=find_path(graph, ep, non_dead_end_points, path=[])
+        non_dead_end_points.extend(lps) # adding points in the newly discoverd line segments to termination points
+        if len(lps)>3:# filtering single points and very small bits
+            max_id += 1
+            dead_end_lines[max_id]=lps
+    return dead_end_lines,max_id
+
+
+
+def find_lines_simple(graph):
+    # find all endpoints
+    graph_cp=copy.deepcopy(graph)
+    lines_points={}
+    i=0
+    while len(graph_cp.keys())>0:
+        # first ednpoint, if no endpoint the first point
+        new_endpoint=next((x for x in iter(graph_cp.keys()) if len(graph_cp[x])==1),next(iter(graph_cp.keys())))
+        line=find_path_to_endpoint(graph_cp, new_endpoint,path=[],first=True) # only explores one direction
+        for p in line:
+            remove_point_from_graph(graph_cp, p)
+        if len(line)>2:
+                lines_points[i]=line
+                i+=1
+        if i>100000:
+            raise FindingBorderError("found more than 100000 lines; something went wrong")
+            break
+    return lines_points
+
+
+def find_path(graph, start, end, path=[]):
+    '''
+    finds a path (not necessarily the shortest one) through a graph from start to an end node (not necessarily the closest one).
+
+    :param graph: dict, graph
+    :param start: int, start point, must be a key in the graph
+    :param end: list, list of endpoints. when any endpoint is reach the path search is stopped
+    :param path: list, all nodes visited on the way from start to the first endpoint
+    :return:
+    '''
+    path = path + [start]
+    if start in end:
+        return path
+    if not start in graph.keys():
+        return None
+    for node in graph[start]:
+        if node not in path:
+            newpath = find_path(graph, node, end, path)
+            if newpath:
+                return newpath
+    return None # only partial path
+
+def find_path_to_endpoint(graph, start, path=[],first=False):
+    '''
+    finds a path to a (not specific) point with onely one neighbour
+
+    :param graph: dict, graph
+    :param start: int, start point, must be a key in the graph
+    :param end: list, list of endpoints. when any endpoint is reach the path search is stopped
+    :param path: list, all nodes visited on the way from start to the first endpoint
+    :return:
+    '''
+    path = path + [start]
+    if len(graph[start])<2 and not first: # stop if we reached a point with only one neighbour
+        return path
+    if not start in graph.keys():
+        return None
+    for node in graph[start]:
+        if node not in path:
+            newpath = find_path_to_endpoint(graph, node, path)
+            if newpath:
+                return newpath
+    return path # only partial path
 
 
 def find_line_segement(graph,start,path=[],left_right=0):
@@ -97,7 +217,7 @@ def find_line_segement(graph,start,path=[],left_right=0):
     if len(path)==1:
         new_p=new_ps[left_right]  #just choose one point
     else:
-        new_p = new_ps[new_ps != path[-2]][0]  # next pint that wasnt the previous point
+        new_p = new_ps[new_ps != path[-2]][0]  # next point that wasnt the previous point
 
     # recursive function
     newpath = find_line_segement(graph, new_p, path)  # next step
@@ -123,7 +243,7 @@ def mask_to_graph(mask,d=np.sqrt(2)):
     return graph,points
 
 
-def identify_line_segments(graph,points): ## could be  abit improved , sometimes a few points at the edges are left out...
+def identify_line_segments(graph): ## could be  abit improved , sometimes a few points at the edges are left out...
     '''
         function to identify all line segents(representing individual cell boundaries. Segments are returnt as a dictionary
         with an id as key and a list of points (referring to the points array) that are included in the line. The
@@ -133,11 +253,9 @@ def identify_line_segments(graph,points): ## could be  abit improved , sometimes
     :return: dictionary with orderd points  in the line
     '''
 
-
-
     lines_dict={}
     n=0 # counter in while loop
-    all_points=list(range(len(points)))
+    all_points=list(graph.keys()) # all points that are (remaining in the graph)
     intersect_ps=[key for key,values in graph.items() if len(values)>2] # fining intersection points
     if len(intersect_ps) == 0:
         raise FindingBorderError("Can't I dentify cell borders.")
@@ -166,25 +284,7 @@ def identify_line_segments(graph,points): ## could be  abit improved , sometimes
 
     return lines_dict
 
-def find_path(graph, start, end, path=[]):
-    '''
-    finds a path (not the shortest one) through a graph from start to end node
-    :param graph:
-    :param start:
-    :param end:
-    :param path:
-    :return:
-    '''
-    path = path + [start]
-    if start == end:
-        return path
-    if not start in graph.keys():
-        return None
-    for node in graph[start]:
-        if node not in path:
-            newpath = find_path(graph, node, end, path)
-            if newpath: return newpath
-    return None
+
 def find_path_circular(graph, start):
     '''
     function to find the order in a circular graph , of one
@@ -196,7 +296,7 @@ def find_path_circular(graph, start):
     end = graph2[start][0]  # one of the neigbouring points
     graph2[end].remove(start)  # removing connection between them
     graph2[start].remove(end)
-    path = find_path(graph2, start, end)
+    path = find_path(graph2, start, [end])
     return path
 
 def points_to_graph(points):
@@ -210,12 +310,7 @@ def points_to_graph(points):
     return graph
 
 
-###### dijacstra algortihm to fuind shortest path
-inf = float('inf')
-Edge = namedtuple('Edge', 'start, end, cost')
 
-class path_error(Exception):
-    pass
 def make_edge(start, end, cost=1):
   return Edge(start, end, cost)
 

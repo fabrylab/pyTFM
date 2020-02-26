@@ -15,6 +15,37 @@ from andreas_TFM_package.functions_for_cell_colonie import *
 from scipy.ndimage.morphology import distance_transform_edt
 from scipy.signal import convolve2d
 from skimage.filters import gaussian
+import threading, queue
+
+
+def threading_wrapper(qu,funct,*args,**kwargs):
+    '''
+
+    :param qu: queue.Queue object
+    :param funct:
+    :param args:
+    :param kwargs:
+    :return:
+    '''
+
+    qu.put(funct(*args,**kwargs))
+
+def execute_as_thread(functions,arg_list,kwargs_list):
+    #### Python doesnt work that way??? ######
+    threads=[]
+    queues=[]
+    for i,(funct,args,kwargs) in enumerate(zip(functions,arg_list,kwargs_list)):
+        qu = queue.Queue()
+        new_thread = threading.Thread(target=threading_wrapper, args=(qu,funct)+args,kwargs=kwargs)
+        new_thread.start()
+        threads.append(new_thread)
+        queues.append(qu)
+    for thread in threads: # waiting for all threads to finish
+        thread.join()
+    return [qu.get() for qu in queues]
+
+
+
 
 def reverse_kernel(k): # not necessary because kernel is symmetric anyway
     '''
@@ -62,7 +93,7 @@ def return_force_coordinate_with_offset(fx):
 
 
 
-def infinite_thickness_convolution_kernel(fx,fy,pixelsize,young,sigma,kernel_size=None):
+def infinite_thickness_convolution_kernel(fx,fy,pixelsize,young,sigma,kernel_size=None,force_shift=0.5):
 
     if not kernel_size:
         kernel_size = fx.shape
@@ -74,14 +105,14 @@ def infinite_thickness_convolution_kernel(fx,fy,pixelsize,young,sigma,kernel_siz
     dist_y = dist_y.astype(float)
     # makeing sure coorinates are shifted and distance is never exactly zero ... (maybe just exlude zero????)
     if np.mean(dist_x[0, :]).is_integer() or np.mean(dist_y[:, 0]).is_integer():
-        dist_x -= np.mean(dist_x[0, :]) - 0.5  # centering
-        dist_y -= np.mean(dist_y[:, 0]) - 0.5
+        dist_x -= np.mean(dist_x[0, :])   # centering
+        dist_y -= np.mean(dist_y[:, 0])
     else:
         dist_x -= np.mean(dist_x[0, :])  # centering
         dist_y -= np.mean(dist_y[:, 0])
 
-    dist_x = dist_x * pixelsize
-    dist_y = dist_y * pixelsize
+    dist_x = (dist_x+force_shift) * pixelsize
+    dist_y = (dist_y+force_shift) * pixelsize
     r=np.sqrt(dist_x**2+dist_y**2)
 
     # convolution kernels
@@ -95,7 +126,7 @@ def infinite_thickness_convolution_kernel(fx,fy,pixelsize,young,sigma,kernel_siz
 
 
 
-def finite_thickness_convolution_greens_tensor(fx, fy,pixelsize, h, young, sigma=0.5,kernel_size=None):
+def finite_thickness_convolution_greens_tensor(fx, fy,pixelsize, h, young, sigma=0.5,kernel_size=None,force_shift=0):
     '''
     calculating the deformation fieldgiven a tracktion force field using the boussinesq solution for an
      half sphere with finite thickness
@@ -142,8 +173,8 @@ def finite_thickness_convolution_greens_tensor(fx, fy,pixelsize, h, young, sigma
         dist_x -= np.mean(dist_x[0,:]) # centering
         dist_y -= np.mean(dist_y[:, 0])
 
-    dist_x= dist_x* pixelsize
-    dist_y = dist_y* pixelsize
+    dist_x = (dist_x+force_shift)* pixelsize
+    dist_y = (dist_y+force_shift)* pixelsize
 
     r=np.sqrt(dist_x**2+dist_y**2)
 
@@ -312,7 +343,7 @@ def finite_thickenss_convolution_exact_greens_tensor(fx, fy,pixelsize, h, young,
 
 
 
-def infinite_thickness_convolution(fx,fy,pixelsize,young,sigma,kernel_size=None):  ## there should be a much better solution to this...
+def infinite_thickness_convolution(fx,fy,pixelsize,young,sigma,kernel_size=None,force_shift=0):  ## there should be a much better solution to this...
     '''
     calculating the deformation fieldgiven a tracktion force field using the boussiinesq solution for an
     infinte half sphere of an lineary isotropic elastic material
@@ -327,7 +358,7 @@ def infinite_thickness_convolution(fx,fy,pixelsize,young,sigma,kernel_size=None)
     fx=fx.astype(np.float128)
     fy=fy.astype(np.float128)
     # distance for the convolution kernel
-    ([conv_k1, conv_k2, conv_k3], [A])=infinite_thickness_convolution_kernel(fx,fy,pixelsize,young,sigma,kernel_size=None)
+    ([conv_k1, conv_k2, conv_k3], [A])=infinite_thickness_convolution_kernel(fx,fy,pixelsize,young,sigma,kernel_size=None,force_shift=force_shift)
     #deformation by convolution with the kernels
     def_x = convolve2d(fx, conv_k1, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, conv_k2, mode="same", boundary="fill", fillvalue=0)
     def_y = convolve2d(fx, conv_k2, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, conv_k3, mode="same", boundary="fill", fillvalue=0)
@@ -338,7 +369,7 @@ def infinite_thickness_convolution(fx,fy,pixelsize,young,sigma,kernel_size=None)
 
 
 
-def finite_thickness_convolution(fx, fy,pixelsize, h, young, sigma=0.5,kernel_size=None):
+def finite_thickness_convolution(fx, fy,pixelsize, h, young, sigma=0.5,kernel_size=None,force_shift=0):
     '''
     convolution with the greens tensor for finite thikness calculation
     :param fx: forces in x direction
@@ -355,15 +386,19 @@ def finite_thickness_convolution(fx, fy,pixelsize, h, young, sigma=0.5,kernel_si
 
     # greens tensor, As are central elements of the tensor
     ([K1, K2, K3, K4, K5, K6, K7, K8, K9], [A1, A2, A3, A4])= finite_thickness_convolution_greens_tensor(fx,
-                                                            fy,pixelsize, h, young, sigma=0.5,kernel_size=None)
+                                                            fy,pixelsize, h, young, sigma=0.5,kernel_size=None,force_shift=force_shift)
     #deformation by convolution with the kernels
+    #v1,v2,v3,v4 = execute_as_thread([convolve2d]*4,[(fx, K1),(fy, K2),(fx, K4),(fx, K4),fy, K5],[{"mode":"same", "boundary":"fill", "fillvalue":0}]*4)
+
+    #def_x=v1+v2
+    #def_y=v3+v4
     def_x = convolve2d(fx, K1, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K2, mode="same", boundary="fill", fillvalue=0)
     def_y = convolve2d(fx, K4, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K5, mode="same", boundary="fill", fillvalue=0)
-    def_z = convolve2d(fx, K7, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K8, mode="same", boundary="fill", fillvalue=0)
+    #def_z = convolve2d(fx, K7, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K8, mode="same", boundary="fill", fillvalue=0)
 
-    return def_x,def_y,def_z
+    return def_x,def_y,#def_z
 
-def finite_thickenss_convolution_exact(fx, fy,pixelsize, h, young, sigma=0.5,kernel_size=None):
+def finite_thickness_convolution_exact(fx, fy,pixelsize, h, young, sigma=0.5,kernel_size=None):
     '''
        calculating the deformation fieldgiven a tracktion force field using the boussinesq solution for an
         half sphere with finite thickness
@@ -401,10 +436,10 @@ def finite_thickenss_convolution_exact(fx, fy,pixelsize, h, young, sigma=0.5,ker
     #deformation by convolution with the kernels
     def_x = convolve2d(fx, K1, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K2, mode="same", boundary="fill", fillvalue=0)
     def_y = convolve2d(fx, K4, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K5, mode="same", boundary="fill", fillvalue=0)
-    def_z = convolve2d(fx, K7, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K8, mode="same", boundary="fill", fillvalue=0)
+    #def_z = convolve2d(fx, K7, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K8, mode="same", boundary="fill", fillvalue=0)
 
 
-    return def_x,def_y,def_z
+    return def_x,def_y#,def_z
 
 
 

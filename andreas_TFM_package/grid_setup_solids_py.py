@@ -1,5 +1,6 @@
 
 from andreas_TFM_package.solids_py_stress_functions import *
+from andreas_TFM_package.utilities_TFM import make_random_discrete_color_range, invert_dictionary,join_dictionary
 from skimage.morphology import skeletonize,remove_small_holes,remove_small_objects,label,binary_dilation,binary_erosion
 from scipy.ndimage.morphology import binary_fill_holes
 from scipy.ndimage.measurements import find_objects
@@ -8,7 +9,7 @@ from scipy.signal import convolve2d
 from scipy.interpolate import splprep, splev
 from itertools import chain
 from collections import Counter
-
+from contextlib import suppress
 
 
 
@@ -79,31 +80,32 @@ def spline_interpolation(line, points,k=3,endpoints=None):
     y = points[line, 0]
 
     if endpoints: # adding endpoints if provided
-        x = np.concatenate([[endpoints[0][1]],x,[endpoints[1][1]]])
-        y = np.concatenate([[endpoints[0][0]], y, [endpoints[1][0]]])
+        # splprep throws error if two points are exactely identidcal
+        # for ecxample for the "dead-end-lines" the endpoint is identical to the first and last point and thus shouldnt
+        # be added here
+        if not (endpoints[0][1]==x[0] and  endpoints[0][0]==y[0]):
+            x = np.concatenate([[endpoints[0][1]], x],axis=0)
+            y = np.concatenate([[endpoints[0][0]], y],axis=0)
+        if not (endpoints[1][1] == x[-1] and endpoints[1][0] == y[-1]):
+            x = np.concatenate([x, [endpoints[1][1]]],axis=0)
+            y = np.concatenate([y, [endpoints[1][0]]],axis=0)
 
 
-
-
+    k = len(x) - 1 if len(x) <= 3 else 3  # addapt spline order, according to number of points
     tck, u = splprep([x, y], s=10, k=k)  ### parametric spline interpolation
     # fits essentially function: [x,y] =f(t) , t(paramter) is default np.linspace(0,1,len(x))
     # tck is array with x_position of knot, y_position of knot, parameters of the plne, order of the spline
     # ui is paramter given to x,y points, in this case default (values from 0 to 1)
-    # s is smootjing factor(?)
+    # s is smoothing factor(?)
     # k is order of the spline, cubic is fine
 
-
-
     if endpoints: # forcing splines to through endpoints
-        tck[1][0][0]=endpoints[0][1]
-        tck[1][0][-1] =endpoints[1][1]
-        tck[1][1][0] =endpoints[0][0]
-        tck[1][1][-1] =endpoints[1][0]
-
-
-
-    points_new = np.array(splev(u, tck,
-                                der=0)).T  # new points from spline interpolation (thes points will be used for normal stress vector calculation
+        tck[1][0][0] = endpoints[0][1]
+        tck[1][0][-1] = endpoints[1][1]
+        tck[1][1][0] = endpoints[0][0]
+        tck[1][1][-1]  =endpoints[1][0]
+    # new points from spline interpolation (thes points will be used for normal stress vector calculation
+    points_new = np.array(splev(u, tck, der=0)).T
     # in xy orientation
     #points_new = np.round(points_new).astype(int)  ## could also use exact values and the interpolate the stress tensor, but thats probably to complicated
     return tck, u, points_new # points new in xy orientation
@@ -207,41 +209,56 @@ def interpolate_points_dict(points_dict,shape_target,shape_orgin):
     return points_dict_interp
 
 
+
+
+
+
 class Cells_and_Lines:
-    # containter for cells and lines, assignement of points with them, and assignement with each other
-    def __init__(self, mask_boundaries,mask_int, graph,points):
+    # container for cells and lines, assignement of points with them, and assignement with each other
+    def __init__(self, mask_boundaries, shape, graph,points):
 
-        self.mask_boundaries = mask_boundaries
-        self.mask_area=mask_int
-
+        # masks, graph and points including dead-end lines // this distinction is mostly due to historic reasons
+        self.mask_boundaries_wp = mask_boundaries
+        self.inter_shape = shape
         # graph as a dictionray with key=ponit id, values: ids of neighbouring points
         # any point id is the index in the points array (contains coordinate of these points
-        self.graph=graph
-        self.points=points
+        self.graph_wp = graph
+        self.points_wp = points
+        self.graph, self.points,removed=remove_endpoints_wrapper(self.graph_wp, self.points_wp)
+        # masks, graph and points excluding dead-end lines
+        self.mask_boundaries = graph_to_mask(self.graph, self.points, mask_boundaries.shape)  # rebuilding the mask
 
         # interpolate points to the size of the future FEM_grid
-        self.points_interpol=interpolation_single_point(self.points, self.mask_area.shape,self.mask_boundaries.shape)
-
+        self.points_interpol=interpolation_single_point(self.points, self.inter_shape,self.mask_boundaries.shape)
+        # interpolation factors used in the fun
+        #self.inerpol_factors=np.array([self.inter_shape[0] /self.mask_boundaries.shape[0], self.inter_shape[1] / self.mask_boundaries.shape[1]])
         # points as dictionary with key=points id, values: points coordinates
         self.points_dict={i:self.points[i] for i in range(len(self.points))}
 
-        # lines as a dictinonray with key=line id, values: ids of containg points (in correct order)
-        self.lines_points=identify_line_segments(self.graph,self.points)
+        # lines as a dictionary with key=line id, values: ids of containg points (in correct order)
+        self.lines_points=identify_line_segments(self.graph)
 
-
-        # cells as a dictinonray with key=cell id, values: ids of containing points (not ordered)
+        # cells as a dictionary with key=cell id, values: ids of containing points (not ordered)
         self.cells_points, self.cells_area=identify_cells(self.mask_boundaries, binary_fill_holes(self.mask_boundaries), self.points)
 
         # interpolate the area of individual cells to the size of deformation
-        self.cells_area_interpol=interpolate_cell_area(self.cells_area,self.mask_area.shape)
+        self.cells_area_interpol=interpolate_cell_area(self.cells_area,self.inter_shape)
+
+        # self.points_lines = invert_dictionary(self.lines_points) # point_id:line_id
+        self.max_line_id = np.max(list(self.lines_points.keys()))
+        self.de_lines_points, self.max_line_id = find_dead_end_lines(self.graph_wp, list(self.graph.keys()),
+                                                                    self.max_line_id)
+        self.de_endpoints={key:(self.points[value[0]],self.points[value[-1]]) for key,value in self.de_lines_points.items()}# using exact endpoints for the dead end lines
+        self.allLines_points=join_dictionary(self.lines_points,self.de_lines_points)
 
         # dictionary with endpoints, needed to completely fill the gaps between all cell_lines
         self.lines_endpoints_com,self.lines_endpoints = find_exact_line_endpoints(self.lines_points, self.points, self.graph)
 
-        self.lines_endpoints_interpol=interpolate_points_dict(self.lines_endpoints_com, self.mask_area.shape,self.mask_boundaries.shape)
-
         # removing all lines that are predicted to be circular. Mostly a problem for very short lines
         remove_circular_line(self.lines_endpoints_com,self.lines_points,self.lines_endpoints)
+
+
+        # dictionary with both dead end lines and circular lines
 
 
         # center of mass of cells, calculated only from the hull points
@@ -261,15 +278,27 @@ class Cells_and_Lines:
         # using the new endpoints to arrange lines in the correct way
         self.cells_lines = arrange_lines_from_endpoints(self.cells_lines, self.lines_endpoints_com)
 
+
+        # adding dead end endpoints only now to avoid complications when identifying cells
+        self.de_endpoints = {key: (self.points[value[0]], self.points[value[-1]]) for key, value in
+                             self.de_lines_points.items()}
+        self.lines_endpoints_com=join_dictionary(self.lines_endpoints_com,self.de_endpoints)
+        self.lines_endpoints_interpol = interpolate_points_dict(self.lines_endpoints_com, self.inter_shape,
+                                                                self.mask_boundaries.shape)
+
         # list of ids
         self.point_ids = list(self.points_dict.keys())
-        self.line_ids=list(self.cells_points.keys())
-        self.cell_ids=list(self.lines_points.keys())
+        self.cell_ids = list(self.cells_points.keys())
+        self.line_ids = list(self.allLines_points.keys())
         # list of all lines at the edge of the cell colony
         self.edge_lines = find_edge_lines(self.cells_lines)
-
+        # list of dead end lines
+        self.dead_end_lines = list(self.de_lines_points.keys())
+        # list of central boundary (non dead-end, non-edge lines)
+        self.central_lines = [line_id for line_id in self.allLines_points.keys() if line_id not in self.edge_lines and line_id not in self.dead_end_lines]
+        self.n_cells=len(self.cell_ids)
         # list with original line lengths--> later used for interpolation
-        self.line_lengths={key:len(value) for key, value in self.lines_points.items()}
+        self.line_lengths={key:len(value) for key, value in self.allLines_points.items()}
 
         # dictionary containing the spline represetation of the points as a parametric function
         #[x,y]=f(u). u is always np.linspace(0,1,"number of points in the line). Use scipy.interpolate.splev
@@ -284,40 +313,39 @@ class Cells_and_Lines:
         # dictionary with example points (where a normal vector originates) from spline interpolation
         self.lines_spline_points = defaultdict(list)
 
-        for  line_ids, line_ps in self.lines_points.items():
-            endpoints= self.lines_endpoints_interpol[line_ids]
+        for line_id, line_ps in self.allLines_points.items():
+            endpoints = self.lines_endpoints_interpol[line_id]
             k = len(line_ps)+2 - 1 if len(line_ps) <= 3 else 3 # addapt spline order, according to number of points
             # spline order must be below nomber of points, so choose 2 if lne has one point + 2 endpoints
             tck, u, points_new=spline_interpolation(line_ps, self.points_interpol,k=k,endpoints=endpoints) #spline interpolation
-            self.lines_splines[line_ids]=tck # saving the spline obejct
+            self.lines_splines[line_id]=tck # saving the spline object
             # saving a few oints and n vectors for easy representations/ debugging,
             # these points will not be used further
             n_vectors=normal_vectors_from_splines(u, tck) # calculating normal vectors as a list
-            self.lines_n_vectors[line_ids]=n_vectors
-            self.lines_spline_points[line_ids] = points_new
+            self.lines_n_vectors[line_id]=n_vectors
+            self.lines_spline_points[line_id] = points_new
 
-    # self.filter_single_endpoints()
-    #def filter_single_endpoints(self):
-        #'''
-        #finds lines that are circular. this is a worka round. Remove if interpolation /mask shrinking isue is resolved
-        #:param self:
-        #:return:
-        #'''
-        #single_endpoints=[line_id for line_id,(ep1,ep2) in self.lines_endpoints_com.items() if np.linalg.norm(ep1-ep2)<0.2]
-        #self.lines_endpoints_com={line_id:value for line_id,value in self.lines_endpoints_com.items() if line_id not in single_endpoints}
-        #self.lines_endpoints = {line_id: value for line_id, value in self.lines_endpoints.items() if line_id not in single_endpoints}
-        #self.lines_points = {line_id: value for line_id, value in self.lines_points.items() if line_id not in single_endpoints}
-
-
-        #plt.figure()
-        #plt.imshow(self.mask_boundaries)
-        #for l_id,points in self.lines_points.items():
-            #for p in points:
-                #plt.text(self.points[p][1],self.points[p][0],str(l_id))
-
-
-
-
+    def cut_to_FEM_grid(self, FEM_mask):
+        '''
+        removing any points that line outside the FEM Grid
+        :param FEM_mask:
+        :return:
+        '''
+        self.lines_outside = []
+        # spline points is already interpolated to shape of self.mask_area
+        for line_id, line_points in list(self.lines_spline_points.items()):
+            line_points = np.round(line_points).astype(int)
+            if np.sum(~FEM_mask[line_points[:, 1], line_points[:, 0]]) > 5:
+                self.lines_spline_points.pop(line_id, None)
+                self.allLines_points.pop(line_id, None)
+                self.line_lengths.pop(line_id, None)
+                self.lines_endpoints_com.pop(line_id, None)
+                self.de_lines_points.pop(line_id, None)
+                self.lines_points.pop(line_id, None)
+                with suppress(ValueError): self.edge_lines.remove(line_id)
+                with suppress(ValueError): self.edge_lines.remove(line_id)
+                with suppress(ValueError): self.edge_lines.remove(line_id)
+                self.lines_outside.append(line_id)
     def return_n_array(self,fill_nan=True):
         '''
         writes (normal) vectors in a two dimensional array according to their position from spline interpolation
@@ -341,92 +369,118 @@ class Cells_and_Lines:
         :param cells_points: factor to reduce line_id labels that are plotted, must be <= 1
         :return:
         '''
-        colors = []
-        for i in range(len(self.lines_points.keys())):
-            colors.append('#%06X' % np.random.randint(0, 0xFFFFFF))
+
         offset = 0.005 # ofset for point id text
         fig=plt.figure()
         plt.imshow(self.mask_boundaries,cmap="jet")
-
-        plt.plot([],[],color="green",label="line_ids") #legend for line ids
+        plt.plot([], [], color="green",label="line_ids") #legend for line ids
         plt.plot([], [], color="red", label="cells_ids") #legend for cells ids
-
         # plotting all points with line id as label
-        for l, ps in self.lines_points.items():
+        colors=np.array(["C1","C2","C3"]) # choosing colors according to line type
+        line_classifier=[self.central_lines,self.edge_lines,self.dead_end_lines]
+        for l, ps in self.allLines_points.items():
             ps=np.array(ps)
-            if l in self.edge_lines:
-                color="orange"
-            else:
-                color = "green"
+            color=colors[np.array([l in line_ids for line_ids in line_classifier])][0]
             p_indices=np.array(list(range(len(ps)))) #all indicces
             # randomly choising a few indices, without first and laast index
             ps_select=np.random.choice(p_indices[1:-1],size=int((len(ps)-2)*sample_factor),replace=False)
-            ps_select=np.append(ps_select,p_indices[np.array([1,-1])]) # adding back first and last indeyx
+            ps_select=np.append(ps_select,p_indices[np.array([1,-1])]) # adding back first and last index
 
-
-            for p in ps:
-                plt.plot(self.points[p][1], self.points[p][0])
+            plt.plot(self.points[ps][:,1], self.points[ps][:,0],"o",color=color)
             for p in ps[ps_select]: # labeling selected points
-
-                plt.text(self.points[p][1] + 1 * offset * l, self.points[p][0] + 1 * offset * l, s=str(l),color=color)
+                plt.text(self.points[p][1] + 1 * offset * l, self.points[p][0] + 1 * offset * l, s=str(l),color="green")
         # plotting cel id at center of mass of cell
         for cell_id,com in self.cells_com.items():
             plt.text(com[1],com[0],str(cell_id),color="red",fontsize=13)
 
         if plot_n_vectors:
             for points,n_vectors in zip(self.lines_spline_points.values(),self.lines_n_vectors.values()):
-                for n_vec,p in zip(n_vectors,points):
+                for n_vec,p in zip(n_vectors,interpolation_single_point(points, self.mask_boundaries.shape, self.inter_shape)):
                     plt.arrow(p[0], p[1], n_vec[0], n_vec[1], head_width=0.15)
-
         plt.legend()
         return fig
-    def vizualize_splines(self,sample_factor=1):
+
+    def vizualize_splines(self,sample_factor=1,subset=np.inf):
         # sample factor: only every nth point is used for plotting
         plt.figure()
-        plt.imshow(self.mask_area)
-        colors = []
-        for i in range(len(self.lines_points.keys())):
-            colors.append('#%06X' % np.random.randint(0, 0xFFFFFF))
+        plt.imshow(self.mask_boundaries)
+        colors=make_random_discrete_color_range(len(self.lines_spline_points.keys()))
         for i,(l_id,points) in enumerate(self.lines_spline_points.items()):
+            if i>subset:
+                break
+            points=interpolation_single_point(points,self.mask_boundaries.shape,self.inter_shape)
             plt.plot(points[::sample_factor,0],points[::sample_factor,1],color=colors[i])
 
-
-    #def line_stresses(self,n_array,stress_tensor):
-    #    '''
-    #    calculates line stresses and nomr of the line stresses form the normal vectors as an array.
-    #    :param n_array:
-    #    :param stress_tensor:
-    #    :return:
-    #    '''
-    #
-     #   self.ls_array=calculate_stress_vector(n_array, stress_tensor)
-    #   self.ls_norm_array=np.linalg.norm(self.ls_array,axis=2)
-
-
+    def simple_line_plotting(self,lines,subset=np.inf):
+        plt.figure()
+        plt.imshow(self.mask_boundaries)
+        for i,ps in enumerate(lines.values()):
+            if i>subset:
+                break
+            ps2 = self.points[ps]
+            if len(ps) > 1:
+                plt.plot(ps2[:, 1], ps2[:, 0])
+            else:
+                plt.plot(ps2[:, 1], ps2[:, 0], "o")
 
 
-def prepare_mask(mask,shape,min_cell_size=None):
+class Cells_and_Lines2(Cells_and_Lines):
+    # much simplyfied version. Doesnt find cells and doesn't guarnatee to find long line segments. Can't identify
+    # lines at the edge of a colony
+
+    def __init__(self, mask_boundaries, shape, graph, points):
+
+        self.mask_boundaries = mask_boundaries
+        self.inter_shape = shape
+        # graph as a dictionary with key=point id, values: ids of neighbouring points
+        # any point id is the index in the points array (contains coordinate of these points
+        self.graph = graph
+        self.points = points
+        # finding line segments
+        self.lines_points=find_lines_simple(self.graph)
+        self.points_interpol = interpolation_single_point(self.points, self.inter_shape, self.mask_boundaries.shape)
+
+        self.lines_splines = defaultdict(list)
+        self.lines_n_vectors = defaultdict(list)
+        self.lines_spline_points = defaultdict(list)
+
+
+        # spline interpolation
+        for line_id, line_ps in self.lines_points.items():
+            # spline order must be below nomber of points, so choose 2 if lne has one point + 2 endpoints
+            tck, u, points_new = spline_interpolation(line_ps, self.points_interpol)  # spline interpolation
+            self.lines_splines[line_id] = tck  # saving the spline object
+            # saving a few oints and n vectors for easy representations/ debugging,
+            # these points will not be used further
+            n_vectors = normal_vectors_from_splines(u, tck)  # calculating normal vectors as a list
+            self.lines_n_vectors[line_id] = n_vectors
+            self.lines_spline_points[line_id] = points_new
+
+        # categories from other lines object
+        self.cell_ids = []
+        self.line_ids = list(self.lines_points.keys())
+        self.edge_lines = []
+        self.dead_end_lines = []
+        self.central_lines= self.line_ids
+        self.line_lengths={key:len(value) for key, value in self.lines_points.items()}
+
+        # very rough estimate of cell number
+        label_mask,self.n_cells=label(~mask_boundaries,connectivity=1,return_num=True)
+
+
+def prepare_mask_FEM(mask,shape):
     '''
     this function usese skeletonize to transform the cellboundraies to one pixel width. Loose ends are trimmed by
     converison to a graph and then deleting all nodes with only one neighbour.
     :param mask:
     :param min_cell_size: minimal sze of cells in pixles, any hole below that will be filled up. If none, then
         some estimated value is used
-    :return:
+    :return: mask of type bool
     '''
-    ## pre clean up
-    if not min_cell_size:
-        min_cell_size=mask.shape[0]*mask.shape[1]/1000 ## is this robust????
-
-
-
-    mask = remove_small_holes(mask.astype(bool), min_cell_size)
-    mask = remove_small_objects(mask.astype(bool), min_cell_size*10) > 0  # removing other small bits
-
-
+    mask = remove_small_objects(mask.astype(bool), 200).astype(bool)  # removing other small bits
     # interpolating the area to the size of future FEM-grd
     mask_int = interpolation(binary_fill_holes(mask) , shape)
-    mask_int=binary_fill_holes(mask_int).astype(bool) # sometime first binary fill holes is not enough
+    mask_int = binary_fill_holes(mask_int).astype(bool) # sometime first binary fill holes is not enough
 
     # removing unsuitable pixels for grid later --> a pixel must be connected to at least more then 2 others
     m=convolve2d(mask_int.astype(int),np.array([[0,1,0],[1,0,1],[0,1,0]]),mode="same",boundary="fill",  fillvalue=0) # convoultion will produce 1 if only one direct (distance 1) neighbour exists
@@ -437,115 +491,45 @@ def prepare_mask(mask,shape,min_cell_size=None):
         new_p=new_ps[mask_int[new_ps[:,0],new_ps[:,1]]][0]  # checking where a possible replacement point could be located this can only have one result
         mask_int[x,y]=False # removing old point
         mask_int[new_p[0],new_p[1]]=True # adding new point
+    return mask_int
 
 
 
 
+
+def find_borders(mask,shape,raise_error=True,type="colony"):
+ #### maybe reintroduce small cell filter
+    # removing small bits
+    mask = remove_small_objects(mask.astype(bool), 1000).astype(bool)
     # generating borders
     mask_boundaries = skeletonize(mask.astype(int))
     # converting mask to graph object
     graph,points = mask_to_graph(mask_boundaries)
-
+    # finding dead ends: cell borders wich dont connect to other cell borders at one end:
+    # this is use full to get a clean structure of cell borders, which is later used to identifying the number and area of cells
     # applying remove endpoints multiple times to deal with forking dead ends
-    for i in range(20): # this could be solved much better simply by updating the points list
-        end_points=remove_endpoints_wrapper(graph,points)
-        if len(end_points)==0:
-            break
-        mask_boundaries = graph_to_mask(graph, points, mask_boundaries.shape) # rebuilding the mask
-        graph, points = mask_to_graph(mask_boundaries) # updating the points list
 
     try :
-        c_l=Cells_and_Lines(mask_boundaries,mask_int, graph,points)
-    except RecursionError as e:
+        if type=="colony":
+            c_l=Cells_and_Lines(mask_boundaries,shape, graph,points)
+        if type=="cell layer":
+            c_l = Cells_and_Lines2(mask_boundaries, shape, graph, points)
+    except (RecursionError,FindingBorderError) as e:
         print("original error: ", e)
-        raise FindingBorderError
+        if raise_error:
+            raise FindingBorderError
+        else:
+            return None
 
-    #c_l.vizualize_lines_and_cells(sample_factor=0.5,plot_n_vectors=True)
-
+    #c_l.cut_to_FEM_grid(mask_int) # this should never be necessary
+    #c_l.vizualize_lines_and_cells(sample_factor=0.2,plot_n_vectors=True)
+    #c_l.vizualize_splines(sample_factor=4,subset=200000)
+    #c_l.simple_line_plotting(c_l.lines_points)
     ## vizualization of spline interpolation with new line enpoints
-
-    return mask_int, c_l
-
-
-def prepare_mask_spread(mask,dil_factor=1.2):
-    '''
-   same as prepare_mask, but adds an adddtional area arund the actual mask.
-   this function is inteded for tessting only.
-
-    :param mask:
-    :return:
-    '''
-
-    min_cell_size = mask.shape[0] * mask.shape[1] / 1000  ## is this robust????
-    mask = remove_small_holes(mask, min_cell_size)
-    mask = remove_small_objects(label(mask), min_cell_size * 10) > 0  # removing other small bits
-    mask = skeletonize(mask)
+    return c_l
 
 
-    graph = defaultdict(list)
-    points = np.array(np.where(mask)).T
-    point_tree = cKDTree(points)  # look up table for nearest neigbours ??
-    d = np.sqrt(2)  # maximal allowd distance
-    for i, p in enumerate(points):
-        neighbours = point_tree.query_ball_point(p, d)
-        neighbours.remove(i)  # removing the point itself from list of its neighbours
-        graph[i].extend(neighbours)
-
-    end_points = np.where(np.array([len(v) for v in graph.values()]) < 2)[0]
-    points_2 = np.array(list(graph.keys()))  # all keys as array
-    eps = points_2[end_points]  # keys of endpoints
-    for ep in eps:  ## do i even need this???
-        if ep in list(graph.keys()):
-            remove_endpoint(graph, ep)
-
-    mask_boundaries = graph_to_mask( graph, points,mask.shape)  # rewriting mask with deleted points
-
-    mask_area = binary_fill_holes(mask_boundaries)
-
-    mask_dil = interpolation(mask_area, (int(mask_area.shape[0] * dil_factor), int(mask_area.shape[1] * dil_factor))) # intrerpolate to larger size by a factor
-    mask_dil=alligne_objects(mask_area,mask_dil) # cut out and place "ontop" of previous mask
-
-    # removing unsuitable pixels for grid later  for area mask
-
-    m = convolve2d(mask_area, np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]), mode="same", boundary="fill",
-                   fillvalue=0)  # convolution will produce 1 if only one direct (distance 1) neighbour exists
-    p = np.where(np.logical_and(m == 1, mask_boundaries))  # problematic coordinates, only at the edge of the amsk
-
-    for x, y in zip(p[0], p[1]):
-        new_ps = np.array([[x + 1, y], [x, y + 1], [x - 1, y], [x, y - 1]])  # all relevant neigbouring points
-        new_p = new_ps[mask_area[new_ps[:, 0], new_ps[:, 1]]][
-            0]  # checking where a possible replacement point could be located this can only have one result
-        mask_boundaries[x, y] = False  # removing old point
-        mask_boundaries[new_p[0], new_p[1]] = True  # adding new point
-        mask_area[x, y] = False
-        mask_area[new_p[0], new_p[1]] = True
-
-    graph, points = mask_to_graph(mask_boundaries)
-    c_l = Cells_and_Lines(mask_area, mask_boundaries)
-
-
-
-    #for border mask
-    m = convolve2d(mask_dil, np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]), mode="same", boundary="fill",
-                   fillvalue=0)  # convoultion will produce 1 if only one direct (distance 1) neighbour exists
-    p = np.where(np.logical_and(m == 1, mask_dil-binary_erosion(mask_dil)))  # problematic coordinate
-
-
-    mask_dil=mask_dil.astype(bool)
-    for x, y in zip(p[0], p[1]):
-        new_ps = np.array([[x + 1, y], [x, y + 1], [x - 1, y], [x, y - 1]])  # all relevant neigbouring points
-        new_p = new_ps[mask_dil[new_ps[:, 0], new_ps[:, 1]]][0]  # checking where a possible replacement point could be located this can only have one result
-        mask_dil[x, y] = False
-        mask_dil[new_p[0], new_p[1]] = True
-
-
-
-
-
-    return mask_area, mask_boundaries,mask_dil, c_l
-
-
-def interpolation(mask, dims, min_cell_size=100):
+def interpolation(mask, dims, min_cell_size=100,dtype=bool):
     #
     # some pre clean up of the mask
     mask = remove_small_holes(mask.astype(bool), min_cell_size)
@@ -557,7 +541,7 @@ def interpolation(mask, dims, min_cell_size=100):
     coords[1] = coords[1] * interpol_factors[1]  # interpolating xy coordinates
     coords = np.round(coords).astype(int)
 
-    coords[0,coords[0]>=dims[0]]=dims[0]-1 # fixing issue when interpolated object is just at the image border
+    coords[0, coords[0] >= dims[0]] = dims[0]-1 # fixing issue when interpolated object is just at the image border
     coords[1, coords[1] >= dims[1]] = dims[1]-1
 
     mask_int = np.zeros(dims)
@@ -568,7 +552,7 @@ def interpolation(mask, dims, min_cell_size=100):
         iter=int(np.ceil(np.max([mask.shape[0]/dims[0],mask.shape[0]/dims[0]]))*5) # times 5 is safety factor
         mask_int=binary_clo(mask_int,iterations=10)
         print(iter)
-    return mask_int
+    return mask_int.astype(bool)
 
 def interpolation_single_point(point,shape_target,shape_origin):
     # is also works with 2d arrays of shape(n,2)
@@ -604,8 +588,26 @@ def alligne_objects(mask1, mask2):
     mask2_alligne[new_cords1[0]: new_cords1[1], new_cords1[2]:new_cords1[3]] = mask2[rectangle2[0][0], rectangle2[0][1]]
     return mask2_alligne.astype(int)
 
+def cut_mask_from_edge(mask,cut_factor,warn_flag=False):
+    mask_cut=copy.deepcopy(mask)
+    sum_mask1=np.sum(mask_cut)
+    dims=mask_cut.shape
+    inds=[int(dims[0]*cut_factor),int(dims[0]-(dims[0]*cut_factor)),int(dims[1]*cut_factor),int(dims[1]-(dims[1]*cut_factor))]
+    mask_cut[:inds[0], :] = 0
+    mask_cut[inds[1]:, :] = 0
+    mask_cut[:, :inds[2]] = 0
+    mask_cut[:, inds[3]:] = 0
+    sum_mask2 = np.sum(mask_cut)
+    warn="mask was cut close to image edge" if (sum_mask2<sum_mask1 and warn_flag) else ""
+    return mask_cut, warn
 
-def grid_setup(mask_area, f_x, f_y, E, sigma):
+def cut_mask_from_edge_wrapper(cut_factor,mask,parameter_dict,cut=True,warn=""):
+    warn_flag = parameter_dict["cut_instruction"][parameter_dict["FEM_mode"]]
+    if cut:
+        mask, warn = cut_mask_from_edge(mask,cut_factor,parameter_dict["TFM_mode"]=="colony")
+    return mask, warn
+
+def grid_setup(mask_area, f_x, f_y, E, sigma,edge_factor):
     '''
     setup of nodes, elements, loads and mats(elastic material properties) lists for solids pys finite elments analysis. Every pixel of
     the provided mask is used as a node. Values from f_x,f_y at these pixels are used as loads. Mats is just
@@ -630,10 +632,11 @@ def grid_setup(mask_area, f_x, f_y, E, sigma):
     nodes[:, 1] = coords[1]  # x coordinate
     nodes[:, 2] = coords[0]  # y coordinate
 
-    # fix all nodes that are exactely at the edge of the image in the movment direction perpendicular to the edge
-
-    edge_nodes_horizontal = np.hstack([ids[:, 0], ids[:, -1]]).astype(int) # upper and lower image edge
-    edge_nodes_vertical = np.hstack([ids[0, :], ids[-1, :]]).astype(int) # left and right image edge
+    # fix all nodes that are exactely at the edge of the image (minus any regions close to the image edge that are
+    # supposed to be ignored)in the movement direction perpendicular to the edge
+    ids_cut,w=cut_mask_from_edge(ids,edge_factor,"")
+    edge_nodes_horizontal = np.hstack([ids_cut[:, 0], ids_cut[:, -1]]).astype(int) # upper and lower image edge
+    edge_nodes_vertical = np.hstack([ids_cut[0, :], ids_cut[-1, :]]).astype(int) # left and right image edge
     edge_nodes_horizontal = edge_nodes_horizontal[edge_nodes_horizontal >= 0]
     edge_nodes_vertical = edge_nodes_vertical[edge_nodes_vertical >= 0]
 

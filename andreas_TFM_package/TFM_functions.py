@@ -320,8 +320,6 @@ def ffttc_traction_finite_thickness_wrapper(u, v, pixelsize1, pixelsize2, h, you
     height correction breaks down due to numerical reasons at large gel height and small wavelengths of deformations.
     In this case the height corrected ffttc-function returns Nans. THis function falls back to the non height-corrected ffttc
     function if this happens
-
-
     :return:
     '''
     with suppress_warnings(RuntimeWarning):
@@ -332,109 +330,6 @@ def ffttc_traction_finite_thickness_wrapper(u, v, pixelsize1, pixelsize2, h, you
         tx, ty = ffttc_traction(u, v, pixelsize1 = pixelsize1, pixelsize2 = pixelsize2, young=young, sigma=sigma,
                                 filter=filter)
     return tx, ty
-
-
-
-
-
-
-
-
-def ffttc_traction_old(u,v,young,pixelsize,pixel_factor,sigma=0.49,bf_image=False,filter="mean"):
-
-    '''
-    this function is depricated avoid usage
-    :param u:
-    :param v:
-    :param young:
-    :param pixelsize:
-    :param pixel_factor:
-    :param sigma:
-    :param bf_image:
-    :param filter:
-    :return:
-    '''
-
-
-    #0) substracting mean(better name for this step)
-    u_shift=(u-np.mean(u))/pixel_factor   # shifting to zero mean and trasnlating to pixelsize of u-image
-    v_shift=(v-np.mean(v))/pixel_factor
-    ## bens algortithm:
-
-    # 1)Zeropadding to get sqauerd array with even index number
-    ax1_length=np.shape(u_shift)[0]   # u and v must have same dimensions
-    ax2_length=np.shape(u_shift)[1]
-    max_ind=int(np.max((ax1_length,ax2_length)))
-    if max_ind%2!=0:
-        max_ind+=1
-    u_expand=np.zeros((max_ind,max_ind))
-    v_expand=np.zeros((max_ind,max_ind))
-    u_expand[:ax1_length,:ax2_length]=u_shift
-    v_expand[:ax1_length,:ax2_length]=v_shift
-
-    #2) produceing wave vectors   ## why this form
-    #form 1:max_ind/2 then -(max_ind/2:1)
-    kx1=np.array([list(range(0,int(max_ind/2),1)),]*int(max_ind))
-    kx2=np.array([list(range(-int(max_ind/2),0,1)),]*int(max_ind))
-    kx=np.append(kx1,kx2,axis=1)
-    ky=np.transpose(kx)
-    k = np.sqrt(kx**2 + ky**2)/(pixelsize*max_ind)    # matrix with "relative" distances??#
-    #np.save("/home/user/Desktop/k_test.npy",k)
-
-    #2.) caclulating angle between k and kx with atan 2 function (what is this exactely??)
-    alpha= np.arctan2(ky,kx)
-    alpha[0,0]=np.pi/2 ## why do i need this?-> arctan2(n,0) n-->0 is pi/2 for n positive and -pi/2 for n negative arctan(0,0) has been defined on 0
-    #np.save("/home/user/Desktop/alpha_test.npy",alpha)
-    #3) calkulation of K--> Tensor to calculate displacements from Tractions. We calculate inverse of K
-    #(check if correct inversion by your self)
-    #K⁻¹=[[kix kid],
-    #     [kid,kiy]]  ,,, so is "diagonal, kid appears two times
-
-    kix = ((k*young) / (2*(1-sigma**2))) *((1 - sigma + sigma * np.cos(alpha)**2))
-    kiy = ((k*young) / (2*(1-sigma**2))) *((1 - sigma + sigma * np.sin(alpha)**2))
-    kid = ((k*young) / (2*(1-sigma**2))) *(sigma * np.sin(alpha) * np.cos(alpha))
-    #np.save("/home/user/Desktop/kid_seg2_test.npy",(sigma * np.sin(alpha) * np.cos(alpha)))
-    ## adding zeros in kid diagonals(?? why do i need this)
-    kid[:,int(max_ind/2)]=np.zeros(max_ind)
-    kid[int(max_ind/2),:]=np.zeros(max_ind)
-
-    #4) calculate fourrier transform of dsiplacements
-    u_ft=np.fft.fft2(u_expand*pixelsize*2*np.pi)
-    v_ft=np.fft.fft2(v_expand*pixelsize*2*np.pi)
-
-    #4.1) calculate tractions in fourrier space T=K⁻¹*U, U=[u,v]  here with individual matrix elelemnts..
-    tx_ft = kix * u_ft  +  kid * v_ft;
-    ty_ft = kid * u_ft  +  kiy * v_ft;
-    ##plt.imshow(tx_ft.real)
-    #4.2) go back to real space
-    tx=np.fft.ifft2(tx_ft).real
-    ty=np.fft.ifft2(ty_ft).real
-
-    #5.2) cut back to oringinal shape
-    tx_cut=tx[0:ax1_length,0:ax2_length]
-    ty_cut=ty[0:ax1_length,0:ax2_length]
-
-    #5.3) using filter
-    if filter=="mean":
-        tx_filter=uniform_filter(tx_cut,size=5)
-        ty_filter=uniform_filter(ty_cut,size=5)
-    if filter == "gaussian":
-        tx_filter = gaussian_filter(tx_cut, sigma=1.5)
-        ty_filter = gaussian_filter(ty_cut, sigma=1.5)
-    if filter == "median":
-        tx_filter = median_filter(tx_cut, size=5)
-        ty_filter = median_filter(ty_cut, size=5)
-
-
-    #5.x) zooming out for represetnation purposes exactly to bf_image size
-    if bf_image:
-        zoom_factors=[np.shape(bf_image)[0]/np.shape(tx_cut)[0],np.shape(bf_image)[1]/np.shape(tx_cut)[1]]
-        tx_zoom_out=zoom(tx_filter,zoom_factors)
-        ty_zoom_out=zoom(ty_filter,zoom_factors)
-        return (tx_filter, ty_filter,tx_zoom_out,ty_zoom_out)
-
-    return(tx_filter,ty_filter)    # because of image axis inversion???
-
 
 
 def calculate_deformation(im1,im2,window_size=64,overlapp=32,std_factor=20):
@@ -466,9 +361,6 @@ def calculate_deformation(im1,im2,window_size=64,overlapp=32,std_factor=20):
     elif isinstance(im2, np.ndarray):
         frame_b = im2
 
-
-
-
     u, v, sig2noise = openpiv.process.extended_search_area_piv( frame_a, frame_b, window_size=window_size, overlap=overlapp,
                                                                 dt=1,subpixel_method="gaussian", search_area_size=window_size, sig2noise_method='peak2peak' )
     x, y = openpiv.process.get_coordinates( image_size=frame_a.shape, window_size=window_size, overlap=overlapp)
@@ -485,7 +377,7 @@ def calculate_deformation(im1,im2,window_size=64,overlapp=32,std_factor=20):
     v[mask_std] = np.nan
 
     u, v = openpiv.filters.replace_outliers( u, v, method='localmean', max_iter=10, kernel_size=2 )
-    return(u,-v,x,y,mask,mask_std)     # return -v because of image inverted axis
+    return (u,-v,x,y,mask,mask_std)     # return -v because of image inverted axis
 
 
 
@@ -502,50 +394,6 @@ def get_xy_for_quiver(u):
     for j in range(np.shape(u)[1]):  ## is inverted in other skript...
         ys[:, j] = np.arange(0,np.shape(u)[0], 1)
     return xs, ys
-
-
-def plotting_deformation(u,v):
-
-
-    fig=plt.figure()
-    def_abs=np.sqrt(u**2+v**2)
-    plt.imshow(def_abs)
-    cbar=plt.colorbar()
-    cbar.set_label("displacement in pixel")
-    x1,y1=get_xy_for_quiver(u)
-    scale_ratio=0.2
-    scale = scale_ratio * np.max(np.shape(u)) / np.max(def_abs)  # automatic scaleing in dependance of the image size
-    plt.quiver(x1,y1,u*scale,v*scale,scale=1,headwidth=3, scale_units='xy',angles='xy')
-
-    plt.arrow(75, -14, 10*scale, 0, head_width=0, facecolor="black", edgecolor="black",
-              clip_on=False, head_starts_at_zero=False, overhang=2)
-    plt.text(75, -10, "10 pixel displacement", color="black")
-
-
-    plt.close()
-    return fig
-
- #defo image:
-
-def plotting_traction(tx, ty):
-    fig = plt.figure()
-    plt.imshow(np.sqrt((tx/1000) ** 2 + (ty/1000) ** 2),cmap="rainbow")
-    cbar = plt.colorbar()
-    cbar.set_label("traktion forces in kPa")
-    x1, y1 = get_xy_for_quiver(tx)
-    scale_ratio=0.2
-    scale = scale_ratio * np.max(np.shape(tx)) / np.max(np.sqrt((tx/1000) ** 2 + (ty/1000) ** 2))  # automatic sacleing in dependace of the image size #
-    plt.quiver(x1, y1, (tx/1000) * scale, (ty/1000) * scale, scale=1, scale_units='xy',angles="xy")
-    plt.arrow(75, -14, 1 * scale, 0, head_width=0, facecolor="black", edgecolor="black",
-              clip_on=False, head_starts_at_zero=False, overhang=2)
-    plt.text(75, -10, "1 kPa Force", color="black")
-    plt.close()
-    return fig
-
-
-### energy calculation and gui
-
-
 
 def contractillity(tx,ty,pixelsize,mask):
     '''
@@ -609,19 +457,7 @@ def contractillity(tx,ty,pixelsize,mask):
 
     return contractile_force, proj_x, proj_y,center # unit of contractile force is N
 
-### incorrect function that was previously used
-def contractile_energy_points_old(u,v,tx,ty,pixelsize1,pixelsize2):
-    pixelsize2*=10**-6 # conversion to m
-    pixelsize1*=10**-6
-    energy_points = 0.5 * (pixelsize2 ** 2) * (np.sqrt((tx  * u * pixelsize1) ** 2 + (
-            ty  * v * pixelsize1) ** 2))
-
-
-    bg = np.percentile(energy_points, 30)  # value of a background point
-    energy_points-=bg
-    return energy_points
-
-
+##
 def contractile_energy_points(u,v,tx,ty,pixelsize1,pixelsize2):
     pixelsize2*=10**-6 # conversion to m
     pixelsize1*=10**-6
@@ -633,90 +469,6 @@ def contractile_energy_points(u,v,tx,ty,pixelsize1,pixelsize2):
     bg = np.percentile(energy_points, 30)  # value of a background point
     energy_points-=bg
     return energy_points
-
-
-
-
-
-def plot_deformation_few_arrows(u,v,vmin=0,vmax=False,scale_ratio=0.5):
-    '''
-    plotting deformation with additional gaussian filter and only showing every 3rd arrow (in x and y direction)
-    :param u:
-    :param v:
-    :param vmin:
-    :param vmax:
-    :param scale_ratio:
-    :return:
-    '''
-
-    pixx = np.arange(np.shape(u)[0])
-    pixy = np.arange(np.shape(u)[1])
-    xv, yv = np.meshgrid(pixy, pixx)
-    def_abs = np.sqrt((u ** 2 + v ** 2))
-    u_show = gaussian_filter(u, sigma=3)
-    v_show = gaussian_filter(v, sigma=3)  # blocks of edge size 3
-    select_x = ((xv - 1) % 3) == 0
-    select_y = ((yv - 1) % 3) == 0
-    selct_size = def_abs > 1
-    select = select_x * select_y * selct_size
-    u_show[~select] = 0
-    v_show[~select] = 0
-
-    if not vmax:
-        vmax = np.max(def_abs)
-    # defo image:
-    fig = plt.figure()
-    im=plt.imshow(def_abs, vmin=vmin, vmax=vmax, cmap="rainbow")
-    x1, y1 = get_xy_for_quiver(u)
-
-    scale = scale_ratio * np.max(np.shape(u)) / np.max(def_abs)  # automatic sacleing in dependace of the image size
-
-    plt.quiver(x1, y1, u_show * scale, v_show * scale, scale=1, headwidth=3, scale_units='xy', width=0.002)
-    plt.arrow(75, -14, 5 * scale, 0, head_width=0, facecolor="black", edgecolor="black",
-              clip_on=False, head_starts_at_zero=False, overhang=2)
-    plt.text(75, -10, "5 pixel displacement", color="black")
-    divider = make_axes_locatable(plt.gca())
-    cax = divider.append_axes("right", size="5%", pad=0.1)
-    cbar = plt.colorbar(mappable=im, cax=cax)
-    cbar.set_label("displacement in pixel", fontsize=15)
-
-
-def plot_deformation_all_arrows(u,v,vmin=0,vmax=False,scale_ratio=0.5,bar_length=5):
-
-    pixx = np.arange(np.shape(u)[0])
-    pixy = np.arange(np.shape(u)[1])
-    xv, yv = np.meshgrid(pixy, pixx)
-    def_abs = np.sqrt((u ** 2 + v ** 2))
-
-
-    if not vmax:
-        vmax = np.max(def_abs)
-    # defo image:
-    fig = plt.figure()
-    im=plt.imshow(def_abs, vmin=vmin, vmax=vmax, cmap="rainbow")
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
-    u_filter=copy.deepcopy(u)
-    u_filter[def_abs < vmin]=0
-    v_filter=copy.deepcopy(v)
-    v_filter[def_abs < vmin] = 0
-
-    x1, y1 = get_xy_for_quiver(u)
-
-    scale = scale_ratio * np.max(np.shape(u)) / np.max(def_abs)  # automatic sacleing in dependace of the image size
-
-    plt.quiver(x1, y1, u_filter * scale, v_filter * scale, scale=1, headwidth=3, scale_units='xy',angles="xy", width=0.002)
-
-
-    plt.arrow(np.shape(u)[0]*1,0-np.shape(u)[1]*0.1, bar_length * scale, 0, head_width=0, facecolor="black", edgecolor="black",
-              clip_on=False, head_starts_at_zero=False, overhang=2)
-    plt.text(np.shape(u)[0]*1,0-np.shape(u)[1]*0.05, "%d pixel displacement" % bar_length, fontsize=10, color="black")
-    divider = make_axes_locatable(plt.gca())
-    cax = divider.append_axes("right", size="5%", pad=0.1)
-    cbar = plt.colorbar(mappable=im, cax=cax)
-    cbar.set_label("displacement in pixel", fontsize=15)
-
-
 
 
 

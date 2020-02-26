@@ -2,8 +2,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import copy
 import warnings
-
+from scipy.ndimage.filters import gaussian_filter
+from collections import defaultdict
 class suppress_warnings():
     def __init__(self,warning_type):
         self.warning_type=warning_type
@@ -20,7 +22,7 @@ def make_iterable(value):
         return value
 
 def make_iterable_args(value):
-    # in order to unack array as one value we need need [array]
+    # in order to unpack array as one value we need need [array]
 
     if not hasattr(value, '__iter__') or isinstance(value,str) or isinstance(value, np.ndarray):
         return [value]
@@ -49,6 +51,14 @@ def make_rank_list(values,dtype=int):
     unique_values_dict={value:rank for rank,value in enumerate(unique_values)} # value:rank of the frame
     rank_list = [unique_values_dict[value] for value in values_conv]
     return rank_list
+
+def invert_dictionary(d):
+    d_inv=defaultdict(list)
+    for key,values in d.items():
+        for v in make_iterable(values):
+            d_inv[v].append(key)
+    return d_inv
+
 
 def round_flexible(n,digits=2):
     '''
@@ -88,6 +98,68 @@ def round_flexible_str(n,digits=2,sci_limit=3):
             string=str(n_round)
     return string
 
+def split_path_with_os(folder):
+    if not os.path.split(folder)[1]=="":
+        parts =os.path.split(folder)[1]
+        remaining = [os.path.split(folder)[0]]
+    else:
+        remaining1=os.path.split(folder)[0]
+        parts = [os.path.split(remaining1)[1]]
+        remaining = [os.path.split(remaining1)[0]]
+
+
+    while True:
+        path_part=os.path.split(remaining[-1])[1]
+        if path_part == "":
+            break
+        parts.append(path_part)
+        remaining.append(os.path.split(remaining[-1])[0])
+
+    return parts
+
+def gaussian_with_nans(arr1, sigma="auto"):
+    '''
+    applies a gaussian to an array with nans, so that nan values are ignored.
+    :param arr1:
+    :param sigma: either a string or a float. Sigma as a string: "auto" or "auto-n",n will be applied as a factor
+    to determine sigma based on the largest array-axis. Sigma as a float: will directly be used as a sigma for the
+    gaussian filter// doesn't depend on axis lengths.
+    :return:
+    '''
+    if isinstance(sigma,str):
+        if "auto" in sigma:
+            try:
+                sigfactor=float(sigma.split("-")[1])
+            except IndexError as e:
+                sigfactor=1
+                print (e)
+            sigma = np.max(arr1.shape) / (500*sigfactor)  # appropriate sigma
+
+    # not sure why this works....
+    arr_zeros = copy.deepcopy(arr1)
+    arr_ones = copy.deepcopy(arr1)
+    arr_zeros[np.isnan(arr1)] = 0  # array where all nans are replaced by zeros
+    arr_ones[~np.isnan(arr1)] = 1
+    arr_ones[np.isnan(arr1)] = 0  # array where all nans are replaced by zeros and all other values are replaced by ones
+
+    filter_zeros = gaussian_filter(arr_zeros, sigma=sigma)  # gaussian filter applied to both arrays
+    filter_ones = gaussian_filter(arr_ones, sigma=sigma)
+    filter_final = filter_zeros / filter_ones  # devision cancles somehow the effect of nan positions
+    filter_final[np.isnan(arr1)] = np.nan  # refilling original nans
+    return filter_final
+
+def make_display_mask(mask):
+    '''
+    converts a boolean mask to a mask with 1 and np.nans
+    :param mask: np.ndarray with dtype bool or int or suitable float
+    :return:
+    '''
+    mask_show=copy.deepcopy(mask).astype(bool)
+    mask_show[~mask_show]=np.nan
+
+    return mask
+
+
 def find_prefix(n):
     '''
     finds an apropriate prefix (nano, giga, milli..) and returns the rounded number
@@ -108,6 +180,7 @@ def find_prefix(n):
 
 
 
+
 def convert_to_int(a):
 
     '''
@@ -123,6 +196,19 @@ def convert_to_int(a):
         return n
     return n
 
+def try_int_strip(string):
+    try:
+        return int(string)
+    except ValueError:
+        return string.strip("'")
+
+
+def squeeze_list(l):
+    if len(l)==1:
+            if isinstance(l[0],list):
+                l=l[0]
+    return l
+
 
 
 
@@ -136,7 +222,20 @@ def createFolder(directory):
     except OSError:
         print('Error: Creating directory. ' + directory)
 
+def exclude_by_key(d,ex_list):
+    ex_dict = {key: values for key, values in d.items() if
+                 key not in ex_list}
+    return ex_dict
 
+def join_dictionary(d1,d2):
+    d3=copy.deepcopy(d1)
+    max_key=np.max(list(d1.keys()))
+    for key,value in d2.items():
+        if key>max_key:
+            max_key+=1
+            d3[max_key]=value
+    return d3
+    # note:z = {**x, **y} and "update" are nices tricks here
 
 
 def produce_index_array(u):
@@ -150,18 +249,11 @@ def ndargmin(array):
 
 
 
-def createFolder(directory):
-    '''
-    function to create directories, if they dont already exist
-    '''
-    try:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    except OSError:
-        print('Error: Creating directory. ' + directory)
-
-
-
+def make_random_discrete_color_range(size):
+    colors = []
+    for i in range(size):
+        colors.append('#%06X' % np.random.randint(0, 0xFFFFFF))
+    return colors
 #function to convert none object from re.search to empty string
 
 def get_group(s=None,group_number=1):

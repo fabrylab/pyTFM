@@ -65,40 +65,14 @@ def hide_ticks(ax, interval):
             label.set_visible(False)
 
 
-def plot_line_stresses(mask,coords,n_stress,shear_stress):
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    plt.subplots_adjust(right=0.8)
-    ax3 = fig.add_axes([0, 0, 0, 0])
-    n_b = list(ax2.get_position().bounds)
-    n_b[0] += n_b[2] + 0.02
-    n_b[2] = 0.05
-    ax3 = fig.add_axes(n_b)
-
-    im1=np.zeros(mask.shape)+np.nan
-    im2=np.zeros(mask.shape)+np.nan
-    im1[coords[1:-1,0],coords[1:-1,1]]=n_stress
-    im2[coords[1:-1, 0], coords[1:-1, 1]]=shear_stress
-
-    min_v = np.nanmin(np.minimum(n_stress, shear_stress))
-    max_v = np.nanmax(np.maximum(n_stress, shear_stress))
-
-    ax1.imshow(im1,cmap="jet",vmin=min_v,vmax=max_v,origin="lower")
-    ax1.set_title("noraml stress on line")
-    ax2.imshow(im2,cmap="jet",vmin=min_v,vmax=max_v,origin="lower")
-    ax2.set_title("shear stress on line")
 
 
-
-    norm = matplotlib.colors.Normalize(vmin=min_v, vmax=max_v)
-    cb1 = matplotlib.colorbar.ColorbarBase(ax3, cmap=matplotlib.cm.get_cmap("jet"),
-                                           norm=norm, label="stress",
-                                          orientation='vertical')
-
-
-
-def plot_continous_boundary_stresses(shape,edge_lines,lines_interpol,min_v,max_v,mask_boundaries=None,plot_t_vecs=False,plot_n_arrows=False,figsize=(10,7),
+def plot_continous_boundary_stresses(plot_values,mask_boundaries=None,plot_t_vecs=False,plot_n_arrows=False,figsize=(10,7),
                                      scale_ratio=0.2,border_arrow_filter=1,cbar_str="line stress in N/µm",vmin=None,vmax=None,
-                                    cbar_width="2%",cbar_height="50%",cbar_axes_fraction=0.2,cbar_tick_label_size=20,background_color="white",cbar_borderpad=2.5,linewidth=4,cmap="jet",cbar_style="clickpoints",**kwargs):
+                                    cbar_width="2%",cbar_height="50%",cbar_axes_fraction=0.2,cbar_tick_label_size=20,
+                                     background_color="white",cbar_borderpad=2.5,linewidth=4,cmap="jet",cbar_style="clickpoints",
+                                     boundary_resolution=3,
+                                     **kwargs):
 
 
     '''
@@ -120,88 +94,77 @@ def plot_continous_boundary_stresses(shape,edge_lines,lines_interpol,min_v,max_v
     :param vmax:  overwrites max_v and min_v if provided
     :return:
     '''
-    if isinstance(vmin,(float,int)):
-        min_v=vmin
-    if isinstance(vmax,(float,int)):
-        max_v=vmax
+
+    min_v = np.min([pv[3] for pv in plot_values]) # minimum over all objects
+    max_v = np.max([pv[4] for pv in plot_values]) # maximum over all objects
+    shape = plot_values[0][0]                     # image shape, should be the same for all objects
     print("plotting cell border stresses")
+    min_v = vmin if isinstance(vmin,(float,int)) else min_v
+    max_v = vmax if isinstance(vmin, (float, int)) else max_v
+    mask_boundaries=np.zeros(shape) if not isinstance(mask_boundaries,np.ndarray) else mask_boundaries
 
     fig = plt.figure(figsize=figsize)
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     fig.add_axes(ax)
-    ax.set_axis_off()
 
-    if not isinstance(mask_boundaries,np.ndarray):
-        mask_boundaries=np.zeros(shape)
-
-    # plotting empty array with background as cmap value of zero
-    if background_color=="cmap_0":
-        cmap_custom = matplotlib.colors.ListedColormap([matplotlib.cm.get_cmap(cmap)(i) for i in range(3)])
-    else:
-        cmap_custom = matplotlib.colors.ListedColormap([background_color for i in range(3)])
-    bounds = [0,1,2]
-    norm = matplotlib.colors.BoundaryNorm(bounds, cmap_custom.N)
-    im = ax.imshow(np.zeros(shape).astype(int),cmap=cmap_custom,norm=norm)
-
-    # finding global scaling factor for arrows
-    all_t_vecs=np.vstack([subdict["t_vecs"] for subdict in lines_interpol.values()])
-    if plot_t_vecs:
-        scale = scale_for_quiver(all_t_vecs[:, 0], all_t_vecs[:, 1], dims=mask_boundaries.shape,
-                                                      scale_ratio=scale_ratio,return_scale=True)
-
-    for line_id,interp in tqdm(lines_interpol.items(),total=len(lines_interpol.values())):
-        p_new=interp["points_new"]
-        x_new=p_new[:,0]
-        y_new=p_new[:,1]
-        t_norm=interp["t_norm"]
-        t_vecs = interp["t_vecs"]
-        n_vecs=interp ["n_vecs"]
-        # plotting line segments
-
-        c = matplotlib.cm.get_cmap(cmap)((t_norm - min_v) / (max_v - min_v))  # normalization and creating a color range
-        ## see how well that works
-        if line_id in edge_lines: # plot lines at the edge
-            for i in range(len(x_new)-1):
-                plt.plot([x_new[i],x_new[i+1]],[y_new[i],y_new[i+1]],color="gray",linewidth=linewidth)
-        else:
-            for i in range(len(x_new) - 1):
-                plt.plot([x_new[i], x_new[i + 1]], [y_new[i], y_new[i + 1]], color=c[i], linewidth=linewidth)
-
-        # plotting stressvectors
+    for shape, edge_lines, lines_interpol,*rest  in plot_values:
+        all_t_vecs=np.vstack([subdict["t_vecs"] for subdict in lines_interpol.values()])
         if plot_t_vecs:
-            t_vecs_scale=t_vecs*scale
-            for i,(xn,yn,t) in enumerate(zip(x_new,y_new,t_vecs_scale)):
-                if i % border_arrow_filter == 0:
-                    plt.arrow(xn,  yn,t[0], t[1],head_width=0.5)
-        # plotting normal vectors
-        if plot_n_arrows:
-            for i in range(len(x_new) - 1):
-                if i % border_arrow_filter == 0:
-                    plt.arrow(x_new[i],  y_new[i],n_vecs[i][0], n_vecs[i][1],head_width=0.5)
+            scale = scale_for_quiver(all_t_vecs[:, 0], all_t_vecs[:, 1], dims=mask_boundaries.shape,
+                                     scale_ratio=scale_ratio,return_scale=True)
+        for line_id,interp in tqdm(lines_interpol.items(),total=len(lines_interpol.values())):
+            p_new=interp["points_new"]
+            x_new=p_new[:,0]
+            y_new=p_new[:,1]
+            t_norm=interp["t_norm"]
+            t_vecs = interp["t_vecs"]
+            n_vecs=interp ["n_vecs"]
+            # plotting line segments
 
+            c = matplotlib.cm.get_cmap(cmap)((t_norm - min_v) / (max_v - min_v))  # normalization and creating a color range
+            ## see how well that works
+            if line_id in edge_lines: # plot lines at the edge
+                for i in range(0,len(x_new)-boundary_resolution,boundary_resolution):
+                    plt.plot([x_new[i],x_new[i+boundary_resolution]],[y_new[i],y_new[i+boundary_resolution]],color="gray",linewidth=linewidth)
+            else:
+                for i in range(0,len(x_new) - boundary_resolution,boundary_resolution):
+                    plt.plot([x_new[i], x_new[i + boundary_resolution]], [y_new[i], y_new[i + boundary_resolution]], color=c[i], linewidth=linewidth)
 
+            # plotting stress vectors
+            if plot_t_vecs:
+                t_vecs_scale=t_vecs*scale
+                for i,(xn,yn,t) in enumerate(zip(x_new,y_new,t_vecs_scale)):
+                    if i % border_arrow_filter == 0:
+                        plt.arrow(xn,  yn,t[0], t[1],head_width=0.5)
+            # plotting normal vectors
+            if plot_n_arrows:
+                for i in range(len(x_new) - 1):
+                    if i % border_arrow_filter == 0:
+                        plt.arrow(x_new[i],  y_new[i],n_vecs[i][0], n_vecs[i][1],head_width=0.5)
 
-    norm = matplotlib.colors.Normalize(vmin=min_v, vmax=max_v)
-    if cbar_style == "clickpoints":
+    plt.gca().invert_yaxis() # to get the typicall imshow orientation
+    plt.xlim(0,shape[1])
+    plt.ylim(shape[0],0)
+    background_color=matplotlib.cm.get_cmap(cmap)(0) if background_color=="cmap_0" else background_color
+    ax.set_facecolor(background_color)
+    add_colorbar(vmin, vmax, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
+                 cbar_str,cbar_axes_fraction)
+    return fig,ax
+
+def add_colorbar(vmin,vmax, cmap,ax,cbar_style,cbar_width,cbar_height,cbar_borderpad,cbar_tick_label_size,cbar_str,cbar_axes_fraction):
+    # adding colorbars inside or outside of plots
+    norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+    sm = plt.cm.ScalarMappable(cmap=matplotlib.cm.get_cmap(cmap), norm=norm)
+    if cbar_style == "clickpoints": # colorbar inside of the plot
         cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad)
+        cb0 = plt.colorbar(sm,cax=cbaxes)
         cbaxes.set_title(cbar_str, color="white")
         cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
-        cb1 = matplotlib.colorbar.ColorbarBase(cbaxes, cmap=matplotlib.cm.get_cmap(cmap),
-                                               # overrides previours colorbar
-                                               norm=norm,
-                                               orientation='vertical')
-    else:
-        cb0=plt.colorbar(im, aspect=20, shrink=0.8,fraction=cbar_axes_fraction) # just exploiting the axis generation by a plt.colorbar
+    else: # colorbar outide of the plot
+        cb0=plt.colorbar(sm, aspect=20, shrink=0.8,fraction=cbar_axes_fraction) # just exploiting the axis generation by a plt.colorbar
         cb0.outline.set_visible(False)
         cb0.ax.tick_params(labelsize=cbar_tick_label_size)
-        cb1 = matplotlib.colorbar.ColorbarBase(cb0.ax, cmap=matplotlib.cm.get_cmap(cmap),
-                                               # overrides previours colorbar
-                                               norm=norm,
-                                               orientation='vertical')
-        cb1.ax.tick_params(labelsize=cbar_tick_label_size)
-        cb1.ax.set_title(cbar_str, color="black")
-    return fig
-
+        cb0.ax.set_title(cbar_str, color="black")
 
 def check_order(mask,coords):
     plt.figure()
@@ -209,36 +172,11 @@ def check_order(mask,coords):
     plt.plot(coords[:,1],coords[:,0],"o")
     for i,(x1,y1) in enumerate(zip(coords[:,0],coords[:,1])):
         plt.text(y1,x1,str(i))
-# plotting:
-# Pre-processing
-def plot_line_stresses(mask,coords,n_stress,shear_stress):
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    plt.subplots_adjust(right=0.8)
-    ax3 = fig.add_axes([0, 0, 0, 0])
-    n_b = list(ax2.get_position().bounds)
-    n_b[0] += n_b[2] + 0.02
-    n_b[2] = 0.05
-    ax3 = fig.add_axes(n_b)
-
-    im1=np.zeros(mask.shape)+np.nan
-    im2=np.zeros(mask.shape)+np.nan
-    im1[coords[1:-1,0],coords[1:-1,1]]=n_stress
-    im2[coords[1:-1, 0], coords[1:-1, 1]]=shear_stress
-
-    min_v = np.nanmin(np.minimum(n_stress, shear_stress))
-    max_v = np.nanmax(np.maximum(n_stress, shear_stress))
-
-    ax1.imshow(im1,cmap="jet",vmin=min_v,vmax=max_v,origin="lower")
-    ax1.set_title("noraml stress on line")
-    ax2.imshow(im2,cmap="jet",vmin=min_v,vmax=max_v,origin="lower")
-    ax2.set_title("shear stress on line")
 
 
 
-    norm = matplotlib.colors.Normalize(vmin=min_v, vmax=max_v)
-    cb1 = matplotlib.colorbar.ColorbarBase(ax3, cmap=matplotlib.cm.get_cmap("jet"),
-                                           norm=norm, label="stress",
-                                           orientation='vertical')
+
+
 
 def check_normal_vectors(mask,coords,n):
 
@@ -356,63 +294,39 @@ def plot_grid(nodes,elements,inverted_axis=False,symbol_size=4,arrows=False,imag
 
 
 
-def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headlength=3,headaxislength=1,width=0.002,cmap="rainbow"):
+def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None,headlength=None,headaxislength=None,width=None,cmap="rainbow",
+                figsize=None, cbar_str="",ax=None,fig=None
+                , vmin=None, vmax=None, cbar_axes_fraction=0.2, cbar_tick_label_size=15
+                , background_color="cmap_0", cbar_width="2%", cbar_height="50%", cbar_borderpad=2.5,
+                cbar_style="not-clickpoints",plot_style="not-clickpoints", **kwargs):
     # list of all necessary quiver parameters
     quiver_parameters={"headwidth":headwidth,"headlength":headlength,"headaxislength":headaxislength,
                        "width":width,"scale_units":"xy","angles":"xy","scale":None}
+    quiver_parameters ={key:value for key, value in quiver_parameters.items() if not value is None}
+
     fx=fx.astype("float64")
     fy=fy.astype("float64")
-    dims=fx.shape#  needed for scaling
-    fig=plt.figure()
-    im = plt.imshow(np.sqrt(fx ** 2 + fy ** 2),cmap=cmap) # imshowing and plotting a colorbar
-    plt.colorbar(im)
-
+    dims=fx.shape # needed for scaling
+    if not isinstance(ax,matplotlib.axes.Axes):
+        fig=plt.figure(figsize=figsize)
+        ax=plt.axes()
+    map_values=np.sqrt(fx ** 2 + fy ** 2)
+    if vmax and not vmin: # other wise the program behaves unexpectedly if the automatically set vmin is smaller the vmax
+        vmin=vmax-1 if np.min(map_values)>vmax else None
+    im = plt.imshow(map_values,cmap=cmap,vmin=vmin,vmax=vmax) # imshowing
+    if plot_style=="clickpoints":
+        ax.set_position([0,0,1,1])
+        ax.set_axis_off()
     # plotting arrows
     fx,fy,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1]) # filtering every n-th value and every value smaller then x
     if scale_ratio: # optional custom scaling with the image axis lenght
-        fx, fy=scale_for_quiver(fx,fy, dims, scale_ratio=scale_ratio)
-        quiver_parameters["scale"]=None # disabeling the auto scaling behavior of quiver
+        fx, fy=scale_for_quiver(fx,fy, dims=dims, scale_ratio=scale_ratio)
+        quiver_parameters["scale"]=1 # disabeling the auto scaling behavior of quiver
     plt.quiver(xs, ys, fx, fy, **quiver_parameters) # plotting the arrows
+    add_colorbar(vmin, vmax, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
+                 cbar_str, cbar_axes_fraction)
+    return fig, ax
 
-    return fig
-
-def show_quiver_clickpoints(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=3,headlength=3,width=0.002,figsize=(6.4, 4.8),cbar_str=""
-                            ,cmap="rainbow",vmin=None,vmax=None,cbar_axes_fraction=0.2,cbar_tick_label_size=15,background_color="cmap_0",scale=None,cbar_width="2%",cbar_height="50%",cbar_borderpad=2.5,cbar_style="clickpoints",**kwargs):
-
-
-
-    fx=fx.astype("float64")
-    fy=fy.astype("float64")
-    dims=fx.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
-
-    fig=plt.figure(figsize=figsize)
-    ax = plt.Axes(fig, [0., 0., 1., 1.])
-    fig.add_axes(ax)
-    ax.set_axis_off()
-    map_values=np.sqrt(fx ** 2 + fy ** 2)
-    if vmax and not vmin:
-        vmin=vmax-1 if np.min(map_values)>vmax else None # other wise the program behaves unexpectedly if the automatically set vmin is smaller the vmax
-    im = ax.imshow(map_values,cmap=cmap,vmin=vmin,vmax=vmax)
-
-    # filtering out arrows
-    fx_f,fy_f,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1])
-
-    # scaling arrows to be reach a certain fraktion of the length of the longer image axis
-    if scale_ratio:
-        fx_f, fy_f=scale_for_quiver(fx_f,fy_f, dims, scale_ratio=scale_ratio)
-        scale=1
-    # plotting the arrows
-    plt.quiver(xs, ys, fx_f, fy_f, scale_units="xy",scale=1, angles="xy",headwidth=headwidth,headlength=headlength,width=width)
-    if cbar_style=="clickpoints":
-        cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5,borderpad=cbar_borderpad)
-        cbaxes.set_title(cbar_str,color="white")
-        cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
-        plt.colorbar(im, cax=cbaxes)
-    else:
-        cb=plt.colorbar(im,aspect=20,shrink=0.8,fraction=cbar_axes_fraction)
-        cb.ax.tick_params(labelsize=cbar_tick_label_size)
-
-    return fig
 
 def show_edgeline(mask, ax, color="#696969", alpha=0.5 , n=6,plot_inner_line=False):
     '''
@@ -457,112 +371,20 @@ def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str=""
     values=values.astype("float64")
     dims=values.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
     values_show = np.zeros(dims)
-    values_show .fill(np.nan)
+    values_show.fill(np.nan)
     values_show[values!=0]=values[values!=0]
     fig=plt.figure(figsize=figsize)
-    ax = plt.Axes(fig, [0., 0., 1., 1.])
-    fig.add_axes(ax)
-    ax.set_axis_off()
-
+    ax = fig.add_axes([0., 0., 1., 1.])
+    # other wise the program behaves unexpectedly if the automatically set vmin is bigger the manually set vmax
     if vmax and not vmin:
-        # other wise the program behaves unexpectedly if the automatically set vmin is smaller the vmax
         vmin = vmax - 1 if np.min(values) > vmax else None
-
-    if background_color == "cmap_0":
-        cmap_custom = matplotlib.colors.ListedColormap([matplotlib.cm.get_cmap(cmap)(i) for i in range(3)])
-    else:
-        cmap_custom = matplotlib.colors.ListedColormap([background_color for i in range(3)])
-    bounds = [0, 1, 2]
-    norm = matplotlib.colors.BoundaryNorm(bounds, cmap_custom.N)
-    im_bg = ax.imshow(np.zeros(dims).astype(int), cmap=cmap_custom, norm=norm)
-
     im = ax.imshow(values_show,cmap=cmap,vmin=vmin,vmax=vmax)
-    if cbar_style == "clickpoints":
-        cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad)
-        cbaxes.set_title(cbar_str, color="white")
-        cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
-        plt.colorbar(im, cax=cbaxes)
-    else:
-        cb = plt.colorbar(im, aspect=20, shrink=0.8,fraction=cbar_axes_fraction)
-        cb.ax.tick_params(labelsize=cbar_tick_label_size)
 
-    # showing the border edge
-    #mask = values != 0
-    #show_edgeline(mask, ax, color="#696969", alpha=0.7, n=6)
-
-    return fig
-
-
-def show_quiver_ax(ax,fx,fy,vmin,vmax,filter=False,scale_ratio=0.2):
-    '''
-    like show quiver but returns manioulates and returns  a pyplot axes object
-    :param fx:
-    :param fy:
-    :param filter:
-    :param scale_ratio:
-    :return:
-    '''
-    fx=fx.astype("float64")
-    fy=fy.astype("float64")
-    dims=fx.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
-
-
-    im = ax.imshow(np.sqrt(fx ** 2 + fy ** 2),vmin=vmin,vmax=vmax)
-
-
-
-    if isinstance(filter,list):
-        fx,fy,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1])
-        if scale_ratio:#
-            fx, fy=scale_for_quiver(fx,fy, dims, scale_ratio=scale_ratio)
-            ax.quiver(xs, ys, fx, fy, scale_units="xy",scale=1, angles="xy",headwidth=6)
-        else:
-            ax.quiver(xs, ys, fx, fy, scale_units="xy", angles="xy")
-    #elif np.isnan(np.sum(fx)): ## fastest way to check if any nan in this array (or so they say)
-     #   ys,xs=np.where(~np.isnan(fx))
-    #    plt.quiver(xs, ys, fx[~np.isnan(fx)], fy[~np.isnan(fx)], scale_units="xy", angles="xy")
-    else:
-        if scale_ratio:  #
-            fx, fy = scale_for_quiver(fx, fy, dims, scale_ratio=scale_ratio)
-            ax.quiver(fx, fy, scale_units="xy",scale=1, angles="xy")
-        else:
-            ax.quiver(fx, fy, scale_units="xy", angles="xy")
-
-
-
-
-    #plt.colorbar(im)
-    return ax
-
-
-def show_quiver_mask(fx,fy,mask,filter=False):
-
-    mask=mask.astype(bool)
-    fx=fx.astype("float64")
-    fy=fy.astype("float64")
-    fx_show = np.zeros(fx.shape) +np.nan
-    fy_show = np.zeros(fy.shape) +np.nan
-    fx_show[mask] = fx[mask]
-    fy_show[mask] = fy[mask]
-
-    # coordinates for quiver
-    pixx = np.arange(np.shape(fx)[0])
-    pixy = np.arange(np.shape(fy)[1])
-    xv, yv = np.meshgrid(pixy, pixx)
-
-    fig=plt.figure()
-    im = plt.imshow(np.sqrt(fx_show ** 2 + fy_show ** 2))
-    if isinstance(filter,list):
-        fx,fy,xs,ys=filter_values(fx_show,fy_show,abs_filter=filter[0],f_dist=filter[1])
-        plt.quiver(xs, ys, fx, fy, scale_units="xy", angles="xy")
-    else:
-        plt.quiver(xv[mask],yv[mask],fx_show[mask].flatten(),fy_show[mask].flatten(), scale_units="xy", angles="xy")
-
-
-    plt.show()
-    plt.colorbar(im)
-    return fig
-
+    background_color = matplotlib.cm.get_cmap(cmap)(0) if background_color == "cmap_0" else background_color
+    ax.set_facecolor(background_color)
+    add_colorbar(vmin, vmax, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
+                 cbar_str, cbar_axes_fraction)
+    return fig,ax
 
 
 def plot_map(ar1,cbar_str="",origin="upper",title="",mask=0,v_range=0,mask_overlay=0):
@@ -1279,7 +1101,7 @@ def custom_solver(mat, rhs, mask_area,verbose=False):
     """
 
     com = regionprops(mask_area.astype(int))[0].centroid  # finding center of mass
-    com = (com[1], com[0])  # as x y coorinate
+    com = (com[1], com[0])  # as x y coordinate
 
     c_x, c_y = np.meshgrid(range(mask_area.shape[1]), range(mask_area.shape[0]))  # arrays with all x and y coordinates
     r = np.zeros((mask_area.shape[0], mask_area.shape[1], 2))  # array with all positional vectors
@@ -1306,7 +1128,7 @@ def custom_solver(mat, rhs, mask_area,verbose=False):
         import scipy.sparse
          # convert additional conditions to sparse matrix
         mat=scipy.sparse.vstack([mat,csr_matrix(add_matrix)],format="csr")
-        u_sol,error = np.array(lsqr(mat, rhs,atol=10**-10, btol=10**-10,iter_lim=15000,show=verbose))[[0,3]]# sparse least squares solver
+        u_sol,error = np.array(lsqr(mat, rhs,atol=10**-12, btol=10**-12,iter_lim=60000,show=verbose,conlim=10**12))[[0,3]]# sparse least squares solver
     elif type(mat) is np.ndarray:
         # adding to matrix
         mat=np.append(mat,add_matrix,axis=0)
@@ -1319,21 +1141,3 @@ def custom_solver(mat, rhs, mask_area,verbose=False):
 
 
 
-
-def plot_deformations(folder):
-    files = os.listdir(folder)
-    files_dict = defaultdict(dict)
-    for f in files:
-        if f[2] == "u":
-            files_dict[f[:2]]["u"] = f
-        if f[2] == "v":
-            files_dict[f[:2]]["v"] = f
-    for frame, files in files_dict.items():
-        u = np.load(os.path.join(folder, files["u"]))
-        v = np.load(os.path.join(folder, files["v"]))
-        dpi = 200
-        fig1 = show_quiver_clickpoints(u, v, filter=[0, int(np.ceil(u.shape[0] / 40))], scale_ratio=0.2,
-                                       headwidth=3, headlength=3, width=0.002,
-                                       figsize=(2022 / dpi, 2011 / dpi),
-                                       cbar_str="deformation\n[pixel]")
-        fig1.savefig(os.path.join(folder, frame + "deformation.png"), dpi=200)

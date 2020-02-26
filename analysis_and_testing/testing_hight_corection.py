@@ -247,11 +247,11 @@ def showing_multiple_force_predictions(fx, fy, hs, pixelsize, young, sigma,mask)
     factor = 10 ** 11
     for j, (h, tx_h, ty_h, tx, ty, c_h, c) in enumerate(
             zip(hs, tx_h_list, ty_h_list, tx_list, ty_list, contractile_forces_h, contractile_forces)):
-        axs[j] = show_quiver_ax(axs[j], tx_h, tx_h, vmax=vmax, vmin=vmin, scale_ratio=0.3)
+        axs[j] = show_quiver(tx_h, tx_h, vmax=vmax, vmin=vmin, scale_ratio=0.3,ax=axs[j])
         axs[j].text(1, 10, "sum of force " + str(np.round(e * factor, 2)), color="white")
         axs[j].text(1, 20, "contractility " + str(np.round(c_h * factor, 2)), color="white")
         axs[j].text(1, 30, "h " + str(np.round(h, 2)), color="white")
-        axs[j + 8] = show_quiver_ax(axs[j + 8], tx, tx, vmax=vmax, vmin=vmin, scale_ratio=0.3)
+        fig,axs[j + 8] = show_quiver(axs[j + 8], tx, tx, vmax=vmax, vmin=vmin, scale_ratio=0.3)
         axs[j + 8].text(1, 10, "sum of force " + str(np.round(e * factor, 2)), color="white")
         axs[j + 8].text(1, 20, "contractility " + str(np.round(c * factor, 2)), color="white")
         axs[j + 8].text(1, 30, "h " + str(np.round(h, 2)), color="white")

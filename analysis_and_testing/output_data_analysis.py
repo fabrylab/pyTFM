@@ -14,7 +14,7 @@ import os
 
 
 # setting the output folder for plots. All plots are saved to this folder.
-folder_plots = "/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/latest_analysis"
+folder_plots = "/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/analysis_20_02_2020"
 createFolder(folder_plots) # creating the folder if it doesn't already exist
 
 
@@ -25,13 +25,17 @@ createFolder(folder_plots) # creating the folder if it doesn't already exist
 # but two frames in the ko, due to issues with imaging the beads.
 exclude1=[]
 # path to the out.txt text file
-file1="/media/user/GINA1-BK/data_traction_force_microscopy/WT_vs_KO_images/WTshift/out8.txt"
+file1="/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/WTshift/out6.txt"
 parameter_dict1,res_dict1=read_output_file(file1) # reading the file and splitting into parameters and results
 # pooling all frames: values_dict has "name of the quantity": "list of values for each frame".
 # this also returns the number of frames (n_frames) and a list of the label of frame (frame_list). The frame labels are
 # ultimately derived from the number at the beginning of the image file names in your database.
 # n_frames is the same for all quantities
 n_frames1,values_dict1, frame_list1=prepare_values(res_dict1,exclude1)
+
+import pickle
+with open("/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/WTshift/test_pickle.pickle", 'wb') as handle:
+    pickle.dump(values_dict1, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # second file
 exclude2=["01","10"]  # list of frames to be excluded, thes

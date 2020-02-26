@@ -1,6 +1,7 @@
 # all function concerning clauclation of stress measures (maximum principal stress, stress vectors) also calcualtion of nomral vectors on diffrent
 #line representations
 from andreas_TFM_package.graph_theory_for_cell_boundaries import *
+from andreas_TFM_package.utilities_TFM import exclude_by_key
 from scipy.interpolate import splev,interp2d
 from itertools import product
 from andreas_TFM_package.utilities_TFM import round_flexible
@@ -90,7 +91,7 @@ def normal_vectors_from_splines(u, tck):
     n_vectors = n_vectors / np.linalg.norm(n_vectors, axis=1)[:, None]  # normalizing
     return n_vectors
 
-def interpolation_for_stress_and_normal_vector(lines_splines, lines_points,stress_tensor,pixel_length, interpol_factor=7):
+def interpolation_for_stress_and_normal_vector(lines_splines, line_lengths,stress_tensor,pixel_length, interpol_factor=7):
     '''
     function to perform interpolation on lines, to get new x,y coordinates, calculate the normal vectors on these points
     and calculate the stress vector and the norm of the stress vectors, accros the lines at the interpolated points.
@@ -131,10 +132,8 @@ def interpolation_for_stress_and_normal_vector(lines_splines, lines_points,stres
 
     for i in lines_splines.keys():
         # getting more points:
-
         tck = lines_splines[i]
-
-        len_u = len(lines_points[i]) * interpol_factor  # number of points to be interpolated
+        len_u = line_lengths[i] * interpol_factor  # number of points to be interpolated
         u_new = np.linspace(0, 1, len_u)  # new points in the interpolation range
         x_new, y_new = splev(u_new, tck, der=0)  # interpolating new x,y points
         p_new=np.vstack([x_new,y_new]).T # convienient form for new points
@@ -366,8 +365,8 @@ def evaluate_all_stress_measures(lines_interpol, borders,norm_levels=["points","
 
 def normal_and_shear(t_vecs,n_vecs):
     tn = np.sum(t_vecs * n_vecs, axis=1)  # dot product of t vec and n vec
-    ts = np.sqrt(np.sum(t_vecs * t_vecs,
-                        axis=1) - tn ** 2)  # dot product of t vec and n vec
+    # remaining component by triangle equation (Pythagorean theorem)
+    ts = np.sqrt(np.sum(t_vecs * t_vecs, axis=1) - tn ** 2)
     return tn,ts
 
 def add_normal_or_shear_component(lines_interpol):
@@ -390,7 +389,8 @@ def add_normal_or_shear_component(lines_interpol):
 
 
 
-def mean_stress_vector_norm(lines_interpolation,borders,exclude_colony_edge=True,norm_level="points",vtype="t_vecs"):
+
+def mean_stress_vector_norm(lines_interpolation,borders,exclude_colony_edge=True,norm_level="points",vtype="t_norm"):
     '''
     average norm of the stress vector.First some vectors are averaged. Averaging can be eft out (level="points"),
     for each line(level="lines") or for each cell (level="cells")
@@ -402,90 +402,50 @@ def mean_stress_vector_norm(lines_interpolation,borders,exclude_colony_edge=True
     :param exclude_colony_edge: set weather to exclude the edges of the colony from calculations. You should do this, as
     these edges have no physical meaning.
     :param norm_level: where to take the norm. Values are ["points","lines","cells"]
-    :param type: using full traction vector, normal or shear components "t_vecs","tn","ts"
+    :param vtype: using full traction vector (with x and y components), the norm (length) of the traction vector, normal
+    or shear components  "t_vecs", "t_norm","tn","ts"
     :return:
     '''
-
-
     if norm_level == "cells":
-        ## only makes sence if normal vectors are orientated all in the same manner
-        # orientation correction:
-        all_norms=[]
-        for cell_id,line_ids in borders.cells_lines.items():
+        all_values=[]
+        # only makes sense if normal vectors are orientated all in the same manner
+        for cell_id,line_ids in borders.cells_lines.items(): # only uses lines asociated to cells
+            # orientation correction:
             n_vectors,t_vectors=reorder_vectors_inward(borders, lines_interpolation, cell_id, line_ids, plot_n_vecs=False)
             # optional exclude borders at the colony edge
-            if exclude_colony_edge:
-                t_vectors = {line_id: values for line_id, values in t_vectors.items() if
-                                       line_id not in borders.edge_lines}
-                n_vectors = {line_id: values for line_id, values in n_vectors.items() if
-                                    line_id not in borders.edge_lines}
-
+            exclude_cond=borders.edge_lines if exclude_colony_edge else list(lines_interpolation.keys())
+            # excluding some lines (or none) and joining to single array
+            t_vectors = np.vstack(list(exclude_by_key(t_vectors, exclude_cond).values()))
+            n_vectors = np.vstack(list(exclude_by_key(n_vectors, exclude_cond).values()))
+            # calculating normal and shear components of traction vector after reorientation
+            tns,tss=normal_and_shear(t_vectors,n_vectors)
             if vtype == "t_vecs":
-                single_cell_force = np.linalg.norm(np.mean(np.vstack(list(t_vectors.values())), axis=0))
-            if vtype == "tn":
-                # calculating the normal compenents
-                tns={l_id:normal_and_shear(t_vecs, n_vecs)[0] for (l_id,n_vecs),t_vecs in zip(n_vectors.items(),t_vectors.values())}
-                single_cell_force = np.mean(np.hstack(list(tns.values())), axis=0)
-            if vtype == "ts":
-                # calculating the shear compenents
-                tss = {l_id: normal_and_shear(t_vecs, n_vecs)[1] for (l_id, n_vecs), t_vecs in  zip(n_vectors.items(), t_vectors.values())}
-                single_cell_force = np.mean(np.hstack(list(tss.values())), axis=0)
-            all_norms.append(single_cell_force)
-        # filtering out all cell borders at the colony edge
+                single_cell_force = np.mean(t_vectors, axis=0)
+            if vtype == "t_norm":
+                single_cell_force = np.mean(np.linalg.norm(t_vectors, axis=1))
+            if vtype == "t_normal":
+                single_cell_force = np.mean(tns, axis=0)
+            if vtype == "t_shear":
+                single_cell_force = np.mean(tss, axis=0)
+            all_values.append(single_cell_force)
+        all_values = np.array(all_values)
 
 
-    # optional exclude borders at the colony edge
+    # optional excluding borders at the colony edge
     if exclude_colony_edge:
-        lines_interpolation = {line_id: values for line_id, values in lines_interpolation.items() if
-                               line_id not in borders.edge_lines}
+        lines_interpolation = exclude_by_key(lines_interpolation, borders.edge_lines)
+    if norm_level == "lines": # mean over a line
+        all_values = np.vstack([np.mean(sub_dict[vtype], axis=0) for sub_dict in lines_interpolation.values()])
+    if norm_level == "points":  # each point individually
+        all_values = np.vstack([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
 
-    if norm_level == "points":
-        vtype = "t_norm" if vtype == "t_vecs" else vtype  # use the norm of t vectors immediately
-        if vtype=="t_norm":
-            all_norms = np.hstack([np.abs(sub_dict[vtype]) for sub_dict in lines_interpolation.values()])
-        if vtype == "t_vecs":
-            all_norms = np.hstack([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
-        if vtype == "t_normal":
-            all_norms = np.hstack([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
-        if vtype == "t_shear":
-            all_norms = np.hstack([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
+    # returning the norm of the mean t_vector
+    all_values=np.linalg.norm(all_values,axis=1) if vtype=="t_vecs" else all_values
+    mean = np.mean(all_values,axis=0)  #
+    std = np.std(all_values,axis=0)
+    # reporting only the magnitude of values, this looses some information...
+    all_norms_magnitude = np.abs(all_values)
+    mean_mag = np.mean(all_norms_magnitude,axis=0) #
+    std_mag = np.std(all_norms_magnitude,axis=0)
 
-    if norm_level == "lines":
-        if vtype == "t_vecs":
-            all_norms = np.hstack(
-                [np.linalg.norm(np.mean(sub_dict[vtype], axis=0)) for sub_dict in lines_interpolation.values()])
-        else:
-            all_norms = np.hstack(
-                [np.abs(np.mean(sub_dict[vtype], axis=0)) for sub_dict in lines_interpolation.values()])
-
-    all_norms=np.array(all_norms)
-    mean = np.mean(all_norms)
-    std = np.std(all_norms)
-
-    return all_norms,mean,std
-
-
-
-
-
-
-
-'''
-sig_x=S_nodes[:,0]
-sig_y=S_nodes[:,1]
-tau_xy=S_nodes[:,2]
-stress_tensor=np.zeros((int(np.sqrt(len(nodes))),int(np.sqrt(len(nodes))),2,2))
-
-
-sigma_max=(sig_x+sig_y)/2+np.sqrt(((sig_x-sig_y)/2)**2+tau_xy**2)
-sigma_min=(sig_x+sig_y)/2-np.sqrt(((sig_x-sig_y)/2)**2+tau_xy**2)
-# maximum shear stress
-tau_max=np.sqrt(((sig_x-sig_y)/2)**2+tau_xy**2)
-# angle of maximal principal stress
-phi_n= np.arctan(2*tau_xy/(sig_x-sig_y))/2
-# angel of maximal shear stress
-phi_shear= np.arctan(-(sig_x-sig_y)/(2*tau_xy))/2
-## side note (phi_n-phi_shear)=pi/4 (also immer 45° unterschied
-sigma_avg=(sigma_max+sigma_min)/2# average (maximal?)normal stress  ## thi according to buttler paper
-
-'''
+    return all_norms_magnitude,mean_mag,std_mag

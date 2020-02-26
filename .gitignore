@@ -32,3 +32,9 @@ andreas_TFM_package/__pycache__/utilities_TFM.cpython-37.pyc
 andreas_TFM_package/TFM_addon/__pycache__/TFM_addon.cpython-37.pyc
 
 andreas_TFM_package/__pycache__/
+
+analysis_and_testing/__pycache__/
+
+.idea/
+
+andreas_TFM_package/test.py
