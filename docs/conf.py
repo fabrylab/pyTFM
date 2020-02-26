@@ -25,6 +25,9 @@ author = 'Andreas Bauer'
 release = '1.1'
 
 
+# manually setting highest level rst file
+master_doc = 'index'
+
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
