@@ -1,6 +1,6 @@
 # correction for frame shift in the images of beads
 
-from andreas_TFM_package.utilities_TFM import createFolder,get_group
+from pyTFM.utilities_TFM import createFolder,get_group
 from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt

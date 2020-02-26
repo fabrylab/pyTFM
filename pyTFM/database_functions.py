@@ -3,8 +3,8 @@ import re
 import warnings
 import clickpoints
 import os
-from andreas_TFM_package.utilities_TFM import *
-from andreas_TFM_package.parameters_and_strings import *
+from pyTFM.utilities_TFM import *
+from pyTFM.parameters_and_strings import *
 from skimage.morphology import label,binary_dilation
 import itertools
 

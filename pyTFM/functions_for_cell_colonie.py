@@ -6,7 +6,7 @@ import matplotlib
 #matplotlib.use("TkAgg")
 #matplotlib.use("Agg") # when running the script to avoid plots popping up
 import matplotlib.pyplot as plt
-from andreas_TFM_package.TFM_functions import *
+from pyTFM.TFM_functions import *
 from matplotlib import cm  # making list from colormap
 from tqdm import tqdm
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator,ScalarFormatter

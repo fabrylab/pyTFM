@@ -8,7 +8,7 @@
 
 
 # importing functions for drift correction and finding and grouping images
-from andreas_TFM_package.frame_shift_correction import *
+from pyTFM.frame_shift_correction import *
 import re
 
 # First set an input folder. The script will search the entire tree of this folder.

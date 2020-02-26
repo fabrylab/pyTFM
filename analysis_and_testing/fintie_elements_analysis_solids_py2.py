@@ -5,9 +5,9 @@ import clickpoints
 import numpy as np
 import solidspy.postprocesor as pos
 import solidspy.assemutil as ass
-from andreas_TFM_package.functions_for_cell_colonie import *
-from andreas_TFM_package.grid_setup_solids_py import *
-from andreas_TFM_package.solids_py_stress_functions import *
+from pyTFM.functions_for_cell_colonie import *
+from pyTFM.grid_setup_solids_py import *
+from pyTFM.solids_py_stress_functions import *
 
 pixelsize = 6.25 / 40 # µm/pixel pixelsize of the original images
 

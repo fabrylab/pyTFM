@@ -1,10 +1,10 @@
 # all function concerning clauclation of stress measures (maximum principal stress, stress vectors) also calcualtion of nomral vectors on diffrent
 #line representations
-from andreas_TFM_package.graph_theory_for_cell_boundaries import *
-from andreas_TFM_package.utilities_TFM import exclude_by_key
+from pyTFM.graph_theory_for_cell_boundaries import *
+from pyTFM.utilities_TFM import exclude_by_key
 from scipy.interpolate import splev,interp2d
 from itertools import product
-from andreas_TFM_package.utilities_TFM import round_flexible
+from pyTFM.utilities_TFM import round_flexible
 
 
 

@@ -6,6 +6,7 @@ import copy
 import warnings
 from scipy.ndimage.filters import gaussian_filter
 from collections import defaultdict
+
 class suppress_warnings():
     def __init__(self,warning_type):
         self.warning_type=warning_type

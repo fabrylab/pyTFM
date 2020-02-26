@@ -99,7 +99,7 @@ You can also setup your database form the python interpreter if you prefer to do
 Either open python in the terminal or use the interpreter for example in PyCharm.
 Import the function to setup a data base:
 ```
-from andreas_TFM_package.database_functions import setup_database_for_tfm
+from pyTFM.database_functions import setup_database_for_tfm
 ```
 set the folder that your images are located in. It could look like this:
 ```
@@ -177,7 +177,7 @@ Note that I change the path entry in the database so that they work immediately 
 
 ## Changing plotting options and default parameters
 
-Default parameters and plotting options can be found in the [file parameters_and_string] (/andreas_TFM_package/parameters_and_strings.py). Go to this file for more details. The parameters are mostly stored in dictionaries. You can freely change entries in these dictionaries, if you installed your package as editable. Note that currently reinstalling the package will overwrite changes you make there.
+Default parameters and plotting options can be found in the [file parameters_and_string] (/pyTFM/parameters_and_strings.py). Go to this file for more details. The parameters are mostly stored in dictionaries. You can freely change entries in these dictionaries, if you installed your package as editable. Note that currently reinstalling the package will overwrite changes you make there.
 
 # Common problems and things to look out for
 

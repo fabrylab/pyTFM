@@ -1,6 +1,6 @@
 # contains the default parameters, parameters for plotting, messages that are printed while the programming is executed
 # and tooltips for the tfm addon
-from andreas_TFM_package.utilities_TFM import make_iterable,squeeze_list
+from pyTFM.utilities_TFM import make_iterable,squeeze_list
 from collections import defaultdict
 from itertools import chain
 from matplotlib import cm  # making list from colormap
@@ -219,3 +219,5 @@ units["sum deformations on cell type 2"]="pixels"
 units["sum traction forces on cell type 2"]="N/m2"
 units["sum deformations on cell colony"]="pixels"
 
+#TODO but this in a proper config file (.init/.yaml..
+# could make options to read external config files in the addon and in normal applications.)

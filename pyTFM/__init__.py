@@ -17,4 +17,4 @@ __all__ = ["data_analysis", "database_functions", "functions_for_cell_colonie",
 "graph_theory_for_cell_boundaries","grid_setup_solids_py","parameters_and_strings",
 "solids_py_stress_functions","TFM_functions","TFM_functions_for_clickpoints","utilities"
 ]
-from andreas_TFM_package._version import __version__
+from pyTFM._version import __version__

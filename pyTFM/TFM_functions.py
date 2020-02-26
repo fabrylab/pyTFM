@@ -12,7 +12,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.ndimage import zoom
 from scipy.ndimage.filters import uniform_filter
-from andreas_TFM_package.utilities_TFM import suppress_warnings
+from pyTFM.utilities_TFM import suppress_warnings
 
 
 

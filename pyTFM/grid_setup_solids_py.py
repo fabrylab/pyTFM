@@ -1,6 +1,6 @@
 
-from andreas_TFM_package.solids_py_stress_functions import *
-from andreas_TFM_package.utilities_TFM import make_random_discrete_color_range, invert_dictionary,join_dictionary
+from pyTFM.solids_py_stress_functions import *
+from pyTFM.utilities_TFM import make_random_discrete_color_range, invert_dictionary,join_dictionary
 from skimage.morphology import skeletonize,remove_small_holes,remove_small_objects,label,binary_dilation,binary_erosion
 from scipy.ndimage.morphology import binary_fill_holes
 from scipy.ndimage.measurements import find_objects

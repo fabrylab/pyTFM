@@ -13,7 +13,7 @@ import solidspy.postprocesor as pos
 import solidspy.assemutil as ass
 import solidspy.solutil as sol
 import matplotlib
-from andreas_TFM_package.functions_for_cell_colonie import *
+from pyTFM.functions_for_cell_colonie import *
 
 folder="/media/user/GINA1-BK/data_traktion_force_microscopy/fem_example2/"
 plt.close("all")

@@ -1,12 +1,12 @@
 ﻿### function integrating Traktion force microscopy into a clcikpoints database
 
-from andreas_TFM_package.grid_setup_solids_py import *
-from andreas_TFM_package.functions_for_cell_colonie import *
-from andreas_TFM_package.solids_py_stress_functions import *
-from andreas_TFM_package.utilities_TFM import *
-from andreas_TFM_package.TFM_functions import *
-from andreas_TFM_package.parameters_and_strings import *
-from andreas_TFM_package.frame_shift_correction import *
+from pyTFM.grid_setup_solids_py import *
+from pyTFM.functions_for_cell_colonie import *
+from pyTFM.solids_py_stress_functions import *
+from pyTFM.utilities_TFM import *
+from pyTFM.TFM_functions import *
+from pyTFM.parameters_and_strings import *
+from pyTFM.frame_shift_correction import *
 import solidspy.postprocesor as pos
 import solidspy.assemutil as ass
 import solidspy.solutil as sol

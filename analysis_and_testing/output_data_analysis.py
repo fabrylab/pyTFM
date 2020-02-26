@@ -8,7 +8,7 @@
 
 # importing tools for reading the output file, analysis and plotting
 # also imports dictionary with units for quantities
-from andreas_TFM_package.data_analysis import *
+from pyTFM.data_analysis import *
 import numpy as np
 import os
 
@@ -48,7 +48,7 @@ n_frames2,values_dict2, frame_list2=prepare_values(res_dict2,exclude2) # pooling
 ## normalizing the quantities by the area of the cell colony
 
 # units is a dictionary with quantity name: unit of the quantity
-# its imported from andreas_TFM_package.parameters_and_strings
+# its imported from pyTFM.parameters_and_strings
 # here we add an " per area" for every existing entry in unit and update the unit with /m2
 units = add_to_units(units, add_name=" per area", add_unit="/m2",exclude=["area", "cell"]) # adding per cell to units list
 # you could do the same with per cells..:
@@ -104,7 +104,7 @@ fig=compare_two_values(values_dict1, values_dict2, types, lables,xlabel="contrac
 # choosing which measures should be displayed in this plot
 types=['average normal stress colony','average shear stress colony']
 # generating labels for the y axis. This uses units stored in a dictionary imported from
-# andreas_TFM_package.parameters_and_strings. ylabels must be a list of strings with length=len(types).
+# pyTFM.parameters_and_strings. ylabels must be a list of strings with length=len(types).
 # Of cause you can also set labels manually e.g. ylabels=["label1","label2",...].
 ylabels=[ty+"\n"+units[ty] for ty in types]
 

@@ -1,6 +1,6 @@
 
 import clickpoints
-from andreas_TFM_package.database_functions import *
+from pyTFM.database_functions import *
 
 db=clickpoints.DataFile("/home/user/Software/tracktion_force_microscopy"
                         "/tracktion_force_microscopy/test_images_database_setup/database.cdb")

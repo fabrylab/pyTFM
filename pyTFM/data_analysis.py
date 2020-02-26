@@ -1,8 +1,8 @@
 # functions fro reading in a typical outputfile and performing some statstical analysis as wel as
 # data representation
 
-from andreas_TFM_package.TFM_functions_for_clickpoints import units
-from andreas_TFM_package.utilities_TFM import *
+from pyTFM.TFM_functions_for_clickpoints import units
+from pyTFM.utilities_TFM import *
 from collections import defaultdict
 from functools import partial
 import numpy as np
@@ -56,7 +56,7 @@ def prepare_values(res_dict, exclude=[]):
     must be strings.
     :param res_dict: Nested dictionary with key1:frame, key2: name of the measured
     quantity, values. Typically produced from
-    ~andreas_TFM_package.data_analysis.read_output_file
+    ~pyTFM.data_analysis.read_output_file
     :param exclude:
     :return: values_dict: dictionary with key: name of the measured quantity, values: list of measured values
             n_frames: number of frames that were pooled
@@ -211,7 +211,7 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
     are provided with the two dictionaries values_dict1 and values_dict2. If a dictionary t_test_dict containing
     p-values (the p-values must be the attribute "pvalue" of the values of this dictionary),
     the statistical significance of differences between the results of the two experiments are shown with stars.
-    Stars are generated from the p-value according to ~andreas_TFM_package.data_analysis.set_significance_stars .
+    Stars are generated from the p-value according to ~pyTFM.data_analysis.set_significance_stars .
 
     :param values_dict1: first dictionary with "name of the measured value":array of measured values.
     :param values_dict2: second dictionary with "name of the measured value":array of measured values.
@@ -225,7 +225,7 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
 
     :usage:
 
-    from andreas_TFM_package.data_analysis import *
+    from pyTFM.data_analysis import *
     ## inputs:
     # two dictionaries containing the measured values.
     #
@@ -478,7 +478,7 @@ def full_standard_analysis(res_file1, res_file2, label1, label2, out_folder,unit
     ## normalizing the quantities by the area of the cell colony
 
     # units is a dictionary with quantity name: unit of the quantity
-    # its imported from andreas_TFM_package.parameters_and_strings
+    # its imported from pyTFM.parameters_and_strings
     # here we add an " per area" for every existing entry in unit and update the unit with /m2
     units = add_to_units(units, add_name=" per area", add_unit="/m2",
                          exclude=["area", "cell"])  # adding per cell to units list
@@ -527,7 +527,7 @@ def full_standard_analysis(res_file1, res_file2, label1, label2, out_folder,unit
     # choosing which measures should be displayed in this plot
     types = ['average normal stress colony', 'average shear stress colony']
     # generating labels for the y axis. This uses units stored in a dictionary imported from
-    # andreas_TFM_package.parameters_and_strings. ylabels must be a list of strings with length=len(types).
+    # pyTFM.parameters_and_strings. ylabels must be a list of strings with length=len(types).
     # Of cause you can also set labels manually e.g. ylabels=["label1","label2",...].
     ylabels = [ty + "\n" + units[ty] for ty in types]
 

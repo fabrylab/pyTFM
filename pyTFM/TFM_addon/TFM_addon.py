@@ -1,9 +1,9 @@
 
 from __future__ import division, print_function
-import andreas_TFM_package
-from andreas_TFM_package.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
-from andreas_TFM_package.parameters_and_strings import tooltips,default_parameters
-from andreas_TFM_package.database_functions import *
+import pyTFM
+from pyTFM.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
+from pyTFM.parameters_and_strings import tooltips,default_parameters
+from pyTFM.database_functions import *
 
 #from TFM_functions_for_clickpoints import * local import
 
@@ -379,7 +379,7 @@ class Addon(clickpoints.Addon):
 
         """ GUI Widgets"""
         # set the title and layout
-        self.setWindowTitle("TFM"+"-"+andreas_TFM_package.__version__)
+        self.setWindowTitle("TFM"+"-"+pyTFM.__version__)
         self.setWindowIcon(qta.icon("fa.compress"))
         self.setMinimumWidth(400)
         self.setMinimumHeight(200)

@@ -1,4 +1,4 @@
-from andreas_TFM_package.database_functions import *  # must be on top becauseof some matplotlib backend issues
+from pyTFM.database_functions import *  # must be on top becauseof some matplotlib backend issues
 import os
 folder=os.getcwd()
 #folder="/home/user/Desktop/Andreas-Python/tracktion_force_microscopy/exmaple_analysis/KO_shift_part/"

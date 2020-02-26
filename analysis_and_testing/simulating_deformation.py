@@ -10,8 +10,8 @@ from scipy.integrate import quad
 from scipy.special import jv # first order bessel function
 import sys
 sys.path.insert(0, '/media/user/GINA1-BK/Andreas-Python/tracktion_force_microscopy/')
-from andreas_TFM_package.TFM_functions import *
-from andreas_TFM_package.functions_for_cell_colonie import *
+from pyTFM.TFM_functions import *
+from pyTFM.functions_for_cell_colonie import *
 from scipy.ndimage.morphology import distance_transform_edt
 from scipy.signal import convolve2d
 from skimage.filters import gaussian

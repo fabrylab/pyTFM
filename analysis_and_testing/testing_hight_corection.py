@@ -5,8 +5,8 @@ import os
 from tqdm import tqdm
 import sys
 from simulating_deformation import *
-from andreas_TFM_package.functions_for_cell_colonie import *
-from andreas_TFM_package.utilities import convert_to_int
+from pyTFM.functions_for_cell_colonie import *
+from pyTFM.utilities import convert_to_int
 
 
 

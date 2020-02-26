@@ -7,11 +7,11 @@ import numpy as np
 import copy
 import clickpoints
 from contextlib import suppress
-from andreas_TFM_package.utilities_TFM import round_flexible,gaussian_with_nans,make_display_mask,createFolder
-from andreas_TFM_package.functions_for_cell_colonie import *
-from andreas_TFM_package.grid_setup_solids_py import grid_setup,interpolation
-from andreas_TFM_package.TFM_functions_for_clickpoints import FEM_simulation,try_to_load_traction
-from andreas_TFM_package.graph_theory_for_cell_boundaries import mask_to_graph,find_path_circular
+from pyTFM.utilities_TFM import round_flexible,gaussian_with_nans,make_display_mask,createFolder
+from pyTFM.functions_for_cell_colonie import *
+from pyTFM.grid_setup_solids_py import grid_setup,interpolation
+from pyTFM.TFM_functions_for_clickpoints import FEM_simulation,try_to_load_traction
+from pyTFM.graph_theory_for_cell_boundaries import mask_to_graph,find_path_circular
 import sys
 from collections import defaultdict
 from skimage.morphology import binary_erosion
