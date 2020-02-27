@@ -12,9 +12,9 @@ Intro
 .. toctree::
    :caption: Contents:
    :maxdepth: 2
-
-   physical background
    installation
+   introduction
+   measures
    tutorial
    examples
 
