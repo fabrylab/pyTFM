@@ -12,6 +12,7 @@ Intro
 .. toctree::
    :caption: Contents:
    :maxdepth: 2
+
    installation
    introduction
    measures
