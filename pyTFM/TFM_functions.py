@@ -464,9 +464,8 @@ def contractile_energy_points(u,v,tx,ty,pixelsize1,pixelsize2):
     # u is given in pixels/minutes where a pixel is from the original image (pixelsize1)
     # tx is given in forces/pixels**2 where a pixel is from the deformation/traction field (pixelsize2)
     energy_points =  0.5 * (pixelsize2 ** 2) * (tx * u * pixelsize1 + ty * v * pixelsize1)
-
-
-    bg = np.percentile(energy_points, 30)  # value of a background point
+    # value of a background point
+    bg = np.percentile(energy_points, 20)
     energy_points-=bg
     return energy_points
 
