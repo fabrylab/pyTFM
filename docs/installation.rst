@@ -39,7 +39,7 @@ This will download all files to into the your Anaconda subdirectly, for example 
 Dependencies
 ---------------------
 The following packages will be installed automatically if necessary:
-numpy, cython, scipy , scikit-image, matplotlib, tqdm, `solidspy<https://pypi.org/project/solidspy/>`_,
+numpy, cython, scipy , scikit-image, matplotlib, tqdm, `solidspy <https://pypi.org/project/solidspy/>`_,
 clickpoints higher then 1.9.0, `openpiv <http://www.openpiv.net/openpiv-python/>`_
 version 0.20.8. Note that Clickpoints versions below 1.9.0 will fail to identify the addon. Also note that Openpiv
 is still in deveolpement, meaning that more recent versions of Openpiv might not be compatible.
