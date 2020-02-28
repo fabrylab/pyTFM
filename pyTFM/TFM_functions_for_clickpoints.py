@@ -2,7 +2,7 @@
 
 from pyTFM.grid_setup_solids_py import *
 from pyTFM.functions_for_cell_colonie import *
-from pyTFM.solids_py_stress_functions import *
+from pyTFM.stress_functions import *
 from pyTFM.utilities_TFM import *
 from pyTFM.TFM_functions import *
 from pyTFM.parameters_and_strings import *
@@ -176,6 +176,7 @@ def write_output_file(values,value_type, file_path,new_file=False):
         with open(file_path, "a+") as f:
             for frame in frames:
                 for name,res_list in values[frame].items():
+
                     for res_single in res_list:
                         cell_id, res, warn = res_single
                         f.write(frame + "\t"+ str(cell_id)+ "\t" + name + "\t" + str(round_flexible(res)) + "\t" + units[
@@ -300,8 +301,6 @@ def try_to_load_traction(path, frame, warn=False):
 
 
 
-
-
 def create_layers_on_demand(db,db_info, layer_list):
 
     '''
@@ -387,14 +386,13 @@ def add_plot(plot_type, values,plot_function,frame,db_info,default_fig_parameter
         create_layers_on_demand(db, db_info, [layer])
         plt.ioff()
         dpi = 200
-        fig_parameters = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame], dpi,
-                                            default_fig_parameters,
+        fig_parameters = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame], dpi, default_fig_parameters,
                                             figtype=plot_type)
         fig,ax = plot_function(*values, **fig_parameters)
 
         # saving the the plot
         print("saving to "+os.path.join(db_info["path"], frame + file_name))
-        fig.savefig(os.path.join(db_info["path"], frame + file_name), dpi=200)
+        fig.savefig(os.path.join(db_info["path"], frame + file_name),facecolor=fig.get_facecolor(),edgecolor=fig.get_facecolor() , dpi=200)
         plt.close(fig)
         # adding the plot to the database
         except_error(db.setImage, IntegrityError, print_error=True, filename=frame + file_name,
@@ -402,7 +400,7 @@ def add_plot(plot_type, values,plot_function,frame,db_info,default_fig_parameter
 
 
 
-def sum_on_area(frame,res_dict,parameter_dict,label,masks,mask_types=None,obj_ids=[],x=None,y=None,sumtype="abs",add_cut_factor=None):
+def calc_on_area(frame,res_dict,parameter_dict,label,masks,mask_types=None,obj_ids=[],x=None,y=None,sumtype="abs",add_cut_factor=None,db_info=None):
     fill_holes=True if parameter_dict["FEM_mode"]=="colony" else False
     mask_iter=masks.reconstruct_masks_frame(frame, mask_types,obj_ids=obj_ids, raise_error=False, fill_holes=fill_holes)
     for obj_id,mask,mtype,warn in mask_iter:
@@ -422,8 +420,11 @@ def sum_on_area(frame,res_dict,parameter_dict,label,masks,mask_types=None,obj_id
         if sumtype=="area": # area of original mask, without interpolation
             area = np.sum(mask) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
             res_dict[frame]["%s of %s" % (label, label2)].append([obj_id,area,warn])
-
-
+        if sumtype=="cv":
+            mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
+            ps_new=parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"][frame]) / np.array(x.shape))
+            border_pad=int(np.round(parameter_dict["cv_pad"]/ps_new))
+            res_dict[frame]["%s of %s" % (label, label2)].append([obj_id,coefficient_of_variation(mask_int, x, border_pad),warn])
 
 
 def general_properties(frame, parameter_dict,res_dict, db,db_info=None,masks=None, **kwargs):
@@ -446,7 +447,7 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,masks=Non
 
 
     # calculate the area of each mask
-    sum_on_area(frame, res_dict, parameter_dict,"area", masks,mask_types=mtypes, sumtype="area")
+    calc_on_area(frame, res_dict, parameter_dict,"area", masks,mask_types=mtypes, sumtype="area")
     # calculating the cell count for each colony
     mask_iter = masks.reconstruct_masks_frame(frame, "membrane", raise_error=True, fill_holes=False)
     for obj_id,mask_membrane,mtype,warn in mask_iter:
@@ -560,7 +561,7 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,masks=None,**kwa
     np.save(os.path.join(db_info["path"], frame + "v.npy"), v)
     # summing deformation over certain areas
     mtypes = [m for m in db_info["mask_types"] if m in get_masks_by_key(default_parameters,"use","defo")]
-    sum_on_area(frame,res_dict,parameter_dict,"sum deformations",masks,mask_types=mtypes,x=u,y=v,sumtype="abs")
+    calc_on_area(frame,res_dict,parameter_dict,"sum deformations",masks,mask_types=mtypes,x=u,y=v,sumtype="abs")
     return None, frame
 
 
@@ -584,9 +585,11 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
     contractile_force = None
     contr_energy = None
     for obj_id, mask, mtype, warn in mask_iter:
+
         if not isinstance(mask, np.ndarray):
             print("couldn't identify mask %s in frame %s patch %s" % (str(mtype), str(frame), str(obj_id)))
             continue
+
         # interpolation to size of traction force array
         mask_int = interpolation(mask, t_x.shape)
         # calculate contractillity only in "colony" mode
@@ -637,7 +640,7 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,masks=None,*
     np.save(os.path.join(db_info["path"], frame + "ty.npy"), ty)
 
     mtypes = [m for m in db_info["mask_types"] if m in get_masks_by_key(default_parameters,"use","forces")]
-    sum_on_area(frame,res_dict,parameter_dict, "sum traction forces", masks,mask_types=mtypes, x=tx, y=ty, sumtype="abs")
+    calc_on_area(frame,res_dict,parameter_dict, "sum traction forces", masks,mask_types=mtypes, x=tx, y=ty, sumtype="abs")
     return None, frame
 
 
@@ -660,7 +663,7 @@ def FEM_grid_setup(frame,parameter_dict,mask_grid,db_info=None,warn="",**kwargs)
     warn_grid = warn_small_FEM_area(mask_area, threshold=1000)
     warn = warn + " " + warn_grid
 
-    # FEM grid setup
+    # FEM grid setupplt.
     # preparing forces
     f_x = t_x * ((ps_new * (10 ** -6)) ** 2)  # point force for each node from tractions
     f_y = t_y * ((ps_new * (10 ** -6)) ** 2)
@@ -684,7 +687,7 @@ def FEM_grid_setup(frame,parameter_dict,mask_grid,db_info=None,warn="",**kwargs)
 
 
 
-def FEM_simulation(nodes, elements, loads, mats, mask_area, system_type, verbose=False, **kwargs):
+def FEM_simulation(nodes, elements, loads, mats, mask_area, verbose=False, **kwargs):
 
     DME, IBC, neq = ass.DME(nodes, elements)  # boundary conditions asembly??
     print("Number of elements: {}".format(elements.shape[0]))
@@ -694,13 +697,14 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, system_type, verbose
     KG = ass.assembler(elements, mats, nodes, neq, DME, sparse=True)
     RHSG = ass.loadasem(loads, IBC, neq)
 
-    # System solution with custom conditions
-    if system_type=="colony":
+
+    if np.sum(IBC==-1)<3: # 1 or zero fixed nodes/ pure neumann-boundary-condition system needs further constraints
+         # System solution with custom conditions
         # solver with constraints to zero translation and zero rotation
-        UG_sol, rx = custom_solver(KG, RHSG, mask_area, verbose=verbose)
+        UG_sol, rx = custom_solver(KG, RHSG, mask_area,nodes,IBC, verbose=verbose)
 
     # System solution with default solver
-    if system_type == "cell layer":
+    else:
         UG_sol = sol.static_sol(KG, RHSG)  # automatically detect sparce matrix
         if not (np.allclose(KG.dot(UG_sol) / KG.max(), RHSG / KG.max())):
             print("The system is not in equilibrium!")
@@ -718,8 +722,8 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, system_type, verbose
 def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new, masks, obj_id,**kwargs):
 
     # analyzing the FEM results with average stresses
-    shear=stress_tensor[:,:,0,1] # shear component of the stress tensor
-    mean_normal_stress =(stress_tensor[:,:,0,0]+stress_tensor[:,:,1,1])/2 # mean normal component of the stress tensor
+    shear = stress_tensor[:, :, 0,1] # shear component of the stress tensor
+    mean_normal_stress = (stress_tensor[:,:,0,0]+stress_tensor[:,:,1,1])/2 # mean normal component of the stress tensor
     shear=shear/(ps_new*10**-6)# conversion to N/m
     mean_normal_stress=mean_normal_stress/(ps_new*10**-6)# conversion to N/m
     if parameter_dict["FEM_mode"] == "cell layer":
@@ -728,13 +732,18 @@ def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stre
     else:
         use_type = "stress_colony"
         add_cut_factor = None
-    #all mask types used for summing
+
     mtypes = [m for m in db_info["mask_types"] if m in get_masks_by_key(default_parameters, "use", use_type)]
-    sum_on_area(frame, res_dict, parameter_dict, "mean normal stress", masks, mask_types=mtypes, obj_ids=[obj_id], x=mean_normal_stress,
+    calc_on_area(frame, res_dict, parameter_dict, "cv mean norma stress", masks, mask_types=mtypes, obj_ids=[obj_id],
+                 x=mean_normal_stress, sumtype="cv",add_cut_factor=add_cut_factor, db_info=db_info)
+    calc_on_area(frame, res_dict, parameter_dict, "cv shear stress", masks, mask_types=mtypes, obj_ids=[obj_id],
+                 x=shear, sumtype="cv", add_cut_factor=add_cut_factor, db_info=db_info)
+    calc_on_area(frame, res_dict, parameter_dict, "mean normal stress", masks, mask_types=mtypes, obj_ids=[obj_id],
+                 x=mean_normal_stress, sumtype="mean",add_cut_factor=add_cut_factor)
+    calc_on_area(frame, res_dict, parameter_dict, "shear stress", masks, mask_types=mtypes, obj_ids=[obj_id], x=shear,
                 sumtype="mean",add_cut_factor=add_cut_factor)
-    sum_on_area(frame, res_dict, parameter_dict, "shear stress", masks, mask_types=mtypes, obj_ids=[obj_id], x=shear,
-                sumtype="mean",add_cut_factor=add_cut_factor)
-    ### other possible stress measures, just for a nice picture
+
+     ### other possible stress measures, just for a nice picture
     #sigma_max, sigma_min, tau_max, phi_n, phi_shear, sigma_avg = all_stress_measures(S_nodes, nodes,
      #                                                                                dims=mask_area.shape)
     #sigma_max_abs = np.maximum(np.abs(sigma_min), np.abs(sigma_max))  ### highest possible norm of the stress tensor
@@ -751,9 +760,22 @@ def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tens
                                                                               interpol_factor=1)
     plot_values=(borders.inter_shape,borders.edge_lines, lines_interpol, min_v, max_v)
 
-    avg_line_stress = mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_vecs",exclude_colony_edge=True)
-    res_dict[frame]["avarage line tension"].append([obj_id, avg_line_stress[1], warn])
-    res_dict[frame]["std line tension"].append([obj_id,avg_line_stress[2],""])
+    #norm of the line tension vector
+    line_tension_norm = mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_vecs",exclude_colony_edge=True)
+    # normal component of the line tension vector
+    line_tension_n = mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_normal",  exclude_colony_edge=True)
+    # shear component of the line tension vector
+    line_tension_sh = mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_shear",
+                                              exclude_colony_edge=True)
+
+    res_dict[frame]["avarage magnitude line tension"].append([obj_id, line_tension_norm [1], warn])
+    res_dict[frame]["std line tension"].append([obj_id,line_tension_norm [2],""])
+    res_dict[frame]["avarage normal line tension"].append([obj_id, line_tension_n [1], warn])
+    res_dict[frame]["std normal line tension"].append([obj_id,line_tension_n [2],""])
+    res_dict[frame]["avarage shear line tension"].append([obj_id, line_tension_sh [1], warn])
+    res_dict[frame]["std shear line tension"].append([obj_id,line_tension_sh [2],""])
+
+
     if parameter_dict["FEM_mode"]=="colony": # currently cells are not detected in cell layer mode// could ne implemented though...
         avg_cell_force = mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="t_vecs",exclude_colony_edge=True)
         avg_cell_pressure = mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="t_normal",exclude_colony_edge=True)
@@ -786,10 +808,12 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,masks=Non
         if not isinstance(mask_grid, np.ndarray):
             print("couldn't identify FEM_area in frame %s patch %s" % (str(frame), str(obj_id)))
             continue # skip if FEM_area for this patch is empty
+
         nodes, elements, loads, mats, mask_area, warn, ps_new = FEM_grid_setup(frame, parameter_dict, mask_grid,
                                                                                           db_info=db_info, **kwargs)
+        print(mask_area.shape)
         # FEM solution
-        UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area, parameter_dict["FEM_mode"], frame=frame)
+        UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area, frame=frame)
         np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor)
 
         # analyzing stresses and stress distribution ####### TODO: implement coefficient of variation here
@@ -870,13 +894,13 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/Monolayers_new_images/KO_DC1_tomatoshift/database_new.cdb", "r")
+        "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/WTshift/database_new.cdb", "r")
     parameter_dict = default_parameters
     res_dict=defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
-    parameter_dict["overlapp"]=10
+    parameter_dict["overlapp"]=19
     parameter_dict["window_size"] = 20
-    parameter_dict["FEM_mode"] = "cell layer"
+    parameter_dict["FEM_mode"] = "colony"
         #parameter_dict["FEM_mode"] = "colony"
         #default_fig_parameters["cmap"]="jet"
         #default_fig_parameters["vmax"] = {"traction":500,"FEM_borders":0.03}
@@ -897,11 +921,12 @@ if __name__=="__main__":
     masks = cells_masks(all_frames, db, db_info, parameter_dict)
    # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, simple_segmentation, res_dict, frames="1",
    #                                            db_info=db_info, masks=masks,seg_threshold=0,seg_type="cell_area",)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="1", db_info=db_info, masks=masks)
-  #  db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="1", db_info=db_info, masks=masks)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="1", db_info=db_info,masks=masks)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="1", db_info=db_info,masks=masks)
-    db_info,masks,res_dict=apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="1", db_info=db_info,masks=masks)
+    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info,masks=masks)
+    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="01", db_info=db_info, masks=masks)
+  # # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="1", db_info=db_info, masks=masks)
+
+    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="01", db_info=db_info,masks=masks)
+    db_info,masks,res_dict=apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="01", db_info=db_info,masks=masks)
    # print(res_dict)
         #apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12", db_info=db_info)
 
