@@ -186,6 +186,8 @@ def setup_masks(db,db_info,parameter_dict,delete_all=False,delete_specific=[]):
     # setting new masks
     FEM_mode = parameter_dict["FEM_mode"]
     mtypes=get_masks_by_key(default_parameters,"FEM_mode",FEM_mode)
+    print("#########",mtypes)
+    print("#########", FEM_mode)
     for mask_name,color,index in zip(*get_properties_masks(default_parameters, mtypes, ["name","color","index"])):
         db.setMaskType(mask_name, color=color, index=index)
     # update db info
