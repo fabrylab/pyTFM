@@ -19,14 +19,16 @@ default_parameters={
     "std_factor":15,  # additional filter for extreme values in deformation field
     "h":300, # height of the substrate in µm
     "edge_padding":0.1, # fraction of the image close to the borders that is ignored for any analyzed value
-"padding_cell_layer":0.05,  # additional region ignored for stress analysis in "cell layer" mode. Average stresses and line
+    "padding_cell_layer":0.05,  # additional region ignored for stress analysis in "cell layer" mode. Average stresses and line
     # tension is only calculated on the area that is "edge_padding"+"padding_cell_layer" away from the image edge
     "TFM_mode":"finite_thickness",  # mode of traction force microscopy ("finite_thickness" or "infinite_thcikness")
     "FEM_mode":"colony",  # mode for FEM type. Either perform FEM on a single colony (mode: "colony") or on the whole
                         # filed of view (mode: "cell layer"). In "cell layer you select two areas and calculate stress and
                         # contractile energy on them. In "colony" you select the area of a colony and draw cell borders. These
                         # borders are used to analyze stresses along these borders.
-    "min_obj_size":1500 # all objects (cell pathches/ isolated cells) below this size (in pixel) will be ignored
+    "min_obj_size":1500, # all objects (cell pathches/ isolated cells) below this size (in pixel) will be ignored
+     "cv_pad": 0 #padding when caluclating the coefficient of variation in µm// only necessary if the
+    # mask for the FEM area fits very closely to the mask for membranes
 }
 
 # dictionary setting a sting label for some calcualtions on mask. (summing deormations, finding the areas,
@@ -94,6 +96,7 @@ default_fig_parameters={
     "cbar_height": "50%",  # height of the color bar in % of the main image. Must be string with % at the end.
     "cbar_borderpad": 6,  # distance between the edge of the image and the color bar (in pixels???)
     "scale_ratio": 0.2,  # scale arrows so that the longest arrow is "maximum image dimension" * "scale ratio" long
+    "cbar_title_pad": 10, # padding of the
     "headwidth": 3,  # width of the arrow heads (in pixels?)
     "headlength": 3,  # length of the arrow heads (in pixels?)
     "width": 0.002,  # width of the arrow shaft (what unit?)
@@ -108,7 +111,7 @@ default_fig_parameters={
     # low number results in  many arrows, high number results in few arrows
     "file_names":{"deformation":"deformation.png","traction":"traction.png"   # filenames under wich plots are saved
         ,"FEM_borders":"border_stress_img.png","stress_map":"avg_normal.png","energy_points":"energy_distribution.png"},
-    "background_color":"cmap_0",# set a color for background values. "cmap_0" fill read the zero color of the colormap. "white" would make the background white...
+    "background_color":"#330033",# set a color for background values. "cmap_0" fill read the zero color of the colormap. "white" would make the background white...
     # this doesn't effect images of deformation and traction
     "cbar_tick_label_size":15, # size of the tick labels on the color bar
     "cbar_axes_fraction":0.2, #fraction of the axes in horrizontal direction, that the colorbar takes up, when colorbar is plotted outside
