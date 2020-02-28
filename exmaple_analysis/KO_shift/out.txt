@@ -1,0 +1,42 @@
+analysis_paramters
+sigma	0.49
+young	49000.0
+pixelsize	0.201
+window_size	20.0
+overlapp	17.0
+std_factor	15
+h	300.0
+edge_padding	0.1
+TFM_mode	finite_thickness
+FEM_mode	colony
+area masks	['cell type1', 'cell type2', 'cell colony']
+02	sum deformations	4380.0	pixels
+02	area of colony	9.23e-09	
+02	colony n_cells	44	
+02	average normal stress colony	0.52	
+02	average shear stress colony	0.00386	
+02	avarage line stress	0.56	N/m
+02	avarage cell force	0.358	N
+02	avarage cell pressure	0.517	N/m
+02	avarage cell shear	0.132	N/m
+02	std line stress	0.202	N/m
+02	std cell force	0.0817	N
+02	std cell pressure	0.0983	N/m
+02	std cell shear	0.0379	N/m
+02	contractillity on cell colony	3.63e-05	
+02	contractile energy on cell colony	2.93e-12	
+03	sum deformations	5140.0	pixels
+03	area of colony	8.46e-09	
+03	colony n_cells	39	
+03	average normal stress colony	0.413	
+03	average shear stress colony	0.0409	
+03	avarage line stress	0.494	N/m	small FEM grid
+03	avarage cell force	0.325	N	small FEM grid
+03	avarage cell pressure	0.467	N/m	small FEM grid
+03	avarage cell shear	0.108	N/m	small FEM grid
+03	std line stress	0.154	N/m
+03	std cell force	0.0828	N
+03	std cell pressure	0.0531	N/m
+03	std cell shear	0.0283	N/m
+03	contractillity on cell colony	3.24e-05	
+03	contractile energy on cell colony	2.55e-12	
