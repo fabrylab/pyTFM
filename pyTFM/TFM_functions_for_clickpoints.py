@@ -50,11 +50,14 @@ class cells_masks():
         print("loading masks: ")
         frames = make_iterable(frames)
         for frame in tqdm(frames):
+
+            print(self.db_info["frames_ref_dict"])
+            print(frame)
             mask = try_mask_load(self.db,self.db_info["frames_ref_dict"][frame],raise_error=False,mtype="all") #loading mask
             if not isinstance(mask,np.ndarray): # checking if mask instance could be loaded
                 for mask_name, index in self.indices.items():
-                    self._masks_dict[frame][0]["mask_name"] = None  # writing to dict
-                    self._warns_dict[frame][0]["mask_name"] = "no mask found"
+                    self._masks_dict[frame][0][mask_name] = None  # writing to dict
+                    self._warns_dict[frame][0][mask_name] = "no mask found"
                 continue
             # optional cutting close to image edge
             mask_full = mask > 0  # mask as one block
@@ -844,6 +847,7 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,masks=Non
 
 
 def provide_basic_objects(db,frames,parameter_dict,db_info,masks,res_dict):
+    frames=make_iterable(frames)
     if not isinstance(db_info, dict):
         db_info, all_frames = get_db_info_for_analysis(db)
     if not isinstance(masks, cells_masks):
@@ -870,7 +874,7 @@ def apply_to_frames(db, parameter_dict, analysis_function,leave_basics=False,res
     :param frames: list f frames (of the cdb database) to be analyze e.g [0,1,2]
     :param db_info: dicitionary with the keys "path","frames_ref_dict","im_shape","file_order" as constructed from
     get db_info_for_analysis
-    :param res_dict: ictionary of results to be filled up adn appended
+    :param res_dict: dictionary of results to be filled up adn appended
     :return:
     '''
 

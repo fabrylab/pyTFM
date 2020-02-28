@@ -373,7 +373,7 @@ class Addon(clickpoints.Addon):
         print_db_info(self.db_info)
         self.res_dict=defaultdict(list) # dictionary that catches all results
         self.masks=None
-        self.parameter_dict = default_parameters # loading default parameters
+        self.parameter_dict = copy.deepcopy(default_parameters) # loading default parameters
         self.read_or_set_options() # reading the database folder and the previous FEM_mode, or fill in defualt values
         self.outfile_path = os.path.join(self.folder, "out.txt")  # path for output text file
 
@@ -486,25 +486,22 @@ class Addon(clickpoints.Addon):
 
 
 
-
-
-
-
     def read_or_set_options(self):
-        try:
-            self.folder = get_option_wrapper(db,"folder",unpack_funct=None,empty_return=list)
-        except:
+        self.folder = get_option_wrapper(self.db,"folder",unpack_funct=None,empty_return=lambda: "")
+        if self.folder=="":
             self.folder = os.getcwd()
             self.db._AddOption(key="folder", value=self.folder)
             self.db.setOption(key="folder", value=self.folder)
-        try:
-            self.parameter_dict["FEM_mode"] = get_option_wrapper(self.db,"FEM_mode")
-            self.parameter_dict["FEM_mode_id"] = 0 if self.parameter_dict["FEM_mode"] == "colony" else 1
-        except:
+        self.parameter_dict["FEM_mode"] = get_option_wrapper(self.db,"FEM_mode",empty_return=lambda: "")
+        if  self.parameter_dict["FEM_mode"]=="":
             self.parameter_dict["FEM_mode"] = default_parameters["FEM_mode"]
-            self.parameter_dict["FEM_mode_id"] = 0 if self.parameter_dict["FEM_mode"] == "colony" else 1
             self.db._AddOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
             self.db.setOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
+        self.parameter_dict["FEM_mode_id"] = 0 if self.parameter_dict["FEM_mode"] == "colony" else 1
+
+
+
+
 
     def select_images(self): # for what do i need this??
         self._new_window = FileSelectWindow(self)
@@ -564,7 +561,11 @@ class Addon(clickpoints.Addon):
     def switch_colony_type_mode(self,first=False):
         setup_mask_wrapper(self, self.db, self.db_info, self.parameter_dict, delete_all=False)
         self.cp.reloadMaskTypes()  # reloading mask to display in clickpoints window
-        self.db.setOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
+        try:
+            self.db.setOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
+        except KeyError:
+            self.db._AddOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
+            self.db.setOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
 
     #def fill_patches(self):
 
