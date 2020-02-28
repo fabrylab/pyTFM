@@ -21,6 +21,7 @@ from scipy.sparse.linalg import spsolve,lsqr
 import os
 from collections import defaultdict
 from scipy.ndimage import binary_erosion
+from solidspy.assemutil import loadasem
 
 
 def make_discrete_colorbar():
@@ -71,7 +72,7 @@ def plot_continous_boundary_stresses(plot_values,mask_boundaries=None,plot_t_vec
                                      scale_ratio=0.2,border_arrow_filter=1,cbar_str="line stress in N/µm",vmin=None,vmax=None,
                                     cbar_width="2%",cbar_height="50%",cbar_axes_fraction=0.2,cbar_tick_label_size=20,
                                      background_color="white",cbar_borderpad=2.5,linewidth=4,cmap="jet",cbar_style="clickpoints",
-                                     boundary_resolution=3,
+                                     boundary_resolution=3,cbar_title_pad=1,
                                      **kwargs):
 
 
@@ -105,6 +106,10 @@ def plot_continous_boundary_stresses(plot_values,mask_boundaries=None,plot_t_vec
 
     fig = plt.figure(figsize=figsize)
     ax = plt.Axes(fig, [0., 0., 1., 1.])
+    background_color = matplotlib.cm.get_cmap(cmap)(0) if background_color == "cmap_0" else background_color
+    fig.set_facecolor(background_color)
+    ax.set_facecolor(background_color)
+    ax.set_axis_off()
     fig.add_axes(ax)
 
     for shape, edge_lines, lines_interpol,*rest  in plot_values:
@@ -145,26 +150,27 @@ def plot_continous_boundary_stresses(plot_values,mask_boundaries=None,plot_t_vec
     plt.gca().invert_yaxis() # to get the typicall imshow orientation
     plt.xlim(0,shape[1])
     plt.ylim(shape[0],0)
-    background_color=matplotlib.cm.get_cmap(cmap)(0) if background_color=="cmap_0" else background_color
-    ax.set_facecolor(background_color)
-    add_colorbar(vmin, vmax, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
-                 cbar_str,cbar_axes_fraction)
+    #background_color=matplotlib.cm.get_cmap(cmap)(0) if background_color=="cmap_0" else background_color
+    #ax.set_facecolor(background_color)
+    add_colorbar(min_v, max_v, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
+                 cbar_str,cbar_axes_fraction,cbar_title_pad)
     return fig,ax
 
-def add_colorbar(vmin,vmax, cmap,ax,cbar_style,cbar_width,cbar_height,cbar_borderpad,cbar_tick_label_size,cbar_str,cbar_axes_fraction):
+def add_colorbar(vmin,vmax, cmap,ax,cbar_style,cbar_width,cbar_height,cbar_borderpad,cbar_tick_label_size,cbar_str,cbar_axes_fraction,cbar_title_pad):
     # adding colorbars inside or outside of plots
+
     norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
     sm = plt.cm.ScalarMappable(cmap=matplotlib.cm.get_cmap(cmap), norm=norm)
     if cbar_style == "clickpoints": # colorbar inside of the plot
         cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad)
         cb0 = plt.colorbar(sm,cax=cbaxes)
-        cbaxes.set_title(cbar_str, color="white")
+        cbaxes.set_title(cbar_str, color="white",pad=cbar_title_pad)
         cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
     else: # colorbar outide of the plot
         cb0=plt.colorbar(sm, aspect=20, shrink=0.8,fraction=cbar_axes_fraction) # just exploiting the axis generation by a plt.colorbar
         cb0.outline.set_visible(False)
         cb0.ax.tick_params(labelsize=cbar_tick_label_size)
-        cb0.ax.set_title(cbar_str, color="black")
+        cb0.ax.set_title(cbar_str, color="black",pad=cbar_title_pad)
 
 def check_order(mask,coords):
     plt.figure()
@@ -298,7 +304,7 @@ def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None,headlength=Non
                 figsize=None, cbar_str="",ax=None,fig=None
                 , vmin=None, vmax=None, cbar_axes_fraction=0.2, cbar_tick_label_size=15
                 , background_color="cmap_0", cbar_width="2%", cbar_height="50%", cbar_borderpad=2.5,
-                cbar_style="not-clickpoints",plot_style="not-clickpoints", **kwargs):
+                cbar_style="not-clickpoints",plot_style="not-clickpoints",cbar_title_pad=1, **kwargs):
     # list of all necessary quiver parameters
     quiver_parameters={"headwidth":headwidth,"headlength":headlength,"headaxislength":headaxislength,
                        "width":width,"scale_units":"xy","angles":"xy","scale":None}
@@ -311,8 +317,7 @@ def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None,headlength=Non
         fig=plt.figure(figsize=figsize)
         ax=plt.axes()
     map_values=np.sqrt(fx ** 2 + fy ** 2)
-    if vmax and not vmin: # other wise the program behaves unexpectedly if the automatically set vmin is smaller the vmax
-        vmin=vmax-1 if np.min(map_values)>vmax else None
+    vmin, vmax = set_vmin_vmax(map_values, vmin, vmax)
     im = plt.imshow(map_values,cmap=cmap,vmin=vmin,vmax=vmax) # imshowing
     if plot_style=="clickpoints":
         ax.set_position([0,0,1,1])
@@ -324,7 +329,7 @@ def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None,headlength=Non
         quiver_parameters["scale"]=1 # disabeling the auto scaling behavior of quiver
     plt.quiver(xs, ys, fx, fy, **quiver_parameters) # plotting the arrows
     add_colorbar(vmin, vmax, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
-                 cbar_str, cbar_axes_fraction)
+                 cbar_str, cbar_axes_fraction,cbar_title_pad)
     return fig, ax
 
 
@@ -362,11 +367,18 @@ def show_edgeline(mask, ax, color="#696969", alpha=0.5 , n=6,plot_inner_line=Fal
         norm = matplotlib.colors.BoundaryNorm(bounds, cmap_custom2.N)
         ax.imshow(edge_inner_show, cmap=cmap_custom2, norm=norm)
 
-
+def set_vmin_vmax(x,vmin,vmax):
+    if not isinstance(vmin, (float, int)):
+        vmin=np.nanmin(x)
+    if not isinstance(vmax, (float, int)):
+        vmax = np.nanmax(x)
+    if isinstance(vmax, (float, int)) and not isinstance(vmin, (float, int)):
+        vmin = vmax - 1 if vmin > vmax else None
+    return vmin, vmax
 
 def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str=""
                             ,cmap="rainbow",vmin=None,vmax=None,background_color = "cmap_0",cbar_width="2%",cbar_height="50%",
-                         cbar_borderpad=2.5,cbar_tick_label_size=15,cbar_axes_fraction=0.2,cbar_style="clickpoints",**kwargs):
+                         cbar_borderpad=2.5,cbar_tick_label_size=15,cbar_axes_fraction=0.2,cbar_style="clickpoints",cbar_title_pad=1,**kwargs):
 
     values=values.astype("float64")
     dims=values.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
@@ -375,15 +387,15 @@ def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str=""
     values_show[values!=0]=values[values!=0]
     fig=plt.figure(figsize=figsize)
     ax = fig.add_axes([0., 0., 1., 1.])
-    # other wise the program behaves unexpectedly if the automatically set vmin is bigger the manually set vmax
-    if vmax and not vmin:
-        vmin = vmax - 1 if np.min(values) > vmax else None
-    im = ax.imshow(values_show,cmap=cmap,vmin=vmin,vmax=vmax)
-
+    ax.set_axis_off()
     background_color = matplotlib.cm.get_cmap(cmap)(0) if background_color == "cmap_0" else background_color
+    fig.set_facecolor(background_color)
     ax.set_facecolor(background_color)
+    # other wise the program behaves unexpectedly if the automatically set vmin is bigger the manually set vmax
+    vmin, vmax = set_vmin_vmax(values, vmin, vmax)
+    im = ax.imshow(values_show,cmap=cmap,vmin=vmin,vmax=vmax)
     add_colorbar(vmin, vmax, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
-                 cbar_str, cbar_axes_fraction)
+                 cbar_str, cbar_axes_fraction,cbar_title_pad)
     return fig,ax
 
 
@@ -1075,8 +1087,31 @@ def scale_for_quiver(ar1,ar2,dims,scale_ratio=0.2,return_scale=False):
         return scale
     return ar1*scale,ar2*scale
 
+def find_eq_position(nodes, IBC, neq):
+    #based on solidspy.assemutil.loadasem
 
-def custom_solver(mat, rhs, mask_area,verbose=False):
+    nloads = IBC.shape[0]
+    RHSG = np.zeros((neq,2))
+    x_points=np.zeros((neq)).astype(bool) # mask showing which point has x deformation
+    y_points = np.zeros((neq)).astype(bool) # mask showing which point has y deformation
+    for i in range(nloads):
+        il = int(nodes[i, 0]) # index of the node
+        ilx = IBC[il, 0] # indices in RHSG or fixed nodes, if -1
+        ily = IBC[il, 1]
+        if ilx != -1:
+            RHSG[ilx] = nodes[i, [1,2]] # x,y position/ not the orientation
+            x_points[ilx]=[True]
+        if ily != -1:
+            RHSG[ily] = nodes[i, [1,2]]
+            y_points[ily] = [True]
+
+    return RHSG.astype(int),x_points,y_points
+
+
+
+
+
+def custom_solver(mat, rhs, mask_area,nodes,IBC,verbose=False):
     #IBC is "internal boundary condition" contains information about which nodes are fixed and
     # where the unfixed nodes can be found in the rhs vector
 
@@ -1100,6 +1135,11 @@ def custom_solver(mat, rhs, mask_area,verbose=False):
     ------
     """
 
+    len_disp = mat.shape[1]  # length of the  displacement vector
+    zero_disp_x = np.zeros(len_disp)
+    zero_disp_y = np.zeros(len_disp)
+    zero_torque = np.zeros(len_disp)
+
     com = regionprops(mask_area.astype(int))[0].centroid  # finding center of mass
     com = (com[1], com[0])  # as x y coordinate
 
@@ -1107,19 +1147,17 @@ def custom_solver(mat, rhs, mask_area,verbose=False):
     r = np.zeros((mask_area.shape[0], mask_area.shape[1], 2))  # array with all positional vectors
     r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
     r[:, :, 1] = c_y
+    nodes_xy_ordered,x_points,y_points=find_eq_position(nodes, IBC, len_disp) # solidspy function that is used to construct the loads vector (rhs)
+    r=r[nodes_xy_ordered[:,1],nodes_xy_ordered[:,0],:] # ordering r in the same order as rhs
     r = r - np.array(com)
-    len_disp = mat.shape[1]  # length of the disered displacement vector
-    zero_disp_x = np.zeros(len_disp)
-    zero_disp_y = np.zeros(len_disp)
-    zero_torque = np.zeros(len_disp)
-    # adding zero displacement condition
-    zero_disp_x[::2] = 1
-    zero_disp_y[1::2] = 1
-    # torque=sum(r1*f2-r2*f1)
-    zero_torque[::2] = r[:, :, 1][mask_area.astype(bool)]  # -r2 factor
-    zero_torque[1::2] = r[:, :, 0][mask_area.astype(bool)]  # +r1 factor
-    add_matrix=np.vstack([zero_disp_x,zero_disp_y,zero_torque])
 
+    zero_disp_x[x_points] = 1
+    zero_disp_y[y_points] = 1
+
+    # torque=sum(r1*f2-r2*f1)
+    zero_torque[x_points] = r[x_points, 1]  # -r2 factor
+    zero_torque[y_points] = -r[y_points, 0]  # r1 factor
+    add_matrix=np.vstack([zero_disp_x,zero_disp_y,zero_torque])
     # adding zero conditions for force vector and torque
     rhs=np.append(rhs,np.zeros(3))
 
