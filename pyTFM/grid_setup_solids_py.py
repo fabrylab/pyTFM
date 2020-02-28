@@ -1,5 +1,5 @@
 
-from pyTFM.solids_py_stress_functions import *
+from pyTFM.stress_functions import *
 from pyTFM.utilities_TFM import make_random_discrete_color_range, invert_dictionary,join_dictionary
 from skimage.morphology import skeletonize,remove_small_holes,remove_small_objects,label,binary_dilation,binary_erosion
 from scipy.ndimage.morphology import binary_fill_holes
@@ -588,28 +588,34 @@ def alligne_objects(mask1, mask2):
     mask2_alligne[new_cords1[0]: new_cords1[1], new_cords1[2]:new_cords1[3]] = mask2[rectangle2[0][0], rectangle2[0][1]]
     return mask2_alligne.astype(int)
 
-def cut_mask_from_edge(mask,cut_factor,warn_flag=False):
-    mask_cut=copy.deepcopy(mask)
-    sum_mask1=np.sum(mask_cut)
-    dims=mask_cut.shape
+def cut_mask_from_edge(mask,cut_factor,warn_flag=False,fill=True):
+
+    sum_mask1=np.sum(mask)
+    dims=mask.shape
     inds=[int(dims[0]*cut_factor),int(dims[0]-(dims[0]*cut_factor)),int(dims[1]*cut_factor),int(dims[1]-(dims[1]*cut_factor))]
-    mask_cut[:inds[0], :] = 0
-    mask_cut[inds[1]:, :] = 0
-    mask_cut[:, :inds[2]] = 0
-    mask_cut[:, inds[3]:] = 0
+    if fill: # filling to the original shape
+        mask_cut = copy.deepcopy(mask)
+        mask_cut[:inds[0], :] = 0
+        mask_cut[inds[1]:, :] = 0
+        mask_cut[:, :inds[2]] = 0
+        mask_cut[:, inds[3]:] = 0
+    else: # new array with new shape
+        mask_cut = np.zeros((inds[1]-inds[0],inds[3]-inds[2]))
+        mask_cut = mask[inds[0]:inds[1],inds[2]:inds[3]]
+
     sum_mask2 = np.sum(mask_cut)
     warn="mask was cut close to image edge" if (sum_mask2<sum_mask1 and warn_flag) else ""
     return mask_cut, warn
 
-def cut_mask_from_edge_wrapper(cut_factor,mask,parameter_dict,cut=True,warn=""):
+def cut_mask_from_edge_wrapper(cut_factor,mask,parameter_dict,cut=True,warn="",fill=True):
     warn_flag = parameter_dict["cut_instruction"][parameter_dict["FEM_mode"]]
     if cut:
         mask, warn = cut_mask_from_edge(mask,cut_factor,parameter_dict["TFM_mode"]=="colony")
     return mask, warn
 
-def grid_setup(mask_area, f_x, f_y, E, sigma,edge_factor):
+def grid_setup(mask_area, f_x, f_y, E, sigma,edge_factor=0):
     '''
-    setup of nodes, elements, loads and mats(elastic material properties) lists for solids pys finite elments analysis. Every pixel of
+    setup of nodes, elements, loads and mats(elastic material properties) lists for solids pys finite elements analysis. Every pixel of
     the provided mask is used as a node. Values from f_x,f_y at these pixels are used as loads. Mats is just
     [E, sigma].
     :param mask_area:
@@ -622,29 +628,26 @@ def grid_setup(mask_area, f_x, f_y, E, sigma,edge_factor):
 
     coords = np.array(np.where(mask_area)) # retrieving all coordintates from the  points  in the mask
 
-    # creating an 2D array, with the node id of each pixel. Non assigned pixel is -1.
-    ids = np.zeros(mask_area.shape).T - 1
-    ids[coords[1], coords[0]] = np.arange(coords.shape[1], dtype=int) # filling with node ids
-
     # setting up nodes list:[node_id,x_coordinate,y_coordinate,fixation_y,fixation_x]
     nodes = np.zeros((coords.shape[1], 5))
     nodes[:, 0] = np.arange(coords.shape[1])
     nodes[:, 1] = coords[1]  # x coordinate
     nodes[:, 2] = coords[0]  # y coordinate
 
+    # creating an 2D array, with the node id of each pixel. Non assigned pixel is -1.
+    ids = np.zeros(mask_area.shape).T - 1
+    ids[coords[0], coords[1]] = np.arange(coords.shape[1], dtype=int)  # filling with node ids
+
     # fix all nodes that are exactely at the edge of the image (minus any regions close to the image edge that are
     # supposed to be ignored)in the movement direction perpendicular to the edge
-    ids_cut,w=cut_mask_from_edge(ids,edge_factor,"")
+    ids_cut,w=cut_mask_from_edge(ids,edge_factor,"",fill=False)
     edge_nodes_horizontal = np.hstack([ids_cut[:, 0], ids_cut[:, -1]]).astype(int) # upper and lower image edge
     edge_nodes_vertical = np.hstack([ids_cut[0, :], ids_cut[-1, :]]).astype(int) # left and right image edge
     edge_nodes_horizontal = edge_nodes_horizontal[edge_nodes_horizontal >= 0]
     edge_nodes_vertical = edge_nodes_vertical[edge_nodes_vertical >= 0]
-
     nodes[edge_nodes_vertical, 3] = -1  # fixed in x direction
     nodes[edge_nodes_horizontal, 4] = -1  # fixed in y direction
     nodes = nodes.astype(int)
-
-
 
 
     # setting up elements list:[ele_id,element type,reference_to_material_properties,node1,node2,node3,node4]
@@ -654,21 +657,20 @@ def grid_setup(mask_area, f_x, f_y, E, sigma,edge_factor):
     #list the square(node,node left,node left down, node down) for each node. These are all posiible square shaped
     # elements, with the coorect orientation
 
-    sqr = [(coords[1], coords[0] - 1),(coords[1] - 1, coords[0] - 1),(coords[1] - 1, coords[0]),(coords[1], coords[0])]
+    sqr = [(coords[0], coords[1] - 1),(coords[0] - 1, coords[1] - 1),(coords[0] - 1, coords[1]),(coords[0], coords[1])]
     # this produce negative indices, when at the edge of the mask
     # filtering these values
     filter=np.sum(np.array([(s[0]<0)+(s[1]<0) for s in sqr]),axis=0)>0 # logical to find any square with negative coordinates
     sqr=[(s[0][~filter],s[1][~filter]) for s in sqr] # applying filter
-    elements=elements[~filter] # alos shortening length of elements list according to the same filter
+    elements=elements[~filter] # shortening length of elements list according to the same filter
 
 
-
-    elements[:, 6] = ids[sqr[0][0], sqr[0][1]]  ## zusammenfassen
-    elements[:, 5] = ids[sqr[1][0], sqr[1][1]]
-    elements[:, 4] = ids[sqr[2][0], sqr[2][1]]
-    elements[:, 3] = ids[sqr[3][0], sqr[3][1]]
-
-
+    # enter node ids in elements, needs counter clockwise arangement
+    # check by calling pyTFM.functions_for_cell_colonie.plot_grid(nodes,elements,inverted_axis=False,symbol_size=4,arrows=True,image=0)
+    elements[:, 6] = ids[sqr[3]]
+    elements[:, 5] = ids[sqr[2]]
+    elements[:, 4] = ids[sqr[1]]
+    elements[:, 3] = ids[sqr[0]]
 
     # cleaning up elements with nodes outside of cell area
     elements = np.delete(elements, np.where(elements == -1)[0], 0)
@@ -678,27 +680,12 @@ def grid_setup(mask_area, f_x, f_y, E, sigma,edge_factor):
     elements[:, 2] = 0  # elastic properties reference
     elements = elements.astype(int)
 
-
-
     # setting up forces
     loads = np.zeros((len(nodes), 3))
     loads[:, 0] = np.arange(len(nodes))
     loads[:, 1] = f_x[coords[0], coords[1]]
     loads[:, 2] = f_y[coords[0], coords[1]]
     #loads=loads[not edge_nodes,:] ## check if this works/ is necessary
-
-
-    # filtering all nodes that are not in elemnte(e.g some singel points at the edge) using sets
-    ## hopefully fixed on in prepare mask, so we dnt need this
-
-    #set1=set(np.unique(elements[:,[3,4,5,6]].flatten()))
-    #set2=set(nodes[:, 0])
-    #dif=set2.difference(set1) # finding complement
-    #nodes_id=copy.deepcopy(nodes) #"nan padded nodes, for easy retrieval of ids.. mybe find better solution
-    #nodes_id[list(dif)]=np.nan
-    #nodes=np.delete(nodes,list(dif),axis=0)
-    #loads = np.delete(loads, list(dif), axis=0)
-
 
     mats = np.array([[E, sigma]])  # material properties: youngsmodulus, poisson ratio
     return nodes, elements, loads, mats
