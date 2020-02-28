@@ -15,6 +15,6 @@
 
 __all__ = ["data_analysis", "database_functions", "functions_for_cell_colonie",
 "graph_theory_for_cell_boundaries","grid_setup_solids_py","parameters_and_strings",
-"solids_py_stress_functions","TFM_functions","TFM_functions_for_clickpoints","utilities"
-]
+           "stress_functions", "TFM_functions", "TFM_functions_for_clickpoints", "utilities"
+           ]
 from pyTFM._version import __version__
