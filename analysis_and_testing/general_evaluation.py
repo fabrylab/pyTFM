@@ -20,7 +20,7 @@ from scipy.ndimage import binary_dilation
 from scipy.ndimage.morphology import binary_fill_holes
 from itertools import chain,product
 import os
-sys.path.insert(0,'/home/user/Software/tracktion_force_microscopy/tracktion_force_microscopy/analysis_and_testing/')
+sys.path.insert(0,'/home/user/Software/pyTFM/analysis_and_testing/')
 from simulating_deformation import *
 from playing_with_strains import *
 
@@ -38,7 +38,7 @@ def traction_wrapper(u, v, pixelsize, h, young,mask=None, filter="gaussian"):
     return fx_corr, fy_corr
 
 def stress_wrapper(mask, fx, fy, young, sigma=0.5):
-    nodes, elements, loads, mats = grid_setup(mask, -fx, -fy, young, sigma=0.5)  # construct fem grid
+    nodes, elements, loads, mats = grid_setup(mask, -fx, -fy, young, sigma=0.5,edge_factor=0)  # construct fem grid
     # solve FEM system
     UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask, verbose=False,
                                              system_type="colony")  # colony means the pure neumann FEM is applied
@@ -736,27 +736,26 @@ def exp_border_real_data():
 #exp_border_real_data()
 
 if __name__=="__main__":
-    out_folder = "/media/user/GINA1-BK/data_traction_force_microscopy/ev_square_square_center_huge"
+    out_folder = "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_square_circ_center_1"
     young = 1
     h = 100
-    pixelsize = 1
+    exp_method = ""
     border_ex_test = []
-    filter = None
+    pixelsize = 1
+    filter="gaussian"
     f_type = "non-circular"  # display_option
-    mask = setup_geometry(im_shape=(1000, 1000), shape_size=700)
-    stress_tensor_b = setup_stress_field(mask, distribution="gaussian_flattened_rectangle", sigma_n=1, sigma_shear=0,
-                                         sigma_gf=7, diameter_gf=25)
+    mask = setup_geometry(im_shape=(300, 300), shape_size=150)
+    stress_tensor_b = setup_stress_field(mask, distribution="gaussian_flattened_circle", sigma_n=1, sigma_shear=0,
+                                         sigma_gf=6)
 
     fx_b, fy_b = traction_from_stress(stress_tensor_b, pixelsize, plot=False, grad_type="diff1")
     u_b, v_b = finite_thickness_convolution(fx_b, fy_b, pixelsize, h, young, sigma=0.5,
-                                            kernel_size=None)  # somewhat of an approximation
+                                            kernel_size=None)  # somwhat of an approximation
 
-    np.save(os.path.join("/home/user/Desktop/", "u_b.npy"), u_b)
-    np.save(os.path.join("/home/user/Desktop/", "v_b.npy"), v_b)
     createFolder(out_folder)
     np.save(os.path.join(out_folder,"u_b.npy"),u_b)
     np.save(os.path.join(out_folder,"v_b.npy"),v_b)
-    u_b,v_b=np.load(os.path.join(out_folder,"u_b.npy")),np.load(os.path.join(out_folder,"v_b.npy"))
+    u_b,v_b = np.load(os.path.join(out_folder,"u_b.npy")),np.load(os.path.join(out_folder,"v_b.npy"))
     #compare_scalar_fields(u,u1)
     #u2,v2,z1=finite_thickenss_convolution_exact(fx, fy,pixelsize, h, young, sigma=0.5,kernel_size=None) # best solution possible
 
@@ -775,7 +774,7 @@ if __name__=="__main__":
 
     #stress_tensors, mean_normal_list, mask_exp_list = exp_border(out_folder=out_folder,exp_range=border_ex_test,fx_f=fx_f,fy_f=fy_f,mask=mask,method=exp_method)
     stress_tensors, mean_normal_list, mask_exp_list = load_exp_border(out_folder=out_folder,exp_range=border_ex_test,method=exp_method)
-    max_dict = get_max_values(exp_test=True,mean_normal_list=mean_normal_list)
+    max_dict = get_max_values(exp_test=len(border_ex_test)>0,mean_normal_list=mean_normal_list)
 
 
     #max_dict["force"]=None

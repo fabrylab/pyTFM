@@ -7,7 +7,7 @@ import solidspy.postprocesor as pos
 import solidspy.assemutil as ass
 from pyTFM.functions_for_cell_colonie import *
 from pyTFM.grid_setup_solids_py import *
-from pyTFM.solids_py_stress_functions import *
+from pyTFM.stress_functions import *
 
 pixelsize = 6.25 / 40 # µm/pixel pixelsize of the original images
 
