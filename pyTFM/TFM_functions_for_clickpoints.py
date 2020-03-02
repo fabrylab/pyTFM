@@ -71,7 +71,7 @@ class cells_masks():
                 for mask_name, index in self.indices.items():
                     self._masks_dict[frame][0][mask_name] = None  # writing to dict
                     self._warns_dict[frame][0][mask_name] = "no mask found"
-                    self._masks_dict[frame][obj_id]["com"] = r.centroid
+                    self._masks_dict[frame][0]["com"] = None
                 continue
 
             for obj_id, r in enumerate(regions): #iterating through all objects
@@ -179,7 +179,6 @@ def write_output_file(values,value_type, file_path,new_file=False):
         with open(file_path, "a+") as f:
             for frame in frames:
                 for name,res_list in values[frame].items():
-
                     for res_single in res_list:
                         cell_id, res, warn = res_single
                         f.write(frame + "\t"+ str(cell_id)+ "\t" + name + "\t" + str(round_flexible(res)) + "\t" + units[
@@ -544,7 +543,7 @@ def simple_segmentation(frame, parameter_dict,res_dict, db,db_info=None,masks=No
 def deformation(frame, parameter_dict,res_dict, db,db_info=None,masks=None,**kwargs):
 
     # deformation for 1 frame
-    im1 = db.getImage(id=db_info["file_order"][frame + "images_after"]).data  ## thats very slow though
+    im1 = db.getImage(id=db_info["file_order"][frame + "images_after"]).data
     im2 = db.getImage(id=db_info["file_order"][frame + "images_before"]).data
 
     # overlapp and windowsize in pixels
@@ -592,7 +591,6 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
         if not isinstance(mask, np.ndarray):
             print("couldn't identify mask %s in frame %s patch %s" % (str(mtype), str(frame), str(obj_id)))
             continue
-
         # interpolation to size of traction force array
         mask_int = interpolation(mask, t_x.shape)
         # calculate contractillity only in "colony" mode

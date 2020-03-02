@@ -205,10 +205,10 @@ class FileSelectWindow(QtWidgets.QWidget):
             self.db_name =self.main_window.db._database_filename # if not use current filename as default filename
         self.cwd = os.getcwd()
         self.default_folder = self.cwd
-        self.folders = {"folder1_txt": os.getcwd(),
-                        "folder2_txt": os.getcwd(),
-                        "folder3_txt": os.getcwd(),
-                        "folder_out_txt": os.getcwd()}
+        self.folders = {"folder_after": os.getcwd(),
+                        "folder_before": os.getcwd(),
+                        "folder_cells": os.getcwd(),
+                        "folder_out": os.getcwd()}
         self.search_keys = {"after": "\d{1,4}after", "before": "\d{1,4}before",
                             "cells": "\d{1,4}bf_before",
                             "frames": "^(\d{1,4})"}
@@ -221,15 +221,15 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.sub_v_layout = defaultdict(QtWidgets.QVBoxLayout)
         self.sub_h_layout= defaultdict(QtWidgets.QHBoxLayout)
         self.objects = {
-            "folder1_txt": {"object": None, "properties": [1, 0,None,20,None, "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
-            "folder2_txt": {"object": None, "properties": [2, 0,None,20,None, "textChanged" ,self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
-            "folder3_txt": {"object": None, "properties": [3, 0,None,20,None,  "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "folder_after": {"object": None, "properties": [1, 0,None,20,None, "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "folder_before": {"object": None, "properties": [2, 0,None,20,None, "textChanged" ,self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "folder_cells": {"object": None, "properties": [3, 0,None,20,None,  "textChanged",self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
 
-            "folder1_button": {"object": None, "properties": [1, 1,30,80,QtCore.Qt.AlignLeft,  "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
-            "folder2_button": {"object": None, "properties": [2, 1,30,80,QtCore.Qt.AlignLeft,  "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
-            "folder3_button": {"object": None, "properties": [3, 1,30,80,QtCore.Qt.AlignLeft,  "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
+            "folder_after_button": {"object": None, "properties": [1, 1,30,80,QtCore.Qt.AlignLeft,  "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
+            "folder_before_button": {"object": None, "properties": [2, 1,30,80,QtCore.Qt.AlignLeft,  "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
+            "folder_cells_button": {"object": None, "properties": [3, 1,30,80,QtCore.Qt.AlignLeft,  "clicked",self.file_dialog,QtWidgets.QPushButton, "..."]},
 
-            "folder_out_txt": {"object": None, "properties": [6, 0, None, 20, None, "textChanged", self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
+            "folder_out": {"object": None, "properties": [6, 0, None, 20, None, "textChanged", self.update_dirs, QtWidgets.QLineEdit, self.cwd]},
             "db_name_text": {"object": None, "properties": [6, 2, None, 20, None, "textChanged", self.update_dirs, QtWidgets.QLineEdit, self.db_name]},
             "folder_out_button": {"object": None, "properties": [6, 1, 30, 20, QtCore.Qt.AlignLeft, "clicked", self.file_dialog, QtWidgets.QPushButton, "..."]},
             "after": {"object": None, "properties": [1, 2,200,30,None, "textChanged" ,self.update_dirs, QtWidgets.QLineEdit, "default"]},
@@ -244,15 +244,15 @@ class FileSelectWindow(QtWidgets.QWidget):
 
 
         self.texts = {
-            "folder_out_txt": {"object": None, "properties": [0, 0, "output folder"]},
-            "folder1_txt": {"object": None, "properties": [0, 0, "images after cell removal"]},
-            "folder2_txt": {"object": None, "properties": [0, 0, "images before cell removal"]},
-            "folder3_txt": {"object": None, "properties": [0, 0, "images cells"]},
+            "folder_out": {"object": None, "properties": [0, 0, "output folder"]},
+            "folder_after": {"object": None, "properties": [0, 0, "images after cell removal"]},
+            "folder_before": {"object": None, "properties": [0, 0, "images before cell removal"]},
+            "folder_cells": {"object": None, "properties": [0, 0, "images cells"]},
             "db_name_text": {"object": None, "properties": [0, 0, "database name"]},
             "folder_out_button": {"object": None, "properties": [0, 0, ""]},
-            "folder1_button": {"object": None, "properties": [0, 0, ""]},
-            "folder2_button": {"object": None, "properties": [0, 0, ""]},
-            "folder3_button": {"object": None, "properties": [0, 0, ""]},
+            "folder_after_button": {"object": None, "properties": [0, 0, ""]},
+            "folder_before_button": {"object": None, "properties": [0, 0, ""]},
+            "folder_cells_button": {"object": None, "properties": [0, 0, ""]},
             "after": {"object": None, "properties": [0, 0, "'after' image identifier"]},
             "before": {"object": None, "properties": [0, 0, "'before' image identifier"]},
             "cells": {"object": None, "properties": [0, 0, "cell image identifier"]},
@@ -298,14 +298,13 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.layout.addLayout(self.sub_h_layout[name], vpos, hpos) # adds to main grid layout
 
     # additional file selectors
-
     def file_dialog(self,button_name):
         dialog=QtWidgets.QFileDialog()
         dialog.setFileMode(QtWidgets.QFileDialog.DirectoryOnly)
         dialog.setDirectory(self.default_folder)
         if dialog.exec_():
             dirname = dialog.selectedFiles()
-            text_field=self.objects[button_name[:-6]+"txt"]["object"]
+            text_field=self.objects[button_name[:-7]]["object"]
             text_field.setText(dirname[0])
             self.default_folder=os.path.split(dirname[0])[0]
         self.update_dirs()
@@ -333,8 +332,8 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.main_window.cp.updateImageCount()  # reload the image bar
 
         # update output folder
-        self.main_window.outfile_path = os.path.join(self.folders["folder_out_txt"], "out.txt")
-        self.folder = self.main_window.db.setOption("folder",self.folders["folder_out_txt"])
+        self.main_window.outfile_path = os.path.join(self.folders["folder_out"], "out.txt")
+        self.folder = self.main_window.db.setOption("folder",self.folders["folder_out"])
         # update db info
         self.main_window.db_info, self.main_window.all_frames = get_db_info_for_analysis(self.main_window.db) # update meta info
         self.main_window.res_dict = defaultdict(lambda: defaultdict(list))  #reseting res dict and masks just to be sure
@@ -347,7 +346,7 @@ class FileSelectWindow(QtWidgets.QWidget):
 
     def save_database_automatically(self):
         # saving the database in the current folder if a temporary filename
-        filename = os.path.join(self.folders["folder_out_txt"], self.db_name)
+        filename = os.path.join(self.folders["folder_out"], self.db_name)
         if not os.path.exists(filename): # save if no file with same name is around
             filename_new=filename
         else: # try some other filenames
@@ -379,7 +378,7 @@ class Addon(clickpoints.Addon):
 
         """ GUI Widgets"""
         # set the title and layout
-        self.setWindowTitle("TFM"+"-"+pyTFM.__version__)
+        self.setWindowTitle("pyTFM"+"-"+pyTFM.__version__)
         self.setWindowIcon(qta.icon("fa.compress"))
         self.setMinimumWidth(400)
         self.setMinimumHeight(200)
@@ -443,7 +442,7 @@ class Addon(clickpoints.Addon):
 
 
         #### parameters
-        self.parameter_labels=["Youngs modulus [Pa]","Possion's ratio","pixel size [µm]","PIV overlapp [µm]","PIV window size [µm]","gel height [µm]"]
+        self.parameter_labels=["Youngs modulus [Pa]","Poisson's ratio","pixel size [µm]","PIV overlapp [µm]","PIV window size [µm]","gel height [µm]"]
         self.param_dict_keys=["young","sigma","pixelsize","overlapp","window_size","h"]
         self.parameter_widgets,self.parameter_lables,last_line=add_parameter_from_list(self.parameter_labels,
                                                             self.param_dict_keys,self.parameter_dict,self.layout
@@ -580,6 +579,8 @@ class Addon(clickpoints.Addon):
         # generating objects needed for the following calculation, if they are not exisiting already
         print_parameters(self.parameter_dict)
         print("output file: ",self.outfile_path)
+
+        self.db_info, self.all_frames = get_db_info_for_analysis(self.db)
         cdb_frame = self.cp.getCurrentFrame()
         self.frame = self.db_info["cbd_frames_ref_dict"][cdb_frame]
         self.mode = self.analysis_mode.currentText()  # only current frame or all frames
@@ -588,8 +589,9 @@ class Addon(clickpoints.Addon):
         if self.mode == "all frames":  # all frames
             frames = self.all_frames
         print("analyzing frames = ", frames)
-        self.db_info, self.masks, self.res_dict = provide_basic_objects(self.db,frames, self.parameter_dict, self.db_info,
-                                                                        self.masks, self.res_dict)
+
+        self.masks = cells_masks(frames, self.db, self.db_info, self.parameter_dict)
+        self.res_dict =   res_dict = defaultdict(lambda: defaultdict(list))
         self.outfile_path = write_output_file(self.parameter_dict, "parameters", self.outfile_path, new_file=True)
         if self.check_box_def.isChecked():
             self.calculate_deformation(frames)

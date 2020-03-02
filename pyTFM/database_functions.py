@@ -76,7 +76,7 @@ def setup_database_for_tfm(folder, name):
     setup_database_internal(db, search_keys, folders)
 
 
-def setup_database_internal(db, keys_dict,folders_dict,TFM_mode=""):
+def setup_database_internal(db, keys_dict,folders_dict):
 
     '''
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
@@ -102,18 +102,15 @@ def setup_database_internal(db, keys_dict,folders_dict,TFM_mode=""):
     key2 = keys_dict["before"]
     key3 = keys_dict["cells"]
     key_frame = keys_dict["frames"]
-    folder1 = folders_dict["folder1_txt"]
-    folder2 = folders_dict["folder2_txt"]
-    folder3 = folders_dict["folder3_txt"]
 
     key1 = make_iterable(key1)
     key2 = make_iterable(key2)
     key3 = make_iterable(key3)
 
     file_endings = "(.*\.png|.*\.jpg|.*\.tif|.*\.swg)" # all allowed file endings
-    layer_search = {"images_after": {"folder":folder1,"file_key":[re.compile(k + file_endings) for k in key1]},
-                    "images_before": {"folder":folder2,"file_key":[re.compile(k + file_endings) for k in key2]},
-                    "membranes": {"folder":folder3,"file_key":[re.compile(k + file_endings) for k in key3]}
+    layer_search = {"images_after": {"folder":folders_dict["folder_after"],"file_key":[re.compile(k + file_endings) for k in key1]},
+                    "images_before": {"folder":folders_dict["folder_before"],"file_key":[re.compile(k + file_endings) for k in key2]},
+                    "membranes": {"folder":folders_dict["folder_cells"],"file_key":[re.compile(k + file_endings) for k in key3]}
                             }
     # filtering all files in the folder
     all_patterns=list(itertools.chain(*layer_search.values()))
@@ -140,7 +137,10 @@ def setup_database_internal(db, keys_dict,folders_dict,TFM_mode=""):
     for l in layer_list[1:]:
         db.getLayer(l, base_layer=base_layer, create=True)
     # sorting images into layers
-    db.setPath(folders_dict["folder_out_txt"],id=1)
+    db.setPath(folders_dict["folder_out"],id=1)
+    #db.setPath(folders_dict["folder_after"], id=2)
+    #db.setPath(folders_dict["folder_before"], id=3)
+    #db.setPath(folders_dict["folder_cell"], id=4)
 
     frames_ref_dict={}
     file_order = {}
@@ -152,8 +152,7 @@ def setup_database_internal(db, keys_dict,folders_dict,TFM_mode=""):
             layer = "images_before"
         if any([pat.match(os.path.split(im)[1]) for pat in layer_search["membranes"]["file_key"]]):
             layer = "membranes"
-        print("file:", im, "frame:", frame, "layer", "layer:", layer)
-
+        print("file:", im, "frame:", frame, "layer:", layer)
         image_object=db.setImage(id=id, filename=im, sort_index=sort_index_id,
                     layer=layer)
         frames_ref_dict[frame]=sort_index_id
@@ -186,8 +185,6 @@ def setup_masks(db,db_info,parameter_dict,delete_all=False,delete_specific=[]):
     # setting new masks
     FEM_mode = parameter_dict["FEM_mode"]
     mtypes=get_masks_by_key(default_parameters,"FEM_mode",FEM_mode)
-    print("#########",mtypes)
-    print("#########", FEM_mode)
     for mask_name,color,index in zip(*get_properties_masks(default_parameters, mtypes, ["name","color","index"])):
         db.setMaskType(mask_name, color=color, index=index)
     # update db info
