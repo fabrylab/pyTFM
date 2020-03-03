@@ -50,9 +50,6 @@ class cells_masks():
         print("loading masks: ")
         frames = make_iterable(frames)
         for frame in tqdm(frames):
-
-            print(self.db_info["frames_ref_dict"])
-            print(frame)
             mask = try_mask_load(self.db,self.db_info["frames_ref_dict"][frame],raise_error=False,mtype="all") #loading mask
             if not isinstance(mask,np.ndarray): # checking if mask instance could be loaded
                 for mask_name, index in self.indices.items():
@@ -168,7 +165,7 @@ def write_output_file(values,value_type, file_path,new_file=False):
                     break
     if value_type=="parameters":
         with open(file_path, "w+") as f:
-            f.write("analysis_paramters")
+            f.write("analysis_paramters\n")
             for parameter, value in values.items():
                 if parameter not in ["cut_instruction","mask_properties","FEM_mode_id"]:
                     f.write(parameter + "\t" + str(value)+ "\n")
@@ -441,7 +438,7 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,masks=Non
 
     # area of the cells/cell colony
     # retrieve which masks should be used to calculate the area
-    use_type="area_colony" if parameter_dict["TFM_mode"]=="colony" else "area_layer"
+    use_type="area_colony" if parameter_dict["FEM_mode"]=="colony" else "area_layer"
     mtypes = [m for m in db_info["mask_types"] if m in get_masks_by_key(default_parameters,"use",use_type)]
     # place holder for shape if not defined in defo-shape, needed for counting cells
     int_shape=db_info["defo_shape"] if "defo_shape" in db_info.keys() else (int(db_info["im_shape"][frame][0] * 0.2),
@@ -461,9 +458,9 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,masks=Non
             print("couldn't identify cell borders in frame %s patch %s" % (str(frame), str(obj_id)))
             continue
         n_cells=borders.n_cells
-        res_dict[frame]["colony n_cells"].append([obj_id,n_cells,warn])
+        res_dict[frame]["cell number"].append([obj_id,n_cells,warn])
 
-    # center of mass 8centroid) of each object// a simple check if objects have been identified correctly
+    # center of mass (centroid) of each object// a simple check if objects have been identified correctly
     for obj_id, com in masks.get_com_frame(frame):
         res_dict[frame]["center of object"].append([obj_id,str(np.round(com,2)),""])
 
@@ -720,7 +717,7 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, verbose=False, **kwa
 
 
 
-def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stress_tensor,ps_new, masks, obj_id,**kwargs):
+def FEM_analysis_average_stresses(frame,res_dict,parameter_dict,db, db_info,stress_tensor,ps_new, masks, obj_id,**kwargs):
 
     # analyzing the FEM results with average stresses
     shear = stress_tensor[:, :, 0,1] # shear component of the stress tensor
@@ -735,7 +732,7 @@ def FEM_analysis_average_stresses(frame,res_dict,parameter_dict, db,db_info,stre
         add_cut_factor = None
 
     mtypes = [m for m in db_info["mask_types"] if m in get_masks_by_key(default_parameters, "use", use_type)]
-    calc_on_area(frame, res_dict, parameter_dict, "cv mean norma stress", masks, mask_types=mtypes, obj_ids=[obj_id],
+    calc_on_area(frame, res_dict, parameter_dict, "cv mean normal stress", masks, mask_types=mtypes, obj_ids=[obj_id],
                  x=mean_normal_stress, sumtype="cv",add_cut_factor=add_cut_factor, db_info=db_info)
     calc_on_area(frame, res_dict, parameter_dict, "cv shear stress", masks, mask_types=mtypes, obj_ids=[obj_id],
                  x=shear, sumtype="cv", add_cut_factor=add_cut_factor, db_info=db_info)
@@ -812,7 +809,6 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,masks=Non
 
         nodes, elements, loads, mats, mask_area, warn, ps_new = FEM_grid_setup(frame, parameter_dict, mask_grid,
                                                                                           db_info=db_info, **kwargs)
-        print(mask_area.shape)
         # FEM solution
         UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area, frame=frame)
         np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor)
@@ -921,11 +917,13 @@ if __name__=="__main__":
 
     ###### problem: produces empty entries when try to acces non-exisitng str
     masks = cells_masks(all_frames, db, db_info, parameter_dict)
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="01",
+                                               db_info=db_info, masks=masks)
+    #
    # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, simple_segmentation, res_dict, frames="1",
    #                                            db_info=db_info, masks=masks,seg_threshold=0,seg_type="cell_area",)
-    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info,masks=masks)
-    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="01", db_info=db_info, masks=masks)
-  # # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="1", db_info=db_info, masks=masks)
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01", db_info=db_info,masks=masks)
+    # # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="1", db_info=db_info, masks=masks)
 
     #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="01", db_info=db_info,masks=masks)
     db_info,masks,res_dict=apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="01", db_info=db_info,masks=masks)

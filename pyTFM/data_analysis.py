@@ -37,14 +37,14 @@ def read_output_file(file_path):
     """
 
     parameter_dict = {}  # dictionary to store the parameters
-    res_dict = defaultdict(dict)  # nested dictionary to store the results of the analysis
+    res_dict = defaultdict(lambda: defaultdict(list)) # nested dictionary to store the results of the analysis
     with open(file_path, "r") as f:
         for line in f.readlines():
             elements = line.strip().split("\t")  # removing tailing "\n" and splitting at "\t"
             if len(elements) > 1:  # skip if no values can be separated
                 if is_int(elements[0]):  # adding to output results if the line starts with the frame
-                    res_dict[elements[0]][elements[2]] = [elements[1],float(elements[3])]
-                else:  # else add to parameters dict
+                    res_dict[elements[0]][elements[2]] = [elements[1], try_float_convert(elements[3])] # no warnings
+                elif len(elements) > 1:  # else add to parameters dict
                     parameter_dict[elements[0]] = try_float_convert(elements[1])
     return parameter_dict, res_dict
 

@@ -446,7 +446,7 @@ def mean_stress_vector_norm(lines_interpolation,borders,exclude_colony_edge=True
     if norm_level == "lines": # mean over a line
         all_values = np.vstack([np.mean(sub_dict[vtype], axis=0) for sub_dict in lines_interpolation.values()])
     if norm_level == "points":  # each point individually
-        all_values = np.vstack([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
+        all_values = np.concatenate([sub_dict[vtype] for sub_dict in lines_interpolation.values()])
 
     # returning the norm of the mean t_vector
     all_values=np.linalg.norm(all_values,axis=1) if vtype=="t_vecs" else all_values
