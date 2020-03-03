@@ -110,7 +110,7 @@ press the "collect image" button. You should see something like this:
 Make sure your database didn't contain any masks that you dont't want to delete. If you just opend the
 databse from new images, you can press OK. The path to the images that are sorted into the databse,
 the type of the images (layer) and the field of view of the images (frame) are printed to the console.
-Make sure all images are sorted correctly. The program generates a clickpoints database and sorts
+Make sure all images are sorted correctly. The program has now generated a clickpoints database and sorts
 images into layers and frames. Your clickpoints window updates automatically.
 
 .. TODO: mention correct Drift
@@ -151,11 +151,11 @@ window size yields a smooth yet accurate deformation field.
    You can measure the beads diameter directly in the clickpoints, using another addon:
    The Measrue Tool
 
-The "PIV overlapp" mainly controlls the resolution of the resulting displacement field and must be
+The "PIV overlap" mainly controlls the resolution of the resulting displacement field and must be
 smaller then the "PIV window size" but at least half of the "PIV window size". You need
 a high resoultion for analyzing stress. In this step the area of cells should at least contain 1000
 pixels. However, if you are not calculating stresses, you can save a lot of calculation time by choosing a
-"PIV overlapp" closer to half of the "PIV window size".
+"PIV overlap" closer to half of the "PIV window size".
 
 For this tutorial you can keep all parameters at their default value.
 
@@ -188,10 +188,11 @@ don't see these tools, press F2.
 
 .. hint:: **Tips for masks in clickpoints.**
    Select a mask and use the brush tool |brush| to draw it. You can
-   in crease and decrease the size of the prush with the plus and minus keys. If you want to
+   in crease and decrease the size of the prush with the "+" and "-" keys. If you want to
    erase a part of a mask use the eraser tool |rubber|. Additionally you can fill holes in your mask with
    the bucket tool |bucket|. Mask types cannot overlap, which means that you erase one mask type when you
-   paint over it with another type.
+   paint over it with another type. Sometimes you will have a hard time seeing things have covered with
+   the mask. Press "i" and "o" to decreaser and increase the transparency of the mask.
 
   .. |brush| image:: brush.png
   .. |rubber| image:: rubber.png
@@ -214,7 +215,7 @@ is no gap in the circle that you drew. I drew the mask like this:
 Its no big deal if your selection is a bit to big, but you should make sure not to include deformations and
 force that do not originate from the cell colony.
 
-You could no press start again, and the programm would generate a text file with contractillity and strain energy
+You could now press start again, and the programm would generate a text file with contractillity and strain energy
 for all frames. In order be a bit more organized and get all results one text file, we will first prepare
 to analyze stresses in the cell sheet
 
@@ -222,6 +223,82 @@ to analyze stresses in the cell sheet
 Measuring Stresses
 -------------------------------
 
-The tractions that we have just
-calculated are are not exactly localized to the cell colony. You can easily see that some tractions are
-predicted to originate from outside of the cell area to
+The stress is calculated by modelling the cell colony as a 2 dimensional sheet and applying the traction
+forces that we have just calculated to it. Due to inaccuracies in the traction force calcualtion, namely
+that some tractions are predicted to originate from outside of the cell sheet, it has proven most accurate to
+use an area slightly larger then the cell colony and includes all tractions that you think originate form the
+cell colony. To select this area, go to the clickpoints main window and switch layers with the "page up" or
+"page down" key untill you reach the plot displaying the trraction forces. Select the mask "FEM_area" and
+encircle all tractions originating from the cell colony. I drew the mask like this:
+
+
+.. figure:: FEM_area.png
+   :width: 600
+   :alt: Main addon window
+
+Drawing the mask larger then the area where tractions forces are present will lead to an understimation
+of stresses, the effect is however quite small for any reasonable mask sizes.
+
+
+Measuring the Line Tension, counting Cells and measuring the Colony Area
+---------------------------------------------------------------------------------------------
+
+Finally, we want to measure forces that are trasmitted accros the cell-cell-boundaries. This requires you
+to mark the cell membranes. Once you have markerd the membrane, you will also get the number of cells
+in each colony and the area of the cell colony, which is usefull to normalize stresses and forces.
+
+In the main window of clickpoints switch to the image showing the cell membrane, using the the "page up" or
+"page down" key,elect the mask "membrane" and mark all cell membranes.
+
+.. hint:: Press F2 and use the controlls in the bottom |control| right to a just the contrast of the image, to
+   see the membrane staining better.
+  .. |control| image:: control.png
+
+Use a thin brush and make sure that there are no
+unitentional gaps. Also mark the outer edge of the colony. This edges is not included in the calculation
+of line tensions, but is necessary to calculate the correct area and cell count of the colony.
+I drew the mask like this:
+
+
+.. figure:: membrane.png
+   :width: 600
+   :alt: Main addon window
+
+
+Once you have drawn all mask in all frames you are ready to start the calculation. Go to pyTFM addon window,
+tick the checkboxes for "stress analysis" and "force generation", make sure you have set "apply to" to "all
+frames" and press start. The calculation should take about 5 minutes.
+
+After the calculation is complete two new plots will be added to the database. The first will show the
+mean normal stress in the cell colony and the second will show the line tension along all cell cell borders.
+The outer edge of the cell colony is marked in grey. These lines are not used in the calculation.
+
+
+.. figure:: stress_res.png
+   :width: 600
+   :alt: Main addon window
+
+.. note::
+   **A few notes on the calculation of stresses.**
+   The average stresses (average mean normal and average shear stress) and the coefficient of variation of these
+   stresses is calcualted by averageing over the true area of the cell colony, marked with the mask "membrane".
+   The mean normal stress should be high in areas where strong force oppose each other, as can be seen in Figure
+   ... . Likewise, the line tension is high if strong forces oppose each other accross the line. A high mean normal
+   stress does not necessarly mean a high line tension. It is better to look at the traction forces, when checking
+   if the results make sense.
+
+
+
+Understanding the output File
+---------------------------------
+
+
+
+
+
+
+.. TODO: make detailed list of functions
+
+
+
+
