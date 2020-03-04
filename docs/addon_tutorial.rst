@@ -24,7 +24,7 @@ for each wildtype and KO. For each field of view there are 3 images. One image (
 and the boundaries between cells. In this case the image shows fluorescence stained cell membranes.
 The other two images show beads that are embedded in the substrate that the cells lie on. One image was recorded before
 the cells were removed (03before.tif) and the other was recorded after the cells were removed (03after.tif).
-The number in front of the filename ("03","10" and so on) indicates which field of view that image belongs to.
+The number in front of the filename ("03", "10" and so on) indicates which field of view that image belongs to.
 
 .. figure:: images/data.png
     :width: 750
@@ -44,6 +44,8 @@ select "open with clickpoints".
     :width: 750
     :alt: Data structure in the example data set
     :name: open_with_clickpoints
+    
+     
 
 Clickpoints sorts images in two dimensions: Frames and layers. The frames are displayed in the bar at the bottom.
 You can skip from frame to frame using the left and right arrows on your keyboard. Layers can be changed
