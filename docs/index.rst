@@ -5,9 +5,7 @@
 
 
 Welcome to pyTFM's documentation!
-=================================
-
-
+======================================
 pyTFM is a python package that allows you to analyze force generation and stresses in cells,
 cell colonies and confluent cell layers growing on a 2 dimensional surface. This package implements the procedures of
 `Traction Force Microscopy <https://www.ncbi.nlm.nih.gov/pubmed/11832345>`_ and
@@ -17,6 +15,7 @@ also includes the line tension, a measure for the force transfer exclusively acr
 pyTFM includes an addon for the image annotation tool `clickpoints <https://clickpoints.readthedocs.io/en/latest/>`_
 allowing you to quickly analyze and vizualize large datasets.
 
+
 .. toctree::
    :caption: Contents:
    :maxdepth: 2
@@ -24,19 +23,12 @@ allowing you to quickly analyze and vizualize large datasets.
    installation
    introduction
    measures
-   tutorial
-   examples
+   tutorials
+
 
 
 
 Note
-----
+--------
 If you encounter any bugs or other problems please report them `here <https://github.com/fabrylab/pyTFM/issues>`_
 or contact me at andreas.b.bauer@fau.de.
-
-.. Citing pyTFM
-   -------------
-
-
-.. Who uses ClickPoints
---------------------
