@@ -28,8 +28,10 @@ The number in front of the filename ("03", "10" and so on) indicates which field
 
 .. figure:: images/data.png
     :width: 750
-    :alt: Data structure in the example data set
+    :alt: Data structure of a Traction Force Microscopy experiment.
     :name: data
+    
+    Data structure of a Traction Force Microscopy experiment.
 
 Opening Clickpoints and sorting Images
 ------------------------------------------
@@ -42,8 +44,10 @@ select "open with clickpoints".
 
 .. figure:: images/open_with_clickpoints.png
     :width: 750
-    :alt: Data structure in the example data set
+    :alt: Opening images with clickpoints.
     :name: open_with_clickpoints
+    
+    Opening images with clickpoints.
     
      
 
@@ -108,8 +112,10 @@ You should see something like this:
 
 .. figure:: images/output_select_images.png
     :width: 750
-    :alt: Data structure in the example data set
+    :alt: Output of collect images.
     :name: output_select_images
+    
+    Output of collect images.
 
 Make sure your database didn't contain any masks that you don't want to delete. If you just opened the
 database from new images, you can press OK. The path to the images that are sorted into the database,
@@ -131,8 +137,10 @@ Lets continue with calculating the deformation and traction field. Go to the pyT
 
 .. figure:: images/main.png
     :width: 600
-    :alt: Main addon window
+    :alt: Main addon window.
     :name: main
+    
+    Main addon window.
 
 
 In this window you have to set the mechanical parameters of the substrate ("Youngs modulus" and "Poisson's
@@ -177,8 +185,10 @@ key on your keyboard. Traction and deformation for the first frame in the wild t
 
 .. figure:: images/def_trac_res.png
     :width: 750
-    :alt: Main addon window
+    :alt: Deformation and traction fields.
     :name: def_trac_res
+    
+    Deformation and traction fields.
 
 If you do not see the display tool and mask names ("membrane", "force measures", "FEM area") on the right press F2.
 
@@ -212,8 +222,10 @@ first make sure that there is no gap in the circle that you drew. I drew the mas
 
 .. figure:: images/mask_force_measures.png
     :width: 600
-    :alt: Main addon window
+    :alt: Mask for quantification of force generation.
     :name: mask_force_measures
+    
+    Mask for quantification of force generation.
 
 
 It's no big deal if your selection is a bit to big, but you should make sure not to include deformations and
@@ -238,8 +250,10 @@ encircle all forces originating from the cell colony. I drew the mask like this:
 
 .. figure:: images/FEM_area.png
     :width: 600
-    :alt: Main addon window
+    :alt: Mask for the stress calculation with FEM-Method
     :name: FEM_area
+    
+    Mask for the stress calculation with FEM-Method
 
 Drawing the mask larger then the area where traction forces are present will lead to an underestimation
 of stresses, the effect is however quite small for any reasonable mask sizes.
@@ -272,8 +286,10 @@ area and cell count of the colony. I drew the mask like this:
 
 .. figure:: images/membrane.png
     :width: 600
-    :alt: Main addon window
+    :alt: Mask of cell membranes.
     :name: membrane
+    
+    Mask of cell membranes.
 
 Once you have drawn all masks in all frames you are ready to start the calculation. Go to the pyTFM addon window,
 tick the check boxes for "stress analysis" and "force generation", make sure you have set "apply to" to "all
@@ -286,8 +302,10 @@ The outer edge of the cell colony is marked in grey. These lines are not used in
 
 .. figure:: images/stress_res.png
     :width: 750
-    :alt: Main addon window
+    :alt: Mean normal stress and line tension.
     :name: stress_res
+    
+    Mean normal stress and line tension.
 
 .. note::
     **A few notes on the calculation of stresses.**
@@ -311,8 +329,10 @@ and optionally the unit of the quantity and a warning.
 
 .. figure:: images/out.png
     :width: 750
-    :alt: Main addon window
+    :alt: The output file.
     :name: out
+    
+    The output file.
 
 Warnings such as "mask was cut close to image edge" and "small FEM grid" should not be ignored.
 
