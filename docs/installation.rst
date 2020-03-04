@@ -13,7 +13,8 @@ information about installation and usage of clickpoints
 
 pyTFM can be installed in several ways. The most straight forward way is to download the package from
 `github <https://github.com/fabrylab/traction_force_microscopy>`_, unzip the files, open a terminal and navigate
-into the "pyTFM" folder. Next, install the package with pip:
+into the "pyTFM-master". Depending on how you unzip there you might need
+to go to "pyTFM-master/pyTFM-master". In this folder you should see a file called "setup.py". Next, install the package with pip:
 
     ``pip install -e .``
 
