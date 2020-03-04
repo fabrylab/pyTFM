@@ -355,7 +355,7 @@ Next we read the output files from wildtype and KO data sets. This is done in tw
 text files are read into a dictionary where they are sorted for the frames, object ids and the type
 of the quantity. Then this dictionary is reduced to a dictionary where each key is the name of a
 quantity and the value is a list of the measured values.
-Note that our output text file for the last step shoudl be called "out0.txt" if you followed the tutorial 
+Note that our output text file for the last step should be called "out0.txt" if you followed the tutorial 
 exactely.
 
 .. code-block:: python
