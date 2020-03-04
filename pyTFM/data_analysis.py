@@ -140,7 +140,7 @@ def add_to_units(units_dict, add_name, add_unit, exclude=["area","cells"]):
     return new_units
 
 
-def t_test(values_dict1, values_dict2, types):
+def t_test(values_dict1, values_dict2, types=None):
     """
     Performing a two-sided t-test with two set of values. The values are provided in the two dictionaries values_dict1 and
     values_dict2. Both must have the same keys. Results are stored in a new dictionary with key: name of the
@@ -155,12 +155,16 @@ def t_test(values_dict1, values_dict2, types):
     :param types: list of quantities ot compare
     :return:  t_test_dict, dictionary with key: name of a quantity, value: t-test object
     """
-
+    if not isinstance(types,list):
+        types=list(set(values_dict1.keys()).intersection(values_dict2.keys()))
     t_test_dict = {}  # output dictionary
     for name in types:  # iterating through the names of all quantities that you want to compare
         if check_types(values_dict1,values_dict2,name):
-            v1, v2, empty = filter_nans(values_dict1, values_dict2, name)
-            t_test_dict[name] = scipy_ttest_ind(v1, v2)  # performing a two-sided t-test
+            try:
+                v1, v2, empty = filter_nans(values_dict1, values_dict2, name)
+                t_test_dict[name] = scipy_ttest_ind(v1, v2)  # performing a two-sided t-test
+            except TypeError:
+                pass
     return t_test_dict
 
 
@@ -284,7 +288,8 @@ def box_plots(values_dict1, values_dict2, lables, t_test_dict=None, ylabels=[], 
         name_refined = split_name(name)  # arrange in two lines if the name is to long
         # label this tick with the name of the measure and
         # central alignment and 60 degree rotation of this label
-        ax.set_xticklabels([name_refined], rotation=60, horizontalalignment="center", multialignment="center")
+        ax.set_xticklabels("")
+        #ax.set_xticklabels([name_refined], rotation=60, horizontalalignment="center", multialignment="center")
         # show numbers on y axis in scientific notation if they are outside of 10**3 to 10**-3
         ax.ticklabel_format(axis='y', style="sci", scilimits=(-3, 3))
         ax.tick_params(axis="y", labelsize=20)
