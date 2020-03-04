@@ -5,26 +5,30 @@ Tutorial
 Analyzing Force Generation and Stresses in Cell-Colonies with Clickpoints
 ---------------------------------------------------------------------------
 
-Prequisites
--------------
+About this Tutorial
+-------------------
 Using the clickpoints-addon in pyTFM obviously requires clickpoints. If you set up clickpoints correctly, you can
 open images by right clicking on the image files and select "open with clickpoints".
 
+The pyTFM package contains an example dataset in the folder "/example_analysis" .
+It contains raw data for 2 types of cell colonies: In one group a critical cytoskeletal protein has been knocked out.
+We will compare these cell colonies to a set of wildtype colonies. The raw data, in the for of images,
+is contained in the subfolder "WT" and "KO". All output files, databases and plots as you should produce them
+in the course of this tutorial are stored in the folders "KO_analyzed", "WT_analyzed" and "plots". Use these folders
+to check if your analysis is correct.
 
 The Data
 -----------
-The pyTFM package that you can find on github contains an example dataset in the /example_analysis folder.
-It contains raw data for 2 types of cell colonies: In one group critical cytoskeletal protein has been knocked out.
-We will compare these cell colonies to a set of wildtype colonies.
+
 As you can see in Figure... there are 6 images in for each colony type. This corresponds to two field of views that
 for each colonies. For each field of view you need 3 images. One image (03after.tif) shows the the colony and the
 boundaries between cells. In this case the image shows fluorescently stained cell membranes.
-The other two images show beads that are embedded in substrate that the cell lie on. One image was recorded before
+The other two images show beads that are embedded +in substrate that the cell lie on. One image was recorded before
 the cells were removed (03before.tif) and the other was recorded after the cells were removed (03after.tif).
 The number in front of the filename ("03","10" and so on) indicates which field of view that image belongs to.
 
-.. figure:: data.png
-  :width: 400
+.. figure:: images/data.png
+  :width: 600
   :alt: Data structure in the example data set
 
 
@@ -34,10 +38,10 @@ Opening Clickpoints and sorting Images
 The first step to analyze the data is to create a clickpoints database, in which the images are identfied correctly,
 concerning their type (whether its an image of the cells or an image of the beads before or after the cell removal)
 and the field of view (formul) they belong to.
+We are going to start with the wildtype dataset. To open a database simple right click on an image and
+select "open with clickpoints".
 
-To open a database simple right click on an image and select "open with clickpoints".
-
-.. figure:: open_with_clickpoints.png
+.. figure:: images/open_with_clickpoints.png
   :width: 550
   :alt: Data structure in the example data set
 
@@ -48,7 +52,7 @@ and every image is sorted into a new frame. Our goal is to sort each field of vi
 each representing one type of image. In order to do this you need to open the pyTFM addon and open the "select image"
 menu. Follow the steps described in Figure ...
 
-.. figure:: open_select_images.png
+.. figure:: images/open_select_images.png
   :width: 750
   :alt: Data structure in the example data set
 
@@ -103,7 +107,7 @@ Once you have entered identifiers for image types, frames, the output folder and
 press the "collect image" button. You should see something like this:
 
 
-.. figure:: output_select_images.png
+.. figure:: images/output_select_images.png
   :width: 600
   :alt: Data structure in the example data set
 
@@ -125,7 +129,7 @@ Lets continue with calculating the deformation and traction field. Go to the pyT
 (Figure...).
 
 
-.. figure:: main.png
+.. figure:: images/main.png
    :width: 600
    :alt: Main addon window
 
@@ -171,7 +175,7 @@ The traction and deformation fields are added to the database as new layers. Swi
 key on your keyboard. Traction and deformation for the first frame in the wild type data should look like this:
 
 
-.. figure:: def_trac_res.png
+.. figure:: images/def_trac_res.png
    :width: 750
    :alt: Main addon window
 
@@ -194,9 +198,9 @@ don't see these tools, press F2.
    paint over it with another type. Sometimes you will have a hard time seeing things have covered with
    the mask. Press "i" and "o" to decreaser and increase the transparency of the mask.
 
-  .. |brush| image:: brush.png
-  .. |rubber| image:: rubber.png
-  .. |bucket| image:: bucket.png
+  .. |brush| image:: images/brush.png
+  .. |rubber| image:: images/rubber.png
+  .. |bucket| image:: images/bucket.png
 
 The mask type used to calculate strain energy and contractility is called "foce measures". Select this mask and
 draw a circle around all deformations and force that you think belong to the cell colony. The area you encircle
@@ -205,7 +209,7 @@ automatically. However, if you get the "no mask found in frame .." message, you 
 is no gap in the circle that you drew. I drew the mask like this:
 
 
-.. figure:: mask_force_measures.png
+.. figure:: images/mask_force_measures.png
    :width: 600
    :alt: Main addon window
 
@@ -232,7 +236,7 @@ cell colony. To select this area, go to the clickpoints main window and switch l
 encircle all tractions originating from the cell colony. I drew the mask like this:
 
 
-.. figure:: FEM_area.png
+.. figure:: images/FEM_area.png
    :width: 600
    :alt: Main addon window
 
@@ -252,7 +256,8 @@ In the main window of clickpoints switch to the image showing the cell membrane,
 
 .. hint:: Press F2 and use the controlls in the bottom |control| right to a just the contrast of the image, to
    see the membrane staining better.
-  .. |control| image:: control.png
+
+  .. |control| image:: images/control.png
 
 Use a thin brush and make sure that there are no
 unitentional gaps. Also mark the outer edge of the colony. This edges is not included in the calculation
@@ -260,7 +265,7 @@ of line tensions, but is necessary to calculate the correct area and cell count 
 I drew the mask like this:
 
 
-.. figure:: membrane.png
+.. figure:: images/membrane.png
    :width: 600
    :alt: Main addon window
 
@@ -274,7 +279,7 @@ mean normal stress in the cell colony and the second will show the line tension 
 The outer edge of the cell colony is marked in grey. These lines are not used in the calculation.
 
 
-.. figure:: stress_res.png
+.. figure:: images/stress_res.png
    :width: 600
    :alt: Main addon window
 
@@ -291,13 +296,130 @@ The outer edge of the cell colony is marked in grey. These lines are not used in
 
 Understanding the output File
 ---------------------------------
+Every time you press start, the program creates a text file "out.text" in the output folder.
+If such a file already exists, the new file is named out0.txt, out1.txt and so on. The out put starts with a
+header containing important parameters of the calculation (Figure ....). This is followed by a section containig all
+results. Each line has 4 to 6 tab-delimted columns, containing the frame, the id of the object in the frame (if you
+analyze multiple cells or cell colonies), the name of the quantity, the value and optionally the unit of
+the quantity and a warning.
+
+.. figure:: images/out.png
+   :width: 600
+   :alt: Main addon window
+
+
+Warnings such as "mask was cut close to image edge" and "small FEM grid" should not be ignored.
 
 
 
+Plotting the Results
+---------------------------------
+Repeat the same Analysis for the KO data set. Once you have output text files for both datasets you could go
+ahead and use any tool of your choosing to read the files and plot the important quantities. Of course the best
+tool to do so is python, where pyTFM provides specialized functions to read and plot data.
+
+First lets import all fucntions that we need:
+
+.. code-block:: python
+
+   from pyTFM.data_analysis import *
+
+Next we read output files for wildtype and KO datasets. This is done in two steps: first the
+Text files are read into a dictionary where they are sorted for the frames, object ids and the type
+of the quantity. Then this dictionary is reduced to a dictionary were each key is the name of a
+quantity and the value is an list of the measured values.
+
+.. code-block:: python
+
+  # reading the Wildtype data set. Use your own output text file here
+  file_WT="/home/user/Software/pyTFM/example_analysis/WT_analyzed/out.txt"
+  # reading the paramters and the results, sorted for frames and object ids
+  parameter_dict_WT,res_dict_WT=read_output_file(file_WT)
+  # pooling all frames together.
+  n_frames_WT,values_dict_WT, frame_list_WT=prepare_values(res_dict_WT)
+  # reading the KO data set. Use your own output text file here
+  file_KO="/home/user/Software/pyTFM/example_analysis/KO_analyzed/out.txt"
+  parameter_dict_KO,res_dict_KO=read_output_file(file_KO)
+  n_frames_KO,values_dict_KO, frame_list_KO=prepare_values(res_dict_KO)
+
+We are going to use the dictionaries with pooled values (values_dict_WT and values_dict_KO) for plotting.
+First let's do some normalization: We can guess that a larger colony generates more forces. If we assume
+the relation is somewhat linear it is usefull to normalize measures for the force generation with
+the area of the colony:
+
+.. code-block:: python
+
+    # normalizing the strain energy
+    values_dict_WT["strain energy per area"]=values_dict_WT["strain energy on colony"]/values_dict_WT["area of colony"]
+    values_dict_KO["strain energy per area"]=values_dict_KO["strain energy on colony"]/values_dict_WT["area of colony"]
+    # normalizing the contractility
+    values_dict_WT["contractillity per area"]=values_dict_WT["contractillity on colony"]/values_dict_WT["area of colony"]
+    values_dict_KO["contractillity per area"]=values_dict_KO["contractillity on colony"]/values_dict_WT["area of colony"]
+
+Note that this only works if force generation and area were calculated successfully for all colonies.
+
+Now we can perform a t-test to check if there are any significant diffrences between KO and WT. We will do
+this for all value pairs now and later display the most important ones.
+Unfortunately, due to the the fact that we analyzed only two colonies
+per dataset you will find no significant diffrence in this case.
+
+.. code-block:: python
+
+    # t-test for all value pairs
+    t_test_dict=t_test(values_dict_WT,values_dict_KO)
+
+Let's produce some plots. First we are gonna compare key measures with boxplots. The function
+"box_plots" expects two dictionaries with values, a list ("labels") with two elements, wich identifies
+these dictionary and a list (types) of measures that you want to plot ("types"). Additionally you can provide
+a dictionary containig statistical test results and specify your own labels and axis limits:
+
+.. code-block:: python
+
+  lables = ["WT", "KO"] # designations for the two dictionaries that are provided to the box_plots functions
+  types = ["contractillity per area", "strain energy per area"] # name of the measures that are plotted
+  ylabels = ["contractillity per colony area [N/m²]", "strain energy per colony area [J/m²]"] # custom axes labels
+  # producing a two box plots comparing the strain energy and the contractillity in WT and KO
+  fig_force = box_plots(values_dict_WT, values_dict_KO, lables, t_test_dict=t_test_dict, types=types,
+             low_ylim=0, ylabels=ylabels, plot_legend=True)
+
+We can do the same for the mean normal stress and line tension:
+
+.. code-block:: python
+
+  lables=["WT", "KO"]  # designations for the two dictionaries that are provided to the box_plots functions
+  types=["contractillity per area", "strain energy per area"] # name of the measures that are plotted
+  ylabels=["contractillity per colony area [N/m²]", "strain energy per colony area [J/m²]"] #
+  fig_stress = box_plots(values_dict_WT, values_dict_KO, lables, t_test_dict=t_test_dict, types=types,
+             low_ylim=0, ylabels=ylabels, plot_legend=True)
+
+Another interesting way of studying force generation is to look at the relation between strain energy (beeing
+a measure for total force generation) and contractillity (beeing a measure for the coordinated force generation)
+This can be done as follows:
+
+.. code-block:: python
+
+  lables=["WT", "KO"]  # designations for the two dictionaries that are provided to the box_plots functions
+  # name of the measures that are plotted. Must be length 2 for this case.
+  types=["contractillity per area", "strain energy per area"]
+  # plotting value of types[0] vs value of types[1]
+  fig_force2 = compare_two_values(values_dict_WT, values_dict_KO, types, lables,
+            xlabel="contractillity per colony area [N/m²]",ylabel="strain energy per colony area [J/m²]")
+
+Finally, let's save the figures.
+
+.. code-block:: python
+
+  # define and output folder for your figures
+  folder_plots = "/home/user/Software/pyTFM/example_analysis/plots/"
+  # create the folder, if it doesn't already exist
+  createFolder(folder_plots)
+  # saving the three figures that were created beforehand
+  fig_force.savefig(os.path.join(folder_plots,"forces1.png")) # boxplot comparing measures for force generation
+  fig_stress.savefig(os.path.join(folder_plots,"fig_stress.png")) # boxplot comapring normal stress and line tension
+  fig_force2.savefig(os.path.join(folder_plots,"forces2.png")) # plot of strain energy vs contractillity
 
 
-
-.. TODO: make detailed list of functions
+.. TODO: make detailed list of functions, warnings, and result values
 
 
 

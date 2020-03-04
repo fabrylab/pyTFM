@@ -1,0 +1,62 @@
+analysis_paramters
+sigma	0.49
+young	49000.0
+pixelsize	0.201
+window_size	20.0
+overlapp	19.0
+std_factor	15
+h	300.0
+edge_padding	0.1
+padding_cell_layer	0.05
+TFM_mode	finite_thickness
+FEM_mode	colony
+min_obj_size	1500
+cv_pad	0
+04	image	sum deformations	32800.0	pixels
+04	0	sum deformations on colony	11600.0	
+04	0	sum traction forces on colony	2360000.0	
+04	0	area of colony	6.34e-09	m2
+04	0	cell number	8	
+04	0	center of object	[1053.28 1002.06]	
+04	0	cv mean normal stress of colony	0.279	
+04	0	cv shear stress of colony	6.14	
+04	0	mean normal stress on colony	0.00518	
+04	0	shear stress on colony	0.000134	
+04	0	average magnitude line tension	0.006		  
+04	0	std line tension	0.00109	N/m
+04	0	average normal line tension	0.00597		  
+04	0	std normal line tension	0.00107	
+04	0	average shear line tension	0.000482		  
+04	0	std shear line tension	0.000398	
+04	0	average cell force	0.00316	N	  
+04	0	average cell pressure	0.00588	N/m	  
+04	0	average cell shear	0.0005	N/m	  
+04	0	std cell force	0.00138	N
+04	0	std cell pressure	0.000789	N/m
+04	0	std cell shear	0.000239	N/m
+04	0	contractillity on colony	2.07e-06	
+04	0	strain energy on colony	2e-13	
+05	image	sum deformations	29600.0	pixels
+05	0	sum deformations on colony	7870.0	
+05	0	sum traction forces on colony	1680000.0	
+05	0	area of colony	4.97e-09	m2
+05	0	cell number	15	
+05	0	center of object	[1039.5   908.12]	
+05	0	cv mean normal stress of colony	0.208	
+05	0	cv shear stress of colony	1.67	
+05	0	mean normal stress on colony	0.00398	
+05	0	shear stress on colony	0.00025	
+05	0	average magnitude line tension	0.0042		  
+05	0	std line tension	0.00086	N/m
+05	0	average normal line tension	0.00416		  
+05	0	std normal line tension	0.000846	
+05	0	average shear line tension	0.000526		  
+05	0	std shear line tension	0.000366	
+05	0	average cell force	0.00233	N	  
+05	0	average cell pressure	0.00415	N/m	  
+05	0	average cell shear	0.000547	N/m	  
+05	0	std cell force	0.00092	N
+05	0	std cell pressure	0.000458	N/m
+05	0	std cell shear	0.000256	N/m
+05	0	contractillity on colony	1.4e-06	
+05	0	strain energy on colony	9.67e-14	

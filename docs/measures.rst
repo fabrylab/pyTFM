@@ -33,7 +33,7 @@ with high coordination of force generation and Case B represents a cell with coo
 each cell generates contractile forces on its own. Accordingly case B has a lower contractility if we
 assume equal strain energy in Case A and B.
 
-.. figure:: contractillity.png
+.. figure:: images/contractillity.png
   :width: 400
   :alt: Illustration for contractility
 
@@ -51,7 +51,7 @@ Stress describes the forces that are transferred inside of a cell or cell sheet.
 in the cell sheet the stress is defined by a tensor with 4 components. Each component represents forces
 that would act on the edges of a square cut out of the cell sheet as shown bellow.
 
-.. figure:: stress_tensor.png
+.. figure:: images/stress_tensor.png
   :width: 400
   :alt: Illustration for contractility
 
