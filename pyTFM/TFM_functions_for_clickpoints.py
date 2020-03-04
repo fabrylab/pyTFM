@@ -553,7 +553,7 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,masks=None,**kwa
     res_dict[frame]["sum deformations"].append(["image",np.sum(np.sqrt(u ** 2 + v** 2)),""]) # propably remove that
 
     # adding plot of derformation field to the database
-    add_plot("deformation", (u,v), show_quiver,frame,db_info,default_fig_parameters,parameter_dict,db)
+    add_plot("deformation", (u,v), show_quiver, frame, db_info, default_fig_parameters, parameter_dict, db)
 
     # saving raw files
     np.save(os.path.join(db_info["path"], frame + "u.npy"), u)
@@ -598,8 +598,8 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
         if isinstance(u,np.ndarray):
             check_shape(u, t_x)
             contr_energy = np.sum(energy_points[mask_int])  # sum of contractile energy on on mask
-            res_dict[frame]["contractile energy on " + default_parameters["mask_properties"][mtype]["label"]].append([obj_id,contr_energy, warn])
-        print("contractile energy=",round_flexible(contr_energy),"contractillity=",round_flexible(contractile_force))
+            res_dict[frame]["strain energy on " + default_parameters["mask_properties"][mtype]["label"]].append([obj_id,contr_energy, warn])
+        print("strain energy=",round_flexible(contr_energy),"contractillity=",round_flexible(contractile_force))
 
     return (contractile_force, contr_energy), frame
 
@@ -766,11 +766,11 @@ def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tens
     line_tension_sh = mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_shear",
                                               exclude_colony_edge=True)
 
-    res_dict[frame]["avarage magnitude line tension"].append([obj_id, line_tension_norm [1], warn])
+    res_dict[frame]["average magnitude line tension"].append([obj_id, line_tension_norm [1], warn])
     res_dict[frame]["std line tension"].append([obj_id,line_tension_norm [2],""])
-    res_dict[frame]["avarage normal line tension"].append([obj_id, line_tension_n [1], warn])
+    res_dict[frame]["average normal line tension"].append([obj_id, line_tension_n [1], warn])
     res_dict[frame]["std normal line tension"].append([obj_id,line_tension_n [2],""])
-    res_dict[frame]["avarage shear line tension"].append([obj_id, line_tension_sh [1], warn])
+    res_dict[frame]["average shear line tension"].append([obj_id, line_tension_sh [1], warn])
     res_dict[frame]["std shear line tension"].append([obj_id,line_tension_sh [2],""])
 
 
@@ -778,9 +778,9 @@ def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tens
         avg_cell_force = mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="t_vecs",exclude_colony_edge=True)
         avg_cell_pressure = mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="t_normal",exclude_colony_edge=True)
         avg_cell_shear = mean_stress_vector_norm(lines_interpol, borders, norm_level="cells", vtype="t_shear",exclude_colony_edge=True)
-        res_dict[frame]["avarage cell force"].append([obj_id, avg_cell_force[1], warn])
-        res_dict[frame]["avarage cell pressure"].append([obj_id, avg_cell_pressure[1], warn])
-        res_dict[frame]["avarage cell shear"].append([obj_id, avg_cell_shear[1], warn])
+        res_dict[frame]["average cell force"].append([obj_id, avg_cell_force[1], warn])
+        res_dict[frame]["average cell pressure"].append([obj_id, avg_cell_pressure[1], warn])
+        res_dict[frame]["average cell shear"].append([obj_id, avg_cell_shear[1], warn])
         res_dict[frame]["std cell force"].append([obj_id, avg_cell_force[2], ""])
         res_dict[frame]["std cell pressure"].append([obj_id, avg_cell_pressure[2], ""])
         res_dict[frame]["std cell shear"].append([obj_id, avg_cell_shear[2], ""])
@@ -892,11 +892,12 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/WTshift/database_new.cdb", "r")
+        "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/KOshift/database.cdb", "r")
     parameter_dict = default_parameters
+    default_fig_parameters["scale_ratio"]=0.07
     res_dict=defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
-    parameter_dict["overlapp"]=19
+    parameter_dict["overlapp"]=17
     parameter_dict["window_size"] = 20
     parameter_dict["FEM_mode"] = "colony"
         #parameter_dict["FEM_mode"] = "colony"
@@ -915,6 +916,14 @@ if __name__=="__main__":
     #
     #mask_membrane = masks.reconstruct_mask("01", 0, "membrane", raise_error=True)
 
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="02",
+                                               db_info=db_info, masks=None)
+
+
+
+
+
+'''
     ###### problem: produces empty entries when try to acces non-exisitng str
     masks = cells_masks(all_frames, db, db_info, parameter_dict)
     db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="01",
@@ -934,3 +943,4 @@ if __name__=="__main__":
 
     write_output_file(res_dict, "results", "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/WTshift/out_test.txt",new_file=True)
         # calculating the deformation field and adding to data base
+'''
