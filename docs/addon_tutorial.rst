@@ -40,7 +40,7 @@ The first step to analyze the data is to create a clickpoints database, in which
 concerning their type (whether it's an image of the cells or an image of the beads before or after cell removal)
 and concerning the field of view they belong to.
 We are going to start with the wildtype data set. To open a database simple right click on an image and
-select "open with clickpoints".
+select "open with"-->"clickpoints". The option to open with clickpoints might also be visible directly after you right clicked.
 
 .. figure:: images/open_with_clickpoints.png
     :width: 750
@@ -177,7 +177,7 @@ Once you have set all parameters you can start the calculation: Use the tick box
 which part of the analysis you want to perform. For now, we are gonna select only "deformation" and "traction". Then
 use the "apply to" option to choose whether all frames should be analyzed or only the frame that you are currently
 viewing. Your window should now look like :numref:`main`. Finally press "start" in the upper left to begin the analysis.
-With the default parameters this takes about 5 minutes per frame. "calculation completed" is printed to the console
+With the default parameters this takes about 5 minutes per frame. "calculation complete" is printed to the console
 once all frames have been analyzed.
 
 The traction and deformation fields are added to the database as new layers. Switch to these layers using the "Page Up"
