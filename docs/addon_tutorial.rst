@@ -181,7 +181,7 @@ With the default parameters this takes about 5 minutes per frame. "calculation c
 once all frames have been analyzed.
 
 The traction and deformation fields are added to the database as new layers. Switch to these layers using the "Page Up"
-key on your keyboard. Traction and deformation for the first frame in the wild type data should look like this:
+key on your keyboard. Traction and deformation for the first frame in the wildtype data should look like this:
 
 
 .. figure:: images/def_trac_res.png
@@ -254,7 +254,7 @@ encircle all forces originating from the cell colony. I drew the mask like this:
     :alt: Mask for the stress calculation with FEM-Method
     :name: FEM_area
     
-    Mask for the stress calculation with FEM-Method
+    Mask for the stress calculation with the FEM-Method
 
 Drawing the mask larger then the area where traction forces are present will lead to an underestimation
 of stresses, the effect is however quite small for any reasonable mask sizes.
@@ -355,17 +355,19 @@ Next we read the output files from wildtype and KO data sets. This is done in tw
 text files are read into a dictionary where they are sorted for the frames, object ids and the type
 of the quantity. Then this dictionary is reduced to a dictionary where each key is the name of a
 quantity and the value is a list of the measured values.
+Note that our output text file for the last step shoudl be called "out0.txt" if you followed the tutorial 
+exactely.
 
 .. code-block:: python
 
     # reading the Wildtype data set. Use your own output text file here
-    file_WT = "/home/user/Software/pyTFM/example_analysis/WT_analyzed/out.txt"
+    file_WT = r"/home/user/Software/pyTFM/example_analysis/WT/out0.txt"
     # reading the parameters and the results, sorted for frames and object ids
     parameter_dict_WT,res_dict_WT = read_output_file(file_WT)
     # pooling all frames together.
     n_frames_WT,values_dict_WT, frame_list_WT = prepare_values(res_dict_WT)
     # reading the KO data set. Use your own output text file here
-    file_KO = "/home/user/Software/pyTFM/example_analysis/KO_analyzed/out.txt"
+    file_KO = r"/home/user/Software/pyTFM/example_analysis/KO/out0.txt"
     parameter_dict_KO,res_dict_KO=read_output_file(file_KO)
     n_frames_KO,values_dict_KO, frame_list_KO=prepare_values(res_dict_KO)
 
@@ -414,8 +416,8 @@ We can do the same for the mean normal stress and line tension:
 .. code-block:: python
 
     lables = ["WT", "KO"] # designations for the two dictionaries that are provided to the box_plots functions
-    types = ["contractillity per area", "strain energy per area"] # name of the measures that are plotted
-    ylabels = ["contractillity per colony area [N/m²]", "strain energy per colony area [J/m²]"] #
+    types = ["mean normal stress on colony", "average magnitude line tension"] # name of the measures that are plotted
+    ylabels = ["mean normal stress [N/m]", "line tension [N/m]"] #
     fig_stress = box_plots(values_dict_WT, values_dict_KO, lables, t_test_dict=t_test_dict, types=types,
               low_ylim=0, ylabels=ylabels, plot_legend=True)
 
@@ -430,20 +432,20 @@ This can be done as follows:
     types = ["contractillity per area", "strain energy per area"]
     # plotting value of types[0] vs value of types[1]
     fig_force2 = compare_two_values(values_dict_WT, values_dict_KO, types, lables,
-             xlabel="contractillity per colony area [N/m²]",ylabel="strain energy per colony area [J/m²]")
+             xlabel="contractillity per colony area [N/m²]", ylabel="strain energy per colony area [J/m²]")
 
 Finally, let's save the figures.
 
 .. code-block:: python
 
     # define and output folder for your figures
-    folder_plots = "/home/user/Software/pyTFM/example_analysis/plots/"
+    folder_plots = r"/home/user/Software/pyTFM/example_analysis/plots/"
     # create the folder, if it doesn't already exist
     createFolder(folder_plots)
     # saving the three figures that were created beforehand
-    fig_force.savefig(os.path.join(folder_plots,"forces1.png")) # boxplot comparing measures for force generation
-    fig_stress.savefig(os.path.join(folder_plots,"fig_stress.png")) # boxplot comapring normal stress and line tension
-    fig_force2.savefig(os.path.join(folder_plots,"forces2.png")) # plot of strain energy vs contractillity
+    fig_force.savefig(os.path.join(folder_plots, "forces1.png")) # boxplot comparing measures for force generation
+    fig_stress.savefig(os.path.join(folder_plots, "fig_stress.png")) # boxplot comapring normal stress and line tension
+    fig_force2.savefig(os.path.join(folder_plots, "forces2.png")) # plot of strain energy vs contractillity
 
 
 .. TODO: make detailed list of functions, warnings, and result values
