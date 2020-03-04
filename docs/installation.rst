@@ -19,7 +19,8 @@ to go to "pyTFM-master/pyTFM-master". In this folder you should see a file calle
     ``pip install -e .``
 
 Pip is included in the Anaconda Distribution and should be available as a command line program out of the box.
-The -e setting will enable you to edit package files.
+The -e setting will enable you to edit package files, and the "." siginifes that the "setup.py" file is
+located in the folder that you are currently in.
 
 .. formul
 
