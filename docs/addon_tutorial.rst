@@ -9,7 +9,7 @@ Using the pyTFM clickpoints addon requires a complete installation of clickpoint
 If you have set up clickpoints correctly, you can open images by right clicking on the image files and select
 "open with clickpoints".
 
-First `download the example data set <https://github.com/fabrylab/example_data_for_pyTFM/archive/master.zip>_ and unzip
+First `download the example data set <https://github.com/fabrylab/example_data_for_pyTFM/archive/master.zip>`_ and unzip
 the files. This data set contains raw data for 2 types of cell colonies: In one group a critical cytoskeletal protein
 has been knocked out.
 We will compare these cell colonies to a set of wildtype colonies. The raw data, in the form of images,
