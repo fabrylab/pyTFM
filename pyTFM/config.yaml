@@ -1,0 +1,94 @@
+analysis_parameters:
+
+  sigma: 0.49
+  young: 49000 # young's modulus
+  pixelsize: 0.201 # pixel size of the image with beads in  µm/pixel
+  window_size: 20  # window size for particle image velocimetry in µm
+  overlapp: 19 # overlap  size for particle image velocimetry in µm. This should be at least window_size/2.
+  std_factor: 15  # additional filter for extreme values in deformation field
+  h: 300 # height of the substrate in µm
+  edge_padding: 0.1 # fraction of the image close to the borders that is ignored for any analyzed value
+  padding_cell_layer: 0.1  # additional region ignored for stress analysis in "cell layer" mode. Average stresses and line
+    # tension is only calculated on the area that is "edge_padding"+"padding_cell_layer" away from the image edge
+  TFM_mode: finite_thickness  # mode of traction force microscopy ("finite_thickness" or "infinite_thcikness")
+  FEM_mode: colony  # mode for FEM type. Either perform FEM on a single colony (mode: "colony") or on the whole
+      # filed of view (mode: "cell layer"). In "cell layer you select two areas and calculate stress and
+      # contractile energy on them. In "colony" you select the area of a colony and draw cell borders. These
+      # borders are used to analyze stresses along these borders.
+  min_obj_size: 1500 # all objects (cell patches/ isolated cells) below this size (in pixel) will be ignored
+  cv_pad: 0 # padding when calculating the coefficient of variation in µm// only necessary if the
+    # mask for the FEM area fits very closely to the mask for membranes
+
+
+
+fig_parameters:
+    # list of which plots to generate depending on which analysis mode is chosen
+    # available plots are ["deformation","traction","FEM_borders","stress_map","energy_points"]
+  plots:
+
+    cell layer:
+      - deformation
+      - traction
+      - FEM_borders
+      - energy_points
+      - stress_map
+
+    colony:
+      - deformation
+      - traction
+      - FEM_borders
+      - stress_map
+
+    # dictionary specifying the name of the layer (in the cdb database) a lot is written to // you dont need to change this
+  plots_layers:
+    deformation: deformation
+    traction: traction
+    FEM_borders: FEM_borders
+    stress_map: stress_map
+    energy_points: energy_points
+
+
+  cbar_str: # label of the color bar
+
+    deformation: "deformation\n[pixel]"
+    traction: "traction\n[Pa]"
+    FEM_borders: "line tension\n[N/m]"
+    stress_map: "avg. normal stress\nin N/m"
+    energy_points: "contractile energy\nJ/pixel\n"
+
+  file_names:
+
+    deformation: deformation.png
+    traction: traction.png
+    FEM_borders: border_stress.png
+    stress_map: mean_normal_stress.png
+    energy_points: energy_distribution.png
+
+
+
+  cmap: rainbow  # colormap for displaying magnitudes in deformation and traction fields
+  vmin: None  # minimal value displayed in the colormap
+  vmax: None  # maximal value displayed in the colormap
+  cbar_width: "2%"  # width of the color bar in % of the main image. Must be string with % at the end.
+  cbar_height: "50%"  # height of the color bar in % of the main image. Must be string with % at the end.
+  cbar_borderpad: 6  # distance between the edge of the image and the color bar (in pixels???)
+  scale_ratio: 0.2  # scale arrows so that the longest arrow is "maximum image dimension" * "scale ratio" long
+  cbar_title_pad: 10 # padding of the
+  headwidth: 3  # width of the arrow heads (in pixels?)
+  headlength: 3  # length of the arrow heads (in pixels?)
+  width: 0.002  # width of the arrow shaft (what unit?)
+  plot_t_vecs: False # plotting the stress vectors on the cell border stresses image
+  plot_n_arrows: False # plotting normal vectors on the cell border stresses image
+  linewidth: 4 # line width when plotting the cell border stresses
+    #"cm_cmap":{"FEM_borders":cm.rainbow}, # color map for plotting the cell border stresses. Needs a color maps object.
+  border_arrow_filter: 1 # plot only every n'th arrow for on the cell border stresses image
+  cbar_style: clickpoints # if "clickpoints" the color bar is plotted inside of the figure
+  plot_style: clickpoints
+  filter_factor: 1 # this factor defines how many arrows are shown in deformation and traction images.
+    # low number results in  many arrows, high number results in few arrows
+  background_color: "#330033" # set a color for background values. "cmap_0" fill read the zero color of the colormap. "white" would make the background white..
+  # this doesn't effect images of deformation and traction
+  cbar_tick_label_size: 15 # size of the tick labels on the color bar
+  cbar_axes_fraction: 0.2 #fraction of the axes in horrizontal direction, that the colorbar takes up, when colorbar is plotted outside
+    # of the graph
+  boundary_resolution: 6 # resolution when plotting the line tension. Highest is 1. Increase for lower resolution,

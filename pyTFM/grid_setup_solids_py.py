@@ -607,8 +607,7 @@ def cut_mask_from_edge(mask,cut_factor,warn_flag=False,fill=True):
     warn="mask was cut close to image edge" if (sum_mask2<sum_mask1 and warn_flag) else ""
     return mask_cut, warn
 
-def cut_mask_from_edge_wrapper(cut_factor,mask,parameter_dict,cut=True,warn="",fill=True):
-    warn_flag = parameter_dict["cut_instruction"][parameter_dict["FEM_mode"]]
+def cut_mask_from_edge_wrapper(cut_factor,mask,parameter_dict,cut=True,warn=""):
     if cut:
         mask, warn = cut_mask_from_edge(mask,cut_factor,parameter_dict["TFM_mode"]=="colony")
     return mask, warn

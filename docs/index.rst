@@ -24,6 +24,7 @@ allowing you to quickly analyze and vizualize large datasets.
    introduction
    measures
    tutorials
+   configuration
 
 
 

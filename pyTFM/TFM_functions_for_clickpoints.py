@@ -167,7 +167,7 @@ def write_output_file(values,value_type, file_path,new_file=False):
         with open(file_path, "w+") as f:
             f.write("analysis_paramters\n")
             for parameter, value in values.items():
-                if parameter not in ["cut_instruction","mask_properties","FEM_mode_id"]:
+                if parameter not in ["mask_properties","FEM_mode_id","fig_parameters","cv_pad"]:
                     f.write(parameter + "\t" + str(value)+ "\n")
     if value_type == "results":
         # list of available frames sorted
@@ -376,18 +376,19 @@ def get_db_info_for_analysis(db):
     return db_info, unique_frames
 
 
-def add_plot(plot_type, values,plot_function,frame,db_info,default_fig_parameters,parameter_dict,db):
+def add_plot(plot_type, values, plot_function,frame, db_info, parameter_dict,db):
     #values: values (args) that are needed as input for the plotting functions
-    if plot_type in default_fig_parameters["plots"][parameter_dict["FEM_mode"]]:  # checking if this should be plotted
-        layer = default_fig_parameters["plots_layers"][plot_type]
-        file_name=default_fig_parameters["file_names"][plot_type]
+    fig_parameters = parameter_dict["fig_parameters"]
+    if plot_type in fig_parameters["plots"][parameter_dict["FEM_mode"]]:  # checking if this should be plotted
+        layer = fig_parameters["plots_layers"][plot_type]
+        file_name = fig_parameters["file_names"][plot_type]
 
         create_layers_on_demand(db, db_info, [layer])
         plt.ioff()
         dpi = 200
-        fig_parameters = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame], dpi, default_fig_parameters,
+        fig_parameters_use = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame], dpi,fig_parameters,
                                             figtype=plot_type)
-        fig,ax = plot_function(*values, **fig_parameters)
+        fig,ax = plot_function(*values, **fig_parameters_use)
 
         # saving the the plot
         print("saving to "+os.path.join(db_info["path"], frame + file_name))
@@ -471,7 +472,7 @@ def find_full_im_path(cdb_image, base_folder):
     return os.path.join(os.path.join(base_folder, rel_path), filename)
 
 
-def simple_shift_correction(frame, parameter_dict,res_dict, db,db_info=None,**kwargs):
+def simple_shift_correction(frame, parameter_dict, res_dict, db,db_info=None,**kwargs):
     #load images from database
     im_a=db.getImage(id=db_info["file_order"][frame + "images_after"])
     im_b=db.getImage(id=db_info["file_order"][frame + "images_before"])
@@ -552,8 +553,8 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,masks=None,**kwa
     db_info["defo_shape"]=u.shape
     res_dict[frame]["sum deformations"].append(["image",np.sum(np.sqrt(u ** 2 + v** 2)),""]) # propably remove that
 
-    # adding plot of derformation field to the database
-    add_plot("deformation", (u,v), show_quiver, frame, db_info, default_fig_parameters, parameter_dict, db)
+    # adding plot of deformation field to the database
+    add_plot("deformation", (u,v), show_quiver, frame, db_info, parameter_dict, db)
 
     # saving raw files
     np.save(os.path.join(db_info["path"], frame + "u.npy"), u)
@@ -576,8 +577,8 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
     mtypes = [m for m in db_info["mask_types"] if m in get_masks_by_key(default_parameters,"use","forces")]
     if isinstance(u, np.ndarray):
         energy_points = contractile_energy_points(u, v, t_x, t_y, parameter_dict["pixelsize"], ps_new)  # contractile energy at any point
-        # plotting contractile energy (only happens if enable in default_fig_parameters
-        add_plot("energy_points",[energy_points],show_map_clickpoints,frame,db_info,default_fig_parameters,parameter_dict,db)
+        # plotting contractile energy (only happens if enable in default_fig_parameters)
+        add_plot("energy_points",[energy_points],show_map_clickpoints,frame,db_info,parameter_dict,db)
 
     # iterating though mask that are selected for summation
     mask_iter = masks.reconstruct_masks_frame(frame, mtypes, raise_error=True, fill_holes=True)
@@ -631,7 +632,7 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,masks=None,*
 
 
     # add a plot of the trackitoon filed to the database
-    add_plot("traction", (tx,ty),show_quiver,frame,db_info,default_fig_parameters,parameter_dict,db)
+    add_plot("traction", (tx,ty),show_quiver,frame,db_info,parameter_dict,db)
 
     # saving raw files
     np.save(os.path.join(db_info["path"], frame + "tx.npy"), tx)
@@ -833,11 +834,10 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,masks=Non
                                  **kwargs)
             plot_values.append(pv)
     # plotting the stress at cell borders
-    add_plot("FEM_borders", [plot_values], plot_continous_boundary_stresses, frame, db_info, default_fig_parameters, parameter_dict, db)
+    add_plot("FEM_borders", [plot_values], plot_continous_boundary_stresses, frame, db_info, parameter_dict, db)
     # plotting the stress on the colony area
     m_stresses=np.sum(m_stresses,axis=0)
-    add_plot("stress_map", [m_stresses], show_map_clickpoints, frame, db_info, default_fig_parameters,
-             parameter_dict, db)
+    add_plot("stress_map", [m_stresses], show_map_clickpoints, frame, db_info,  parameter_dict, db)
 
 
 def provide_basic_objects(db,frames,parameter_dict,db_info,masks,res_dict):
@@ -892,12 +892,11 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/KOshift/database.cdb", "r")
+        "/home/user/Software/pyTFM/example_analysis/KO/database.cdb", "r")
     parameter_dict = default_parameters
-    default_fig_parameters["scale_ratio"]=0.07
     res_dict=defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
-    parameter_dict["overlapp"]=17
+    parameter_dict["overlapp"]=10
     parameter_dict["window_size"] = 20
     parameter_dict["FEM_mode"] = "colony"
         #parameter_dict["FEM_mode"] = "colony"
@@ -916,7 +915,7 @@ if __name__=="__main__":
     #
     #mask_membrane = masks.reconstruct_mask("01", 0, "membrane", raise_error=True)
 
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="02",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="04",
                                                db_info=db_info, masks=None)
 
 

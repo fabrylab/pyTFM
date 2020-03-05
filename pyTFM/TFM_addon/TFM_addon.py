@@ -17,13 +17,61 @@ from PyQt5.QtCore import pyqtSignal
 import qtawesome as qta
 import clickpoints
 import asyncio
-import threading
-
+import yaml
 
 import warnings
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
+class ConfigError(Exception):
+    def __init__(self,message=None,path=None):
+        self.final_message=""
+        if isinstance(message,str):
+            self.message=message
+            self.final_message=self.final_message+message
+        if isinstance(path, str):
+            self.path = path
+            self.final_message = self.final_message + "\npath: " +path
+    def __str__(self):
+        if self.message:
+            return self.final_message
+        else:
+            return "reading config file failed"
 
+
+
+
+def load_config(file_path,parameters):
+    try:
+        with open(file_path, "r") as f:
+            c = yaml.safe_load(f)
+        if "analysis_parameters" in c.keys():    # behold the ugliest piece of code ever
+            for k,v in c["analysis_parameters"].items():
+                if isinstance(v,dict):
+                    for k2, v2 in v.items():
+                        if isinstance(v2, dict):
+                            for k3, v3 in v2.items():
+                                parameters[k][k2][k3] = v3
+                        else:
+                            parameters[k][k2] = v2
+                else:
+                    parameters[k] = v
+        # adding to subdict "fig parameters in parameters
+        if "fig_parameters" in c.keys():
+            for k, v in c["fig_parameters"].items(): # first layer would be applied to all plots
+                if isinstance(v, dict):
+                    for k2, v2 in v.items(): # second layer would be applied for specific plot types
+                        if isinstance(v2, dict):
+                            for k3, v3 in v2.items(): # third layer currently not used
+                                parameters["fig_parameters"][k][k2][k3] = v3
+                        else:
+                            parameters["fig_parameters"][k][k2] = v2
+                else:
+                    parameters["fig_parameters"][k] = defaultdict(lambda value=v: value) # needs to be defaultdict to work for all plot types
+    except:
+        #raise ConfigError("reading config file failed",path=file_path)
+        print("reading config file failed\n","path: "+file_path)
+
+    return parameters
 
 def add_parameter_from_list(labels, dict_keys, default_parameters, layout,grid_line_start,con_func):
     params = {}
@@ -56,8 +104,11 @@ def read_all_paramters(parameter_widgets,parameter_dict):
 def print_parameters(parameters): # printing only selected parts of the parameter dict
     print("paramters:\n")
     for key,value in parameters.items():
-        if key not in ["cut_instruction","mask_properties","FEM_mode_id"]:
+        if key not in ["mask_properties", "FEM_mode_id", "fig_parameters", "cv_pad"]:
             print(key,": ",value)
+
+
+
 def print_db_info(db_info): # printing only selected parts of the db_info dict
     print("image information:\n")
     for key, value in db_info.items():
@@ -343,6 +394,13 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.main_window.cp.reloadMaskTypes()
         self.main_window.cp.window.SaveDatabase(srcpath=filename)
 
+        #reading config if set:
+
+        config_path = os.path.join(self.folders["folder_out"], "config.yaml")
+        # trying to read config:
+        if os.path.exists(config_path):
+            self.main_window.config_path = config_path
+            self.main_window.parameter_dict = load_config(config_path, self.main_window.parameter_dict)
 
     def save_database_automatically(self):
         # saving the database in the current folder if a temporary filename
@@ -375,6 +433,13 @@ class Addon(clickpoints.Addon):
         self.parameter_dict = copy.deepcopy(default_parameters) # loading default parameters
         self.read_or_set_options() # reading the database folder and the previous FEM_mode, or fill in defualt values
         self.outfile_path = os.path.join(self.folder, "out.txt")  # path for output text file
+        self.config_path = os.path.join(self.folder, "config.yaml")
+        # trying to read config:
+        print_parameters(self.parameter_dict)
+        if os.path.exists(self.config_path):
+            self.parameter_dict=load_config(self.config_path, self.parameter_dict)
+        print_parameters(self.parameter_dict)
+
 
         """ GUI Widgets"""
         # set the title and layout
@@ -482,7 +547,6 @@ class Addon(clickpoints.Addon):
         self.sub_layout3.addWidget(self.button_seg)
         self.sub_layout3.addStretch()
         self.layout.addLayout(self.sub_layout3, 3, 0)
-
 
 
     def read_or_set_options(self):
