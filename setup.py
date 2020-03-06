@@ -18,7 +18,7 @@ setup(
     author='Andreas Bauer',
     author_email='andreas.b.bauer@fau.de',
     license='',
-    install_requires=['numpy' ,'cython','openpiv==0.20.8','scipy', 'scikit-image', 'matplotlib', 'tqdm', 'solidspy','clickpoints >= 1.9.0'], #[clickpoints 18.3] could be rather problematic
+    install_requires=['numpy' ,'cython','openpiv==0.20.8','scipy', 'scikit-image', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy','clickpoints >= 1.9.0'], #[clickpoints 18.3] could be rather problematic
     keywords = ['traction force microscopy','finite elements'],
     classifiers = [],
     include_package_data=True,
