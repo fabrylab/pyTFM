@@ -3,6 +3,7 @@ plotting and other accesory functions for the Monolayer stress Microscopy
 
 '''
 import matplotlib
+from contextlib import suppress
 #matplotlib.use("TkAgg")
 #matplotlib.use("Agg") # when running the script to avoid plots popping up
 import matplotlib.pyplot as plt
@@ -161,16 +162,18 @@ def add_colorbar(vmin,vmax, cmap,ax,cbar_style,cbar_width,cbar_height,cbar_borde
 
     norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
     sm = plt.cm.ScalarMappable(cmap=matplotlib.cm.get_cmap(cmap), norm=norm)
+    sm.set_array([]) # bug fix for lower matplotlib version
     if cbar_style == "clickpoints": # colorbar inside of the plot
         cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad)
         cb0 = plt.colorbar(sm,cax=cbaxes)
-        cbaxes.set_title(cbar_str, color="white",pad=cbar_title_pad)
+        with suppress(TypeError,AttributeError): cbaxes.set_title(cbar_str, color="white",pad=cbar_title_pad)
         cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
     else: # colorbar outide of the plot
         cb0=plt.colorbar(sm, aspect=20, shrink=0.8,fraction=cbar_axes_fraction) # just exploiting the axis generation by a plt.colorbar
         cb0.outline.set_visible(False)
         cb0.ax.tick_params(labelsize=cbar_tick_label_size)
-        cb0.ax.set_title(cbar_str, color="black",pad=cbar_title_pad)
+        with suppress(TypeError,AttributeError):
+            cb0.ax.set_title(cbar_str, color="black",pad=cbar_title_pad)
 
 def check_order(mask,coords):
     plt.figure()
