@@ -2,8 +2,6 @@ Installation
 ============
 
 It is recommended to use this package with the `Anaconda Distribution <https://www.anaconda.com/distribution/>`_.
-If you are using Windows you additionally need to install `Microsoft Visual C++ build tools
-<https://visualstudio.microsoft.com/de/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16>`_.
 
 This package includes an addon for the image display and annotation tool clickpoints. You can find detailed
 information about installation and usage of clickpoints
@@ -24,8 +22,8 @@ located in the folder that you are currently in.
 
 .. formul
 
-You can also download and install the package in one step using the command line program git.
-If you use the Anaconda Distribution, git can be installed with the command
+You can also download and install the package in one step using the command line program "git".
+If you use the Anaconda Distribution, "git" can be installed with the command
 
     ``conda install git``
 
@@ -33,8 +31,8 @@ Now you can install pyTFM directly with the command
 
     ``pip install git+https://github.com/fabrylab/pyTFM.git``
 
-This will download all files, including the example data sets used in the tutorial, into the your
-Anaconda subdirectory, for example to "anaconda3/lib/python3.7/site-packages/pyTFM"
+This will download the script file into your Anaconda subdirectory, for example to
+"anaconda3/lib/python3.7/site-packages/pyTFM"
 
 
 Dependencies
@@ -43,6 +41,9 @@ The following packages will be installed automatically if necessary:
 numpy, cython, scipy , scikit-image, matplotlib, tqdm, `solidspy <https://pypi.org/project/solidspy/>`_,
 clickpoints with a version higher then 1.9.0, `OpenPIV <http://www.openpiv.net/openpiv-python/>`_
 version 0.20.8. Note that Clickpoints versions below 1.9.0 will fail to identify the pyTFM addon. Also note that OpenPIV
-is still in developement, meaning that more recent versions of OpenPIV might not be compatible with pyTFM.
+is still in developement, meaning that more recent versions of OpenPIV might not be compatible with pyTFM. Currently, if you are on
+windows, openpiv is installed from a compiled .whl file included in the pyTFM packge. If you want to install
+openpiv on your own you are likely to need the `Microsoft Visual C++ build tools
+<https://visualstudio.microsoft.com/de/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16>`_.
 
 

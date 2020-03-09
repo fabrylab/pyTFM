@@ -9,8 +9,9 @@ Using the pyTFM clickpoints addon requires a complete installation of clickpoint
 If you have set up clickpoints correctly, you can open images by right clicking on the image files and select
 "open with clickpoints".
 
-First `download the example data set <https://github.com/fabrylab/example_data_for_pyTFM/archive/master.zip>`_ and unzip
-the files. This data set contains raw data for 2 types of cell colonies: In one group a critical cytoskeletal protein
+You can find a small example data set, which is used during this tutorial,
+`here <https://github.com/fabrylab/example_data_for_pyTFM/archive/master.zip>`__.
+This data set contains raw data for 2 types of cell colonies: In one group a critical cytoskeletal protein
 has been knocked out.
 We will compare these cell colonies to a set of wildtype colonies. The raw data, in the form of images,
 is contained in the subfolders "WT" and "KO". All output files, databases and plots as you should produce them
@@ -71,18 +72,29 @@ frame, each representing one type of image. In order to do this you need to open
     to open the pyTFM addon. D: Finally, open the menu to select images by pressing the "select images" button.
 
 
-The "file selection" manu allows you to do three things: You can select where images are
+The "image selection" menu allows you to do three things: You can select where images are
 located and how they are classified. You can also set an output folder, where the database file and all analysis
 results will be saved and you can choose a name for the database.
 As mentioned above, the analysis requires three types of images. For each type you can select a folder
-(left hand side) and a regular expression that identifies the image type from the image filename (right hand site).
+(left hand side) and a regular expression that identifies the image type from the image filename (right hand side).
 
-.. note::
+The default identifiers fit to the example data set, meaning that for now and in the future, if you are using the same
+naming scheme for your images, you **can leave the identifiers as they are**.
+
+
+.. note:: **Details on identifying images**
+
+    The "'after' image identifier" identifies images of beads after cell removal, the "'before' image identifier"
+    identifies images of beads before cell removal and the "cell image identifier" identifies images that
+    show the cells or cell membranes. Finally, there is a separate regular expression, the
+    "frame identifier" that identifies the field of view each image belongs to. This must point to a
+    number (e.g. "02" or "2" and so on) in the image filename. This number must be specially marked by brackets "()".
+    Note that the extension (".png",".tiff", ".jpeg" ...) must not be included in the identifiers.
+
     Regular expressions are the standard way to find patterns in texts. For example, it allows you to
     identify numbers of certain length, groups of characters or the beginning and end of a text. You
-    find more information on regular expressions `here <https://docs.python.org/3/library/re.html>`_.
+    find more information on regular expressions `here <https://docs.python.org/3/library/re.html>`__.
     Some useful expressions are listed in the table below:
-
 
    ==============    ==============================================================
    search pattern     meaning
@@ -98,17 +110,8 @@ As mentioned above, the analysis requires three types of images. For each type y
 
 
 
-The "'after' image identifier" identifies images of beads after cell removal, the "'before' image identifier"
-identifies images of beads before cell removal and the "cell image identifier" identifies images that
-show the cells or cell membranes. Finally, there is a separate regular expression, the
-"frame identifier" that identifies the field of view each image belongs to. This must point to a
-number (e.g. "02" or "2" and so on) in the image filename. This number must be specially marked by brackets "()".
-Note that the extension (".png",".tiff", ".jpeg" ...) must not be included in the identifiers.
-
-The default identifiers fit to the example data set, meaning that for now and in the future if you are using the same
-naming scheme for your images, you can leave the identifiers as they are. Once you have entered identifiers for
-image types, frames, the output folder and the database name press the "collect image" button.
-You should see something like this:
+Once you have entered identifiers for image types, frames, the output folder and the database name press
+the "collect image" button. You should see something like this:
 
 
 .. figure:: images/output_select_images.png
@@ -119,10 +122,11 @@ You should see something like this:
     Output of collect images.
 
 Make sure your database didn't contain any masks that you don't want to delete. If you just opened the
-database from new images, you can press OK. The path to the images that are sorted into the database,
+database from new images, you can press "Yes". The path to the images that are sorted into the database,
 the type of the images (layer) and the field of view of the images (frame) are printed to the console.
-Make sure all images are sorted correctly. The program has now generated a clickpoints database and sorts
-images into layers and frames. Your clickpoints window updates automatically.
+Make sure all images are sorted correctly. The program has generated a new clickpoints database file.
+Your currently opened clickpoints window updates automatically. You can close the "image selection"
+window now.
 
 .. TODO: mention correct Drift
 
@@ -137,7 +141,7 @@ Lets continue with calculating the deformation and traction field. Go to the pyT
 
 
 .. figure:: images/main.png
-    :width: 550
+    :width: 500
     :alt: Main addon window.
     :name: main
     
@@ -175,7 +179,7 @@ For this tutorial you can keep all parameters at their default value.
 Calculating Traction and Deformation Fields
 --------------------------------------------
 Once you have set all parameters you can start the calculation: Use the tick boxes in the upper right to select
-which part of the analysis you want to perform. For now, we are gonna select only "deformation" and "traction". Then
+which part of the analysis you want to perform. For now, we are gonna select only "deformation" and "traction forces". Then
 use the "apply to" option to choose whether all frames should be analyzed or only the frame that you are currently
 viewing. Your window should now look like :numref:`main`. Finally press "start" in the upper left to begin the analysis.
 With the default parameters this takes about 5 minutes per frame. "calculation complete" is printed to the console
