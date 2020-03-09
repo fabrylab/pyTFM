@@ -2,11 +2,33 @@
 
 from setuptools import setup
 import os
+import platform
+
+
+
+install_requires=['numpy' ,'cython','openpiv==0.20.8',
+		      'scipy', 'scikit-image', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy','clickpoints >= 1.9.0']
 
 version='1.2' # adding a version file automatically
 file_path=os.path.join(os.getcwd(),os.path.join("pyTFM","_version.py"))
 with open(file_path,"w") as f:
 	f.write("__version__ = '%s'"%version)
+
+# installing openpiv from local .whl if we are on windows
+local_openpiv = os.path.join(os.getcwd(),"local_dependencies","OpenPIV-0.20.8-cp37-cp37m-win_amd64.whl")
+print('\033[92m'+"Identified operating system: ",platform.system() + '\033[0m')
+
+try:
+	if platform.system()=="Windows":
+		print('\033[92m' + "installing openpiv from local wheel" + '\033[0m')
+		print(local_openpiv)
+		if os.system("pip install "+ local_openpiv)!=0: # checking if exit code 0 (successfull)
+			raise Exception
+		install_requires.remove('openpiv==0.20.8')
+except Exception as e:
+	print('\033[91m' + "Failed to install openpiv from local files")
+	print("Error:", e)
+	print("trying to install open piv from pip" + '\033[0m')
 
 setup(
     name='pyTFM',
@@ -18,12 +40,9 @@ setup(
     author='Andreas Bauer',
     author_email='andreas.b.bauer@fau.de',
     license='',
-    install_requires=['numpy' ,'cython','openpiv==0.20.8; platform_system!="Windows"'
-		      'openpiv_0.20.8_local; platform_system=="Windows"',
-		      ,'scipy', 'scikit-image', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy','clickpoints >= 1.9.0'], #[clickpoints 18.3] could be rather problematic
-    
-    dependency_links=[os.path.join(os.getcwd(),"local_dependencies","openpiv_0.20.8_local.whl"]
-    keywords = ['traction force microscopy','finite elements'],
+    install_requires=['numpy' ,'cython','openpiv==0.20.8; platform_system!="Windows"',
+		      'scipy', 'scikit-image', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy','clickpoints >= 1.9.0'],
+    keywords = ['traction force microscopy', 'finite elements'],
     classifiers = [],
     include_package_data=True,
     )
