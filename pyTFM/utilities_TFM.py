@@ -6,6 +6,7 @@ import copy
 import warnings
 from scipy.ndimage.filters import gaussian_filter
 from collections import defaultdict
+from contextlib import suppress
 
 class suppress_warnings():
     def __init__(self,warning_type):
@@ -345,5 +346,23 @@ def unpack_list(li):
 
 
 
+def flattten_nested_dict(dict1):
+    k_v_list = []
+    for k1, v1 in dict1.items():
+        if isinstance(v1, (dict, defaultdict)):
+            for k2, v2 in v1.items():
+                if isinstance(v2, (dict, defaultdict)):
+                    for k3, v3 in v1.items():
+                        if isinstance(v3, (dict, defaultdict)):
+                            for k4, v4 in v3.items():
+                                k_v_list.append([k1, k2, k3, k4, v4])
+                        else:
+                            k_v_list.append([k1, k2, k3, v3])
+                else:
+                    k_v_list.append([k1, k2, v2])
+        else:
+            k_v_list.append([k1, v1])
+
+    return k_v_list
 
 

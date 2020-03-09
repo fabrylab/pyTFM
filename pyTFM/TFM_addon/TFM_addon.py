@@ -16,6 +16,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 import qtawesome as qta
 import clickpoints
+import traceback
 import asyncio
 import yaml
 
@@ -51,10 +52,13 @@ def load_config(file_path,parameters):
                         if isinstance(v2, dict):
                             for k3, v3 in v2.items():
                                 parameters[k][k2][k3] = v3
+                                print("setting","analysis_parameters",k,k2,k3,"to",v3)
                         else:
                             parameters[k][k2] = v2
+                            print("setting", "analysis_parameters", k, k2,"to", v2)
                 else:
                     parameters[k] = v
+                    print("setting", "analysis_parameters", k,"to", v)
         # adding to subdict "fig parameters in parameters
         if "fig_parameters" in c.keys():
             for k, v in c["fig_parameters"].items(): # first layer would be applied to all plots
@@ -63,15 +67,21 @@ def load_config(file_path,parameters):
                         if isinstance(v2, dict):
                             for k3, v3 in v2.items(): # third layer currently not used
                                 parameters["fig_parameters"][k][k2][k3] = v3
+                                print("setting", "fig_parameters", k,k2,k3,"to",v3)
                         else:
                             parameters["fig_parameters"][k][k2] = v2
+                            print("setting", "fig_parameters", k, k2, "to", v2)
                 else:
                     parameters["fig_parameters"][k] = defaultdict(lambda value=v: value) # needs to be defaultdict to work for all plot types
-    except:
+                    print("setting", "fig_parameters", k, "to", v)
+
+    except Exception as e:
+        traceback.print_exc()
         #raise ConfigError("reading config file failed",path=file_path)
         print("reading config file failed\n","path: "+file_path)
 
     return parameters
+
 
 def add_parameter_from_list(labels, dict_keys, default_parameters, layout,grid_line_start,con_func):
     params = {}
@@ -244,7 +254,7 @@ class FileSelectWindow(QtWidgets.QWidget):
                 QLabel#text_file_selection {font-size:10pt;font-weight: bold}
                 QLabel#text_output_options {font-size:10pt;font-weight: bold}
                 """)
-        self.setWindowTitle("file selection")
+        self.setWindowTitle("image selection")
         self.setMinimumWidth(600)
         self.setMinimumHeight(300)
         self.main_window=main_window
@@ -399,8 +409,10 @@ class FileSelectWindow(QtWidgets.QWidget):
         config_path = os.path.join(self.folders["folder_out"], "config.yaml")
         # trying to read config:
         if os.path.exists(config_path):
+            print("found exsisting config at",self.config_path)
             self.main_window.config_path = config_path
             self.main_window.parameter_dict = load_config(config_path, self.main_window.parameter_dict)
+
 
     def save_database_automatically(self):
         # saving the database in the current folder if a temporary filename
@@ -434,11 +446,10 @@ class Addon(clickpoints.Addon):
         self.read_or_set_options() # reading the database folder and the previous FEM_mode, or fill in defualt values
         self.outfile_path = os.path.join(self.folder, "out.txt")  # path for output text file
         self.config_path = os.path.join(self.folder, "config.yaml")
-        # trying to read config:
-        print_parameters(self.parameter_dict)
+
         if os.path.exists(self.config_path):
+            print("found exsisting config at",self.config_path)
             self.parameter_dict=load_config(self.config_path, self.parameter_dict)
-        print_parameters(self.parameter_dict)
 
 
         """ GUI Widgets"""
@@ -459,9 +470,9 @@ class Addon(clickpoints.Addon):
 
 
         # button to select images:
-        self.button_select_images = QtWidgets.QPushButton("select images")
+        self.button_select_images = QtWidgets.QPushButton("image selection")
         self.button_select_images.clicked.connect(self.select_images)
-        self.button_select_images.setToolTip(tooltips["select images"])
+        self.button_select_images.setToolTip(tooltips["image selection"])
         self.sub_layout1 = QtWidgets.QHBoxLayout()
         self.sub_layout1.addWidget(self.button_select_images)
         self.sub_layout1.addStretch()
