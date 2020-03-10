@@ -14,7 +14,7 @@ and `Overview of Plotting Parameters`_.
 Using Config Files
 -------------------
 You can provide a config file by placing a file "config.yaml" in the same folder as your database
-(.cdb) file. YAML is a standard format for configuration files. In YAML files parameters are definied by
+(.cdb) file. YAML is a standard format for configuration files. In YAML files parameters are defined by
 a series of indented key words like this:
 
 .. code-block:: yaml
@@ -24,7 +24,8 @@ a series of indented key words like this:
         key3: value
 
 
-
+You can find a config.yaml file that reproduces all default parameters in the
+`example data <https://github.com/fabrylab/example_data_for_pyTFM/archive/master.zip>`__ set.
 The config file distinguishes two classes of parameters at the first level:
 The "analysis_parameters" and the "fig_parameters". "analysis_parameters" set all parameters that are used
 by the program not related to plotting.

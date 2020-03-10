@@ -11,6 +11,7 @@ If you have set up clickpoints correctly, you can open images by right clicking 
 
 You can find a small example data set, which is used during this tutorial,
 `here <https://github.com/fabrylab/example_data_for_pyTFM/archive/master.zip>`__.
+The data is in the subfolder "clickpoints_tutorial".
 This data set contains raw data for 2 types of cell colonies: In one group a critical cytoskeletal protein
 has been knocked out.
 We will compare these cell colonies to a set of wildtype colonies. The raw data, in the form of images,
@@ -41,8 +42,8 @@ Opening Clickpoints and sorting Images
 The first step to analyze the data is to create a clickpoints database, in which the images are identified correctly,
 concerning their type (whether it's an image of the cells or an image of the beads before or after cell removal)
 and concerning the field of view they belong to.
-We are going to start with the wildtype data set. To open a database simple right click on an image and
-select "open with"-->"clickpoints". The option to open with clickpoints might also be visible directly after you right clicked.
+**We are going to start with the wildtype data set**. To open a database simple right click on an image and
+select "open with" --> "clickpoints". The option to open with clickpoints might also be visible directly after you right clicked.
 
 .. figure:: images/open_with_clickpoints.png
     :width: 750
@@ -111,7 +112,7 @@ naming scheme for your images, you **can leave the identifiers as they are**.
 
 
 Once you have entered identifiers for image types, frames, the output folder and the database name press
-the "collect image" button. You should see something like this:
+the "collect images" button. You should see something like this:
 
 
 .. figure:: images/output_select_images.png
@@ -168,13 +169,14 @@ values and check which window size yields a smooth yet accurate deformation fiel
     You can measure the beads diameter directly in clickpoints using another addon: The Measure Tool
 
 The "PIV overlapp" mainly controls the resolution of the resulting displacement field and must be
-smaller then the "PIV window size" but at least half of the "PIV window size". You need
+smaller than the "PIV window size" but at least half of the "PIV window size". You need
 a high resolution for analyzing stress. In this step the area of cells should at least contain 1000
 pixels. However, if you are not calculating stresses, you can save a lot of calculation time by choosing a
 "PIV overlapp" closer to half of the "PIV window size". Especially, when you are trying out different window sizes,
 you can set the overlap to the smallest allowed value, which is half of the window size.
 
-For this tutorial you can keep all parameters at their default value.
+For this tutorial you can keep all parameters at their default value. If you are in a hurry, you could set the
+"PIV window size" to 15 µm.
 
 Calculating Traction and Deformation Fields
 --------------------------------------------
@@ -221,7 +223,7 @@ don't see these tools, press F2.
 
 The mask type used to calculate strain energy and contractillity is called "force measures". Select this mask and
 draw a circle around all deformations and forces that you think belong to the cell colony. The area you encircle
-is typically large then the cell colony itself. You don't need to fill the area you have encircle. This is done
+is typically large than the cell colony itself. You don't need to fill the area you have encircle. This is done
 automatically. However, if you see the "no mask found in frame .." warning message in the console, you should
 first make sure that there is no gap in the circle that you drew. I drew the mask like this:
 
@@ -248,7 +250,7 @@ Measuring Stresses
 The stress is calculated by modelling the cell colony as a 2 dimensional sheet and applying the traction
 forces that we have just calculated to it. Due to inaccuracies in the traction force calculation, namely
 that some forces are predicted to originate from outside of the cell sheet, it has proven most accurate to
-use an area slightly larger then the cell colony, so that it includes all forces that you think originate form the
+use an area slightly larger than the cell colony, so that it includes all forces that you think originate form the
 cell colony. To select this area, go to the clickpoints main window and switch layers with the "Page Up" or
 "Page Down" key until you reach the plot displaying the traction forces. Select the mask "FEM_area" and
 encircle all forces originating from the cell colony. I drew the mask like this:
@@ -261,7 +263,7 @@ encircle all forces originating from the cell colony. I drew the mask like this:
     
     Mask for the stress calculation with the FEM-Method
 
-Drawing the mask larger then the area where traction forces are present will lead to an underestimation
+Drawing the mask larger than the area where traction forces are present will lead to an underestimation
 of stresses, the effect is however quite small for any reasonable mask sizes.
 
 
@@ -299,7 +301,7 @@ area and cell count of the colony. I drew the mask like this:
 
 Once you have drawn all masks in all frames you are ready to start the calculation. Go to the pyTFM addon window,
 tick the check boxes for "stress analysis" and "force generation", make sure you have set "apply to" to "all
-frames" and press start. The calculation should take about 5 minutes.
+frames", untick the "deformation" and traction forces" boxes and press start. The calculation should take about 5 minutes.
 
 After the calculation is complete two new plots will be added to the database. The first will show the
 mean normal stress in the cell colony and the second will show the line tension along all cell-cell borders.
