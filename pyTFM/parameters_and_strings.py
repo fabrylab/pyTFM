@@ -19,7 +19,7 @@ default_parameters={
     "std_factor": 15,  # additional filter for extreme values in deformation field
     "h": 300, # height of the substrate in µm
     "edge_padding":0.1, # fraction of the image close to the borders that is ignored for any analyzed value
-    "padding_cell_layer":0.1,  # additional region ignored for stress analysis in "cell layer" mode. Average stresses and line
+    "padding_cell_layer":0.2,  # additional region ignored for stress analysis in "cell layer" mode. Average stresses and line
     # tension is only calculated on the area that is "edge_padding"+"padding_cell_layer" away from the image edge
     "TFM_mode": "finite_thickness",  # mode of traction force microscopy ("finite_thickness" or "infinite_thcikness")
     "FEM_mode": "colony",  # mode for FEM type. Either perform FEM on a single colony (mode: "colony") or on the whole
