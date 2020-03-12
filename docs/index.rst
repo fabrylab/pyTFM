@@ -22,8 +22,8 @@ allowing you to quickly analyze and vizualize large datasets.
 
    installation
    introduction
-   measures
    tutorials
+   measures
    configuration
 
 
