@@ -17,7 +17,7 @@ in clickpoints and saved them as PNG files so that you can look at them with a s
 You can use any other format, as long as you can load them as a boolean (True and False) array to python.
 
 The "python_tutorial" folder also contains the complete code of the tutorial in a single python script "tutorial.py".
-This script prints the quantities and saves the figures, that we are going to see in
+This script prints all quantities and produces all figures, that we are going to see in
 this tutorial. It should work right away.
 
 Calculating Deformation Fields
