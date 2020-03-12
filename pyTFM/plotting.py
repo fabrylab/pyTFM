@@ -14,15 +14,11 @@ from matplotlib.ticker import AutoMinorLocator, MultipleLocator,ScalarFormatter
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 #from matplotlib.figure import Figure
 #from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from scipy.optimize import least_squares
-from skimage.measure import regionprops
-
-from scipy.sparse.csr import csr_matrix
-from scipy.sparse.linalg import spsolve,lsqr
 import os
 from collections import defaultdict
 from scipy.ndimage import binary_erosion
-from solidspy.assemutil import loadasem
+from tqdm import tqdm
+
 
 
 def make_discrete_colorbar():
@@ -69,12 +65,12 @@ def hide_ticks(ax, interval):
 
 
 
-def plot_continous_boundary_stresses(plot_values,mask_boundaries=None,plot_t_vecs=False,plot_n_arrows=False,figsize=(10,7),
-                                     scale_ratio=0.2,border_arrow_filter=1,cbar_str="line stress in N/µm",vmin=None,vmax=None,
-                                    cbar_width="2%",cbar_height="50%",cbar_axes_fraction=0.2,cbar_tick_label_size=20,
-                                     background_color="white",cbar_borderpad=2.5,linewidth=4,cmap="jet",cbar_style="clickpoints",
-                                     boundary_resolution=3,cbar_title_pad=1,
-                                     **kwargs):
+def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_vecs=False, plot_n_arrows=False, figsize=(10, 7),
+                                      scale_ratio=0.2, border_arrow_filter=1, cbar_str="line stress in N/µm", vmin=None, vmax=None,
+                                      cbar_width="2%", cbar_height="50%", cbar_axes_fraction=0.2, cbar_tick_label_size=20,
+                                      background_color="white", cbar_borderpad=0.1, linewidth=4, cmap="jet", cbar_style="clickpoints",
+                                      boundary_resolution=3, cbar_title_pad=1,
+                                      **kwargs):
 
 
     '''
@@ -96,6 +92,8 @@ def plot_continous_boundary_stresses(plot_values,mask_boundaries=None,plot_t_vec
     :param vmax:  overwrites max_v and min_v if provided
     :return:
     '''
+    if not isinstance(plot_values[0],list):
+        plot_values=[plot_values]
 
     min_v = np.min([pv[3] for pv in plot_values]) # minimum over all objects
     max_v = np.max([pv[4] for pv in plot_values]) # maximum over all objects
@@ -155,7 +153,7 @@ def plot_continous_boundary_stresses(plot_values,mask_boundaries=None,plot_t_vec
     #ax.set_facecolor(background_color)
     add_colorbar(min_v, max_v, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
                  cbar_str,cbar_axes_fraction,cbar_title_pad)
-    return fig,ax
+    return fig, ax
 
 def add_colorbar(vmin,vmax, cmap,ax,cbar_style,cbar_width,cbar_height,cbar_borderpad,cbar_tick_label_size,cbar_str,cbar_axes_fraction,cbar_title_pad):
     # adding colorbars inside or outside of plots
@@ -164,12 +162,12 @@ def add_colorbar(vmin,vmax, cmap,ax,cbar_style,cbar_width,cbar_height,cbar_borde
     sm = plt.cm.ScalarMappable(cmap=matplotlib.cm.get_cmap(cmap), norm=norm)
     sm.set_array([]) # bug fix for lower matplotlib version
     if cbar_style == "clickpoints": # colorbar inside of the plot
-        cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad)
+        cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad*30)
         cb0 = plt.colorbar(sm,cax=cbaxes)
         with suppress(TypeError,AttributeError): cbaxes.set_title(cbar_str, color="white",pad=cbar_title_pad)
         cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
     else: # colorbar outide of the plot
-        cb0=plt.colorbar(sm, aspect=20, shrink=0.8,fraction=cbar_axes_fraction) # just exploiting the axis generation by a plt.colorbar
+        cb0=plt.colorbar(sm, aspect=20, shrink=0.8,fraction=cbar_axes_fraction,pad=cbar_borderpad) # just exploiting the axis generation by a plt.colorbar
         cb0.outline.set_visible(False)
         cb0.ax.tick_params(labelsize=cbar_tick_label_size)
         with suppress(TypeError,AttributeError):
@@ -306,7 +304,7 @@ def plot_grid(nodes,elements,inverted_axis=False,symbol_size=4,arrows=False,imag
 def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None,headlength=None,headaxislength=None,width=None,cmap="rainbow",
                 figsize=None, cbar_str="",ax=None,fig=None
                 , vmin=None, vmax=None, cbar_axes_fraction=0.2, cbar_tick_label_size=15
-                , background_color="cmap_0", cbar_width="2%", cbar_height="50%", cbar_borderpad=2.5,
+                , cbar_width="2%", cbar_height="50%", cbar_borderpad=0.1,
                 cbar_style="not-clickpoints",plot_style="not-clickpoints",cbar_title_pad=1, **kwargs):
     # list of all necessary quiver parameters
     quiver_parameters={"headwidth":headwidth,"headlength":headlength,"headaxislength":headaxislength,
@@ -526,248 +524,6 @@ def plot_fields(nodes,fields=[],titles=[],cbar_str=[],grid_lines=False,grid_line
                                            norm=norm, label=cbar_str,
                                           )
     return fig
-
-
-def correct_torque(fx,fy,mask_area):
-    com = regionprops(mask_area.astype(int))[0].centroid  # finding center of mass
-    com = (com[1], com[0])  # as x y coorinate
-
-    c_x, c_y = np.meshgrid(range(fx.shape[1]), range(fx.shape[0]))  # arrays with all x and y coordinates
-    r = np.zeros((fx.shape[0], fx.shape[1], 2))  # array with all positional vectors
-    r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
-    r[:, :, 1] = c_y
-    r = r - np.array(com)
-
-    f = np.zeros((fx.shape[0], fx.shape[1], 2),dtype="float64")  # array with all force vectors
-    f[:, :, 0] = fx
-    f[:, :, 1] = fy
-    q = np.zeros((fx.shape[0], fx.shape[1], 2),dtype="float64")  # rotated positional vectors
-
-    def get_torque_angle(p):
-        q[:, :, 0] = + np.cos(p) * (f[:, :, 0]) - np.sin(p) * (f[:, :, 1])  # whats the mathematics behind this??
-        q[:, :, 1] = + np.sin(p) * (f[:, :, 0]) + np.cos(p) * (f[:, :, 1])
-        torque = np.abs(np.nansum(np.cross(r, q, axisa=2, axisb=2))) ## using nna sum to only look at force values in mask
-        return torque.astype("float64")
-
-    # plotting torque angle relation ship
-    #ps=np.arange(-np.pi/2,np.pi/2,0.01)
-    #torques=[get_torque_angle(p)*1000 for p in ps]
-    #plt.figure()
-    #ticks=np.arange(-np.pi/2,np.pi/2+np.pi/6,np.pi/6)
-    #tick_labels=[r"$-\frac{\pi}{2}$",r"$-\frac{\pi}{3}$",r"$-\frac{\pi}{6}$",r"$0$",r"$\frac{\pi}{6}$",r"$\frac{\pi}{3}$",r"$\frac{\pi}{2}$"]
-    #plt.xticks(ticks,tick_labels,fontsize=25)
-    #plt.yticks(fontsize=15)
-    #plt.plot(ps,torques,linewidth=6)
-    #plt.gca().spines['bottom'].set_color('black')
-    #plt.gca().spines['left'].set_color('black')
-    #plt.gca().tick_params(axis='x', colors='black')
-    #plt.gca().tick_params(axis='y', colors='black')
-    #plt.savefig("/home/user/Desktop/results/thesis/figures/torque_angle.png")
-
-
-
-    pstart = 0
-    #bounds = ([-np.pi], [np.pi])
-    ## just use normal gradient descent??
-    eps=np.finfo(float).eps # minimum machine tolerance, for most exact calculation
-    p = least_squares(fun=get_torque_angle, x0=pstart, method="lm",
-                      max_nfev=100000000, xtol=eps, ftol=eps,gtol=eps, args=())["x"]  # trust region algorithm,
-
-    q[:, :, 0] = + np.cos(p) * (f[:, :, 0]) - np.sin(p) * (f[:, :, 1])  # corrected forces
-    q[:, :, 1] = + np.sin(p) * (f[:, :, 0]) + np.cos(p) * (f[:, :, 1])
-
-    return q[:, :, 0],q[:, :, 1], p  # returns corrected forces and rotation angle
-
-
-
-
-def get_torque1(fx,fy,mask_area,return_map=False):
-    com = regionprops(mask_area.astype(int))[0].centroid  # finding center of mass
-    com = (com[1], com[0])  # as x y coorinate
-
-    c_x, c_y = np.meshgrid(range(fx.shape[1]), range(fx.shape[0]))  # arrays with all x and y coordinates
-    r = np.zeros((fx.shape[0], fx.shape[1], 2))  # array with all positional vectors
-    r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
-    r[:, :, 1] = c_y
-    r = r - np.array(com)
-
-    f = np.zeros((fx.shape[0], fx.shape[1], 2))  # array with all force vectors
-    f[:, :, 0] = fx
-    f[:, :, 1] = fy
-    if return_map:
-        return np.cross(r, f, axisa=2, axisb=2)
-    else:
-        return np.nansum(np.cross(r, f, axisa=2, axisb=2))
-
-def check_unbalanced_forces(fx,fy,mask=None,raise_error=False):
-    if not isinstance(mask, np.ndarray):
-        mask=np.logical_or(fy!=0,fx!=0)
-    torque=get_torque1(fx, fy, mask, return_map=False) # torque of the system
-    net_force=np.array([np.sum(fx),np.sum(fy)])
-    print("torque = "+ str(torque))
-    print("net force = " + str(net_force))
-    if raise_error and (torque==0 or np.sum(net_force==0)>0):
-        raise Exception("torque or net force is not zero")
-
-
-
-def calculate_rotation(a1, a2, mask):
-    '''
-
-
-
-    hopefully caclualtes the rotaton of a body from a rotaion filed
-    :param dx:eithr array with dx values or nodes
-    :param dy:
-    :return:
-    '''
-    mask = mask.astype(bool)
-    if a1.shape[1] == 5 and a1.shape[0] != a1.shape[1]:  # this would recognize a nodes array
-
-        dx, dy = make_field(a1.astype(int), a2, mask.shape)  # an construct a field from it
-
-    else:
-        dx, dy = a1, a2
-
-    r = np.zeros((dx.shape[0], dx.shape[1], 2))  # array with all positional vectors
-    d = np.zeros((dx.shape[0], dx.shape[1], 2))
-
-
-    c_x, c_y = np.meshgrid(range(mask.shape[1]), range(mask.shape[0]))
-    r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
-    r[:, :, 1] = c_y
-    com=(np.mean(r[:,:,0][mask]),np.mean(r[:,:,1][mask]))
-    r = r - np.array(com)
-    r[~mask] = 0
-    d[:, :, 0][mask] = dx[mask].flatten()  # note maybe its also enough to chose any point as refernece point
-    d[:, :, 1][mask] = dy[mask].flatten()
-    return np.sum(np.cross(r, d, axisa=2, axisb=2))
-
-
-def correct_rotation(def_x, def_y, mask):
-    '''
-    function to apply rigid body translation and rotation to a deformation field, to minimize rotation
-    and translation
-    :return:
-    '''
-    mask=mask.astype(bool)
-    trans = np.array([np.mean(def_x[mask]), np.mean(def_y[mask])])  # translation
-    def_xc1 = def_x - trans[0]  # correction of translation
-    def_yc1 = def_y - trans[1]
-    ##
-    # insert method to calculate angular rotaton??
-    ##
-    # constructinoon positional vectors and
-    r = np.zeros((def_x.shape[0], def_x.shape[1], 2))  # array with all positional vectors
-    r_n = np.zeros((def_x.shape[0], def_x.shape[1], 2))
-    d = np.zeros((def_x.shape[0], def_x.shape[1], 2))
-    d_n = np.zeros((def_x.shape[0], def_x.shape[1], 2))
-    c_x, c_y = np.meshgrid(range(def_x.shape[1]), range(def_x.shape[0]))
-    r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
-    r[:, :, 1] = c_y
-    com = (np.mean(r[:, :, 0][mask]), np.mean(r[:, :, 1][mask])) ## why inverted indices??????????
-    r = r - np.array(com)
-    r[~mask] = 0
-    d[:,:, 0][mask]= def_xc1[mask].flatten()  # note maybe its also enough to chose any point as refernece point
-    d[:, :, 1][mask] = def_yc1[mask].flatten()
-
-    # applying rotation
-    def rot_displacement(p):
-        r_n[:, :, 0] = + np.cos(p) * (r[:, :, 0]) - np.sin(p) * (r[:, :, 1])  # rotation of postional vectors
-        r_n[:, :, 1] = + np.sin(p) * (r[:, :, 0]) + np.cos(p) * (r[:, :, 1])
-        disp = r - r_n
-        return disp  # norma error measure
-
-    # fit to corect rotation
-    def displacement_error(p):
-        r_n[:, :, 0] = + np.cos(p) * (r[:, :, 0]) - np.sin(p) * (r[:, :, 1])  # rotation of postional vectors
-        r_n[:, :, 1] = + np.sin(p) * (r[:, :, 0]) + np.cos(p) * (r[:, :, 1])
-        disp = r - r_n
-        return np.sum(np.linalg.norm((d[mask] - disp[mask]),axis=1))  # norma error measure
-
-    pstart = -1
-    bounds = ([-np.pi], [np.pi])
-    ## just use normal gradient descent??
-    p = least_squares(fun=displacement_error, x0=pstart, bounds=bounds, method="trf",
-                      max_nfev=100000000, xtol=3e-32, ftol=3e-32, gtol=3e-32, args=())["x"]  # trust region algorithm,
-    ## note only works if displacement can be reached in "one rotation!!!!
-    # get the part of displacement originating form a rotation of p
-    d_rot = rot_displacement(p)
-    d_n[mask] = d[mask] - d_rot[mask]  # correcting this part of rotation
-    return d_n[:, :, 0], d_n[:, :, 1], trans,p
-
-
-def make_field(nodes, values, dims):
-    '''
-    function to write e.g loads or deformation data to array
-    :param nodes:
-    :param values:
-    :return:
-    '''
-    nodes=nodes.astype(int)
-    fx = np.zeros(dims)
-    fy = np.zeros(dims)
-    fx[nodes[:, 2], nodes[:, 1]] = values[:, 0]
-    fy[nodes[:, 2], nodes[:, 1]] = values[:, 1]
-    return fx, fy
-
-
-def make_solids_py_values_list(nodes, fx, fy,mask,shape=1):
-    '''
-    function to create a list of values, eg deformation as needed by solidspy
-
-    :param nodes:
-    :param fx:
-    :param fy:
-    :return:
-    '''
-    nodes=nodes.astype(int)
-    mask=mask.astype(bool)
-    if shape==1:
-        l = np.zeros((len(nodes)*2))
-        l[np.arange(0, len(nodes)*2) % 2 == 0] = fx[mask].flatten()  #ordering in solidspy is x,y..
-        l[np.arange(0, len(nodes)*2) % 2 != 0] = fy[mask].flatten()
-    else:
-        l = np.zeros((len(nodes), 2))
-        l[:, 0] = fx[mask][nodes[:, 2], nodes[:, 1]]
-        l[:, 1] = fy[mask][nodes[:, 2], nodes[:, 1]]
-    return l
-
-def normalizing(img):
-    img = img - np.nanmin(img)
-    img = img / np.nanmax(img)
-    img[img < 0] = 0.0
-    img[img > 1] = 1.0
-    return img
-
-
-def get_torque2(nodes,loads):
-
-    nodes=nodes.astype(int)
-
-    k,l=(np.max(nodes[:,1])+1, np.max(nodes[:,2])+1)
-    fx = np.zeros((k,l))
-    fy = np.zeros((k,l))
-    area = np.zeros((k,l),dtype=int)
-    fx[nodes[:, 1], nodes[:, 2]] = loads[:, 1]
-    fy[nodes[:, 1], nodes[:, 2]] = loads[:, 2]
-    area[nodes[:, 1], nodes[:, 2]]=1
-
-    com = regionprops(area)[0].centroid  # finding center of mass
-    com = (com[1], com[0])  # as x y coorinate
-
-    c_x, c_y = np.meshgrid(range(fx.shape[1]), range(fx.shape[0]))  # arrays with all x and y coordinates
-    r = np.zeros((fx.shape[0], fx.shape[1], 2))  # array with all positional vectors
-    r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
-    r[:, :, 1] = c_y
-    r = r - np.array(com)
-
-    f = np.zeros((fx.shape[0], fx.shape[1], 2))  # array with all force vectors
-    f[:, :, 0] = fx
-    f[:, :, 1] = fy
-    torque = np.sum(np.cross(r, f, axisa=2, axisb=2))  # note order ju
-    return(torque)
-
 
 
 def plot_all_sigmas(sigma_max,sigma_min,tau_max,sigma_avg,nodes):
@@ -1090,95 +846,6 @@ def scale_for_quiver(ar1,ar2,dims,scale_ratio=0.2,return_scale=False):
         return scale
     return ar1*scale,ar2*scale
 
-def find_eq_position(nodes, IBC, neq):
-    #based on solidspy.assemutil.loadasem
-
-    nloads = IBC.shape[0]
-    RHSG = np.zeros((neq,2))
-    x_points=np.zeros((neq)).astype(bool) # mask showing which point has x deformation
-    y_points = np.zeros((neq)).astype(bool) # mask showing which point has y deformation
-    for i in range(nloads):
-        il = int(nodes[i, 0]) # index of the node
-        ilx = IBC[il, 0] # indices in RHSG or fixed nodes, if -1
-        ily = IBC[il, 1]
-        if ilx != -1:
-            RHSG[ilx] = nodes[i, [1,2]] # x,y position/ not the orientation
-            x_points[ilx]=[True]
-        if ily != -1:
-            RHSG[ily] = nodes[i, [1,2]]
-            y_points[ily] = [True]
-
-    return RHSG.astype(int),x_points,y_points
-
-
-
-
-
-def custom_solver(mat, rhs, mask_area,nodes,IBC,verbose=False):
-    #IBC is "internal boundary condition" contains information about which nodes are fixed and
-    # where the unfixed nodes can be found in the rhs vector
-
-
-    """Solve a static problem [mat]{u_sol} = {rhs}
-
-    Parameters
-    ----------
-    mat : array
-        Array with the system of equations. It can be stored in
-        dense or sparse scheme.
-    rhs : array
-        Array with right-hand-side of the system of equations.
-
-    Returns
-    -------
-    u_sol : array
-        Solution of the system of equations.
-
-    Raises
-    ------
-    """
-
-    len_disp = mat.shape[1]  # length of the  displacement vector
-    zero_disp_x = np.zeros(len_disp)
-    zero_disp_y = np.zeros(len_disp)
-    zero_torque = np.zeros(len_disp)
-
-    com = regionprops(mask_area.astype(int))[0].centroid  # finding center of mass
-    com = (com[1], com[0])  # as x y coordinate
-
-    c_x, c_y = np.meshgrid(range(mask_area.shape[1]), range(mask_area.shape[0]))  # arrays with all x and y coordinates
-    r = np.zeros((mask_area.shape[0], mask_area.shape[1], 2))  # array with all positional vectors
-    r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
-    r[:, :, 1] = c_y
-    nodes_xy_ordered,x_points,y_points=find_eq_position(nodes, IBC, len_disp) # solidspy function that is used to construct the loads vector (rhs)
-    r=r[nodes_xy_ordered[:,1],nodes_xy_ordered[:,0],:] # ordering r in the same order as rhs
-    r = r - np.array(com)
-
-    zero_disp_x[x_points] = 1
-    zero_disp_y[y_points] = 1
-
-    # torque=sum(r1*f2-r2*f1)
-    zero_torque[x_points] = r[x_points, 1]  # -r2 factor
-    zero_torque[y_points] = -r[y_points, 0]  # r1 factor
-    add_matrix=np.vstack([zero_disp_x,zero_disp_y,zero_torque])
-    # adding zero conditions for force vector and torque
-    rhs=np.append(rhs,np.zeros(3))
-
-
-    if type(mat) is csr_matrix:
-        import scipy.sparse
-         # convert additional conditions to sparse matrix
-        mat=scipy.sparse.vstack([mat,csr_matrix(add_matrix)],format="csr")
-        u_sol,error = np.array(lsqr(mat, rhs,atol=10**-12, btol=10**-12,iter_lim=60000,show=verbose,conlim=10**12))[[0,3]]# sparse least squares solver
-    elif type(mat) is np.ndarray:
-        # adding to matrix
-        mat=np.append(mat,add_matrix,axis=0)
-
-        u_sol,error = np.array(np.linalg.lstsq(mat, rhs))[[0,1]]
-    else:
-        raise TypeError("Matrix should be numpy array or csr_matrix.")
-
-    return u_sol,error
 
 
 

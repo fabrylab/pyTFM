@@ -13,7 +13,7 @@
 #	print(e)
 #from . import utilities
 
-__all__ = ["data_analysis", "database_functions", "functions_for_cell_colonie",
+__all__ = ["data_analysis", "database_functions", "plotting.py",
 "graph_theory_for_cell_boundaries","grid_setup_solids_py","parameters_and_strings",
            "stress_functions", "TFM_functions", "TFM_functions_for_clickpoints", "utilities"
            ]

@@ -55,7 +55,7 @@ default_fig_parameters={
     "vmax": None,  # maximal value displayed in the colormap
     "cbar_width": "2%",  # width of the color bar in % of the main image. Must be string with % at the end.
     "cbar_height": "50%",  # height of the color bar in % of the main image. Must be string with % at the end.
-    "cbar_borderpad": 6,  # distance between the edge of the image and the color bar (in pixels???)
+    "cbar_borderpad": 0.1,  # distance between the edge of the image and the color bar (in pixels???)
     "scale_ratio": 0.2,  # scale arrows so that the longest arrow is "maximum image dimension" * "scale ratio" long
     "cbar_title_pad": 10, # padding of the
     "headwidth": 3,  # width of the arrow heads (in pixels?)

@@ -18,7 +18,7 @@ from pyTFM.utilities_TFM import suppress_warnings
 
 
 
-def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="mean"):
+def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="gaussian"):
     '''
     fourier transform based calculation of the traction force. U and v must be given  as deformations in pixel. Size of
     these pixels must be the pixelsize (size of a pixel in the deformation field u or v). Note that thePiv deformation
@@ -215,7 +215,7 @@ def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.
     return (tx_filter, ty_filter)
 
 
-def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean"):
+def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "gaussian"):
     '''
     FTTC with correction for finite substrate thikness according to
     Xavier Trepat, Physical forces during collective cell migration, 2009
@@ -315,24 +315,30 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
     #show_quiver(tx_filter,ty_filter)
     return (tx_filter, ty_filter)
 
-def ffttc_traction_finite_thickness_wrapper(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean"):
+def TFM_tractions(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter ="gaussian"):
     '''
     height correction breaks down due to numerical reasons at large gel height and small wavelengths of deformations.
     In this case the height corrected ffttc-function returns Nans. THis function falls back to the non height-corrected ffttc
     function if this happens
     :return:
     '''
-    with suppress_warnings(RuntimeWarning):
-        tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, h=h, young=young,
-                                                         sigma=sigma, filter=filter)    # unit is N/m**2
-
-    if np.isnan(tx).all() and np.isnan(ty).all():
-        tx, ty = ffttc_traction(u, v, pixelsize1 = pixelsize1, pixelsize2 = pixelsize2, young=young, sigma=sigma,
+    if isinstance(h,(int,float)):
+        with suppress_warnings(RuntimeWarning):
+            tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, h=h, young=young,
+                                                             sigma=sigma, filter=filter)    # unit is N/m**2
+        # fails for large substrate heights --> falling back to infinite height assumption
+        if np.isnan(tx).all() and np.isnan(ty).all():
+            tx, ty = ffttc_traction(u, v, pixelsize1 = pixelsize1, pixelsize2 = pixelsize2, young=young, sigma=sigma,
+                                    filter=filter)
+    elif h=="infinite":
+        tx, ty = ffttc_traction(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, young=young, sigma=sigma,
                                 filter=filter)
+    else:
+        raise ValueError("illegal value for h")
     return tx, ty
 
 
-def calculate_deformation(im1,im2,window_size=64,overlapp=32,std_factor=20):
+def calculate_deformation(im1,im2,window_size=64,overlap=32,std_factor=20):
 
     '''
     Calculation of deformation field using particle image velocimetry (PIV). Recommendations: window_size should be about
@@ -353,7 +359,7 @@ def calculate_deformation(im1,im2,window_size=64,overlapp=32,std_factor=20):
     '''
     #accepting either path to file or image data directly
     if isinstance(im1,str):
-        frame_a  = np.array(openpiv.tools.imread(im1),dtype="int32")
+        frame_a  = np.array(openpiv.tools.imread(im1), dtype="int32")
     elif isinstance(im1,np.ndarray):
         frame_a=im1
     if isinstance(im2, str):
@@ -361,9 +367,8 @@ def calculate_deformation(im1,im2,window_size=64,overlapp=32,std_factor=20):
     elif isinstance(im2, np.ndarray):
         frame_b = im2
 
-    u, v, sig2noise = openpiv.process.extended_search_area_piv( frame_a, frame_b, window_size=window_size, overlap=overlapp,
+    u, v, sig2noise = openpiv.process.extended_search_area_piv( frame_a, frame_b, window_size=window_size, overlap=overlap,
                                                                 dt=1,subpixel_method="gaussian", search_area_size=window_size, sig2noise_method='peak2peak' )
-    x, y = openpiv.process.get_coordinates( image_size=frame_a.shape, window_size=window_size, overlap=overlapp)
 
     u, v, mask = openpiv.validation.sig2noise_val( u, v, sig2noise, threshold = 1.05 )
 
@@ -377,7 +382,7 @@ def calculate_deformation(im1,im2,window_size=64,overlapp=32,std_factor=20):
     v[mask_std] = np.nan
 
     u, v = openpiv.filters.replace_outliers( u, v, method='localmean', max_iter=10, kernel_size=2 )
-    return (u,-v,x,y,mask,mask_std)     # return -v because of image inverted axis
+    return (u,-v,mask,mask_std)    # return -v because of image inverted axis
 
 
 
@@ -458,7 +463,7 @@ def contractillity(tx,ty,pixelsize,mask):
     return contractile_force, proj_x, proj_y,center # unit of contractile force is N
 
 ##
-def contractile_energy_points(u,v,tx,ty,pixelsize1,pixelsize2):
+def strain_energy_points(u, v, tx, ty, pixelsize1, pixelsize2):
     pixelsize2*=10**-6 # conversion to m
     pixelsize1*=10**-6
     # u is given in pixels/minutes where a pixel is from the original image (pixelsize1)

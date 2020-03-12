@@ -1,15 +1,12 @@
 ﻿### function integrating Traktion force microscopy into a clcikpoints database
 
 from pyTFM.grid_setup_solids_py import *
-from pyTFM.functions_for_cell_colonie import *
+from pyTFM.plotting import *
 from pyTFM.stress_functions import *
 from pyTFM.utilities_TFM import *
 from pyTFM.TFM_functions import *
 from pyTFM.parameters_and_strings import *
 from pyTFM.frame_shift_correction import *
-import solidspy.postprocesor as pos
-import solidspy.assemutil as ass
-import solidspy.solutil as sol
 from peewee import IntegrityError
 import clickpoints
 from skimage.morphology import label
@@ -546,9 +543,9 @@ def deformation(frame, parameter_dict,res_dict, db,db_info=None,masks=None,**kwa
 
     # overlapp and windowsize in pixels
     window_size_pix=int(np.ceil(parameter_dict["window_size"] / parameter_dict["pixelsize"]))
-    overlapp_pix=int(np.ceil(parameter_dict["overlapp"] / parameter_dict["pixelsize"]))
-    u, v, x, y, mask, mask_std = calculate_deformation(im1.astype(np.int32), im2.astype(np.int32),
-                                                      window_size_pix, overlapp_pix,
+    overlap_pix=int(np.ceil(parameter_dict["overlapp"] / parameter_dict["pixelsize"]))
+    u, v, mask, mask_std = calculate_deformation(im1.astype(np.int32), im2.astype(np.int32),
+                                                      window_size_pix, overlap_pix,
                                                        std_factor=parameter_dict["std_factor"])
     db_info["defo_shape"]=u.shape
     res_dict[frame]["sum deformations"].append(["image",np.sum(np.sqrt(u ** 2 + v** 2)),""]) # propably remove that
@@ -576,7 +573,7 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
     # select masks
     mtypes = [m for m in db_info["mask_types"] if m in get_masks_by_key(default_parameters,"use","forces")]
     if isinstance(u, np.ndarray):
-        energy_points = contractile_energy_points(u, v, t_x, t_y, parameter_dict["pixelsize"], ps_new)  # contractile energy at any point
+        energy_points = strain_energy_points(u, v, t_x, t_y, parameter_dict["pixelsize"], ps_new)  # contractile energy at any point
         # plotting contractile energy (only happens if enable in default_fig_parameters)
         add_plot("energy_points",[energy_points],show_map_clickpoints,frame,db_info,parameter_dict,db)
 
@@ -617,11 +614,11 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,masks=None,*
 
     # using tfm with or without finite thickness correction
     if parameter_dict["TFM_mode"] == "finite_thickness":
-        tx, ty = ffttc_traction_finite_thickness_wrapper(u, v, pixelsize1=parameter_dict["pixelsize"],
-                                                     pixelsize2=ps_new,
-                                                     h=parameter_dict["h"], young=parameter_dict["young"],
-                                                     sigma=parameter_dict["sigma"],
-                                                     filter="gaussian")
+        tx, ty = TFM_tractions(u, v, pixelsize1=parameter_dict["pixelsize"],
+                               pixelsize2=ps_new,
+                               h=parameter_dict["h"], young=parameter_dict["young"],
+                               sigma=parameter_dict["sigma"],
+                               filter="gaussian")
 
     if parameter_dict["TFM_mode"] == "infinite_thickness":
         tx, ty = ffttc_traction(u, v, pixelsize1=parameter_dict["pixelsize"],
@@ -684,40 +681,6 @@ def FEM_grid_setup(frame,parameter_dict,mask_grid,db_info=None,warn="",**kwargs)
 
     return nodes, elements, loads, mats, mask_area, warn, ps_new
 
-
-
-def FEM_simulation(nodes, elements, loads, mats, mask_area, verbose=False, **kwargs):
-
-    DME, IBC, neq = ass.DME(nodes, elements)  # boundary conditions asembly??
-    print("Number of elements: {}".format(elements.shape[0]))
-    print("Number of equations: {}".format(neq))
-
-    # System assembly
-    KG = ass.assembler(elements, mats, nodes, neq, DME, sparse=True)
-    RHSG = ass.loadasem(loads, IBC, neq)
-
-
-    if np.sum(IBC==-1)<3: # 1 or zero fixed nodes/ pure neumann-boundary-condition system needs further constraints
-         # System solution with custom conditions
-        # solver with constraints to zero translation and zero rotation
-        UG_sol, rx = custom_solver(KG, RHSG, mask_area,nodes,IBC, verbose=verbose)
-
-    # System solution with default solver
-    else:
-        UG_sol = sol.static_sol(KG, RHSG)  # automatically detect sparce matrix
-        if not (np.allclose(KG.dot(UG_sol) / KG.max(), RHSG / KG.max())):
-            print("The system is not in equilibrium!")
-
-    # average shear and normal stress on the colony area
-    UC = pos.complete_disp(IBC, nodes, UG_sol)  # uc are x and y displacements
-    E_nodes, S_nodes = pos.strain_nodes(nodes, elements, mats, UC)  # stresses and strains
-    stress_tensor = calculate_stress_tensor(S_nodes, nodes, dims=mask_area.shape)  # assembling the stress tensor
-    return  UG_sol,stress_tensor
-
-
-
-
-
 def FEM_analysis_average_stresses(frame,res_dict,parameter_dict,db, db_info,stress_tensor,ps_new, masks, obj_id,**kwargs):
 
     # analyzing the FEM results with average stresses
@@ -754,9 +717,9 @@ def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tens
     lines_splines = borders.lines_splines
     line_lengths = borders.line_lengths
     # plot lines tresses over border as continuous curves:
-    lines_interpol, min_v, max_v = interpolation_for_stress_and_normal_vector(lines_splines, line_lengths,
-                                                                              stress_tensor, pixel_length=ps_new,
-                                                                              interpol_factor=1)
+    lines_interpol, min_v, max_v = lineTension(lines_splines, line_lengths,
+                                               stress_tensor, pixel_length=ps_new,
+                                               interpol_factor=1)
     plot_values=(borders.inter_shape,borders.edge_lines, lines_interpol, min_v, max_v)
 
     #norm of the line tension vector
@@ -811,7 +774,7 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,masks=Non
         nodes, elements, loads, mats, mask_area, warn, ps_new = FEM_grid_setup(frame, parameter_dict, mask_grid,
                                                                                           db_info=db_info, **kwargs)
         # FEM solution
-        UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area, frame=frame)
+        UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area)
         np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor)
 
         # analyzing stresses and stress distribution ####### TODO: implement coefficient of variation here
@@ -834,7 +797,7 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,masks=Non
                                  **kwargs)
             plot_values.append(pv)
     # plotting the stress at cell borders
-    add_plot("FEM_borders", [plot_values], plot_continous_boundary_stresses, frame, db_info, parameter_dict, db)
+    add_plot("FEM_borders", [plot_values], plot_continuous_boundary_stresses, frame, db_info, parameter_dict, db)
     # plotting the stress on the colony area
     m_stresses=np.sum(m_stresses,axis=0)
     add_plot("stress_map", [m_stresses], show_map_clickpoints, frame, db_info,  parameter_dict, db)
@@ -892,7 +855,7 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Software/pyTFM/example_analysis/KO/database.cdb", "r")
+        "/home/user/Software/example_data_for_pyTFM/KO_analyzed/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict=defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
@@ -915,7 +878,7 @@ if __name__=="__main__":
     #
     #mask_membrane = masks.reconstruct_mask("01", 0, "membrane", raise_error=True)
 
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="04",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="04",
                                                db_info=db_info, masks=None)
 
 

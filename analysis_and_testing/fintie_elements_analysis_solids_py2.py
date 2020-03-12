@@ -5,7 +5,7 @@ import clickpoints
 import numpy as np
 import solidspy.postprocesor as pos
 import solidspy.assemutil as ass
-from pyTFM.functions_for_cell_colonie import *
+from pyTFM.plotting import *
 from pyTFM.grid_setup_solids_py import *
 from pyTFM.stress_functions import *
 
@@ -123,12 +123,12 @@ lines_spline_points=borders.lines_spline_points
 lines_splines=borders.lines_splines
 lines_points=borders.lines_points
 # plot linestresses over border as continous curves:
-lines_interpol,min_v,max_v=interpolation_for_stress_and_normal_vector(lines_splines,lines_points,stress_tensor,pixel_length=ps_new,interpol_factor=6)
+lines_interpol,min_v,max_v=lineTension(lines_splines, lines_points, stress_tensor, pixel_length=ps_new, interpol_factor=6)
 lines_interpol=add_normal_or_shear_component(lines_interpol)
 
 evaluate_all_stress_measures(lines_interpol,borders,norm_levels=["points","lines","cells"],types=["t_vecs","tn","ts"],show_histogramm=True)
-fig=plot_continous_boundary_stresses((200,200),borders.edge_lines,lines_interpol,min_v,max_v,
-                                     mask_boundaries=borders.mask_boundaries,plot_t_vecs=True,scale_ratio=0.05,arrow_filter=4)
+fig=plot_continuous_boundary_stresses((200, 200), borders.edge_lines, lines_interpol, min_v, max_v,
+                                      mask_boundaries=borders.mask_boundaries, plot_t_vecs=True, scale_ratio=0.05, arrow_filter=4)
 
 #check_normal_vectors_graph(mask_boundaries,n,points) # plotting normal vectors
 #check_normal_vectors_array(mask_boundaries,n_array)

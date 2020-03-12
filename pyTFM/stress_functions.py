@@ -92,7 +92,7 @@ def normal_vectors_from_splines(u, tck):
     n_vectors = n_vectors / np.linalg.norm(n_vectors, axis=1)[:, None]  # normalizing
     return n_vectors
 
-def interpolation_for_stress_and_normal_vector(lines_splines, line_lengths,stress_tensor,pixel_length, interpol_factor=7):
+def lineTension(lines_splines, line_lengths, stress_tensor, pixel_length, interpol_factor=1):
     '''
     function to perform interpolation on lines, to get new x,y coordinates, calculate the normal vectors on these points
     and calculate the stress vector and the norm of the stress vectors, accros the lines at the interpolated points.
@@ -251,7 +251,7 @@ def calculate_stress_tensor(S_nodes,nodes,dims=None):
     return stress_tensor
 
 
-def coefficient_of_variation(mask,x,border_pad):
+def coefficient_of_variation(mask,x,border_pad=0):
     # leave some space away from the edge
     mask_cp=copy.deepcopy(mask)
     if border_pad > 0:

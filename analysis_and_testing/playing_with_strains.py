@@ -7,7 +7,7 @@ import numpy as np
 import copy
 from contextlib import suppress
 from pyTFM.utilities_TFM import round_flexible,gaussian_with_nans,make_display_mask,createFolder
-from pyTFM.functions_for_cell_colonie import *
+from pyTFM.plotting import *
 from pyTFM.grid_setup_solids_py import grid_setup
 from pyTFM.TFM_functions_for_clickpoints import FEM_simulation
 from pyTFM.graph_theory_for_cell_boundaries import mask_to_graph,find_path_circular

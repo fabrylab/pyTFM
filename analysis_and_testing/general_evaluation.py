@@ -8,7 +8,7 @@ import copy
 import clickpoints
 from contextlib import suppress
 from pyTFM.utilities_TFM import round_flexible,gaussian_with_nans,make_display_mask,createFolder
-from pyTFM.functions_for_cell_colonie import *
+from pyTFM.plotting import *
 from pyTFM.grid_setup_solids_py import grid_setup,interpolation
 from pyTFM.TFM_functions_for_clickpoints import FEM_simulation,try_to_load_traction
 from pyTFM.graph_theory_for_cell_boundaries import mask_to_graph,find_path_circular
@@ -30,8 +30,8 @@ from itertools import product
 
 
 def traction_wrapper(u, v, pixelsize, h, young,mask=None, filter="gaussian"):
-    tx, ty = ffttc_traction_finite_thickness_wrapper(u, v, pixelsize1=pixelsize, pixelsize2=pixelsize, h=h,
-                                                         young=young, sigma=0.49, filter=filter)
+    tx, ty = TFM_tractions(u, v, pixelsize1=pixelsize, pixelsize2=pixelsize, h=h,
+                           young=young, sigma=0.49, filter=filter)
     fx, fy = tx*(pixelsize**2), ty*(pixelsize**2)
     check_unbalanced_forces(fx, fy)
     fx_corr, fy_corr = force_and_torque_correction(fx, fy, mask)  # correct forces
@@ -166,7 +166,7 @@ def standard_measures(mask,pixelsize_tract=1,pixelsize_og=1,mean_normal_list=Non
     with suppress(TypeError, NameError): mean_shear_f = np.mean(shear_f[mask])
     # line tension
     # forces
-    with suppress(TypeError, NameError):  energy_points_f = contractile_energy_points(u_b, v_b, fx_f, fy_f, pixelsize_og, pixelsize_tract)  # contractile energy at any point
+    with suppress(TypeError, NameError):  energy_points_f = strain_energy_points(u_b, v_b, fx_f, fy_f, pixelsize_og, pixelsize_tract)  # contractile energy at any point
     # needs interpolation of mask possibley
     with suppress(TypeError, NameError): cont_energy_f = np.sum(energy_points_f[mask_exp])
     with suppress(TypeError, NameError): contractile_force_f, proj_x, proj_y, center = contractillity(fx_f, fy_f, pixelsize_tract, mask_exp)
@@ -177,7 +177,7 @@ def standard_measures(mask,pixelsize_tract=1,pixelsize_og=1,mean_normal_list=Non
     with suppress(TypeError, NameError): mean_shear_b = np.mean(shear_b[mask])
     # line tension
     # forces
-    with suppress(TypeError, NameError):  energy_points_b = contractile_energy_points(u_b, v_b, fx_b, fy_b, pixelsize_og, pixelsize_tract)  # contractile energy at any point
+    with suppress(TypeError, NameError):  energy_points_b = strain_energy_points(u_b, v_b, fx_b, fy_b, pixelsize_og, pixelsize_tract)  # contractile energy at any point
     # needs interpolation of mask possibley
     with suppress(TypeError, NameError): cont_energy_b = np.sum(energy_points_b[mask_exp])
     with suppress(TypeError, NameError): contractile_force_b, proj_x, proj_y, center = contractillity(fx_b, fy_b, pixelsize_tract, mask_exp)
@@ -772,7 +772,7 @@ if __name__=="__main__":
     # typical stress and force measures
 
 
-    #stress_tensors, mean_normal_list, mask_exp_list = exp_border(out_folder=out_folder,exp_range=border_ex_test,fx_f=fx_f,fy_f=fy_f,mask=mask,method=exp_method)
+    # stress_tensors, mean_normal_list, mask_exp_list = exp_border(out_folder=out_folder,exp_range=border_ex_test,fx_f=fx_f,fy_f=fy_f,mask=mask,method=exp_method)
     stress_tensors, mean_normal_list, mask_exp_list = load_exp_border(out_folder=out_folder,exp_range=border_ex_test,method=exp_method)
     max_dict = get_max_values(exp_test=len(border_ex_test)>0,mean_normal_list=mean_normal_list)
 
