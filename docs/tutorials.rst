@@ -11,4 +11,5 @@ databases without using the GUI, and how to use pyTFM on its own.
    :maxdepth: 2
 
    addon_tutorial
+   pythonTutorial
 
