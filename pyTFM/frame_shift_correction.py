@@ -149,3 +149,28 @@ def correct_frame_shift(folder):
     names=["after_shift.tif","before_shift.tif","bf_before_shift.tif"]
     files_dict=find_files_for_shifting(folder, identifier_list)
     cut_images(folder,files_dict,names)
+
+def correct_stage_drift(image1,image2,additional_images=[]):
+    # find shift with image registration
+    shift_values = register_translation(image1, image2, upsample_factor=100)
+    shift_y = shift_values[0][0]
+    shift_x = shift_values[0][1]
+
+    # using interpolation to shift subpixel precision, image2 is the reference
+    image1_shift = shift(image1, shift=(-shift_y, -shift_x), order=5)
+
+    # normalizing and converting to image format
+    b = normalizing(croping_after_shift(image1_shift, shift_x, shift_y))
+    a = normalizing(croping_after_shift(image2, shift_x, shift_y))
+    b_save = Image.fromarray(b * 255)
+    a_save = Image.fromarray(a * 255)
+
+    # doing the same with additional images
+    additional_images_save=[]
+    for add_image in additional_images:
+        add_image_shift = shift(add_image, shift=(-shift_y, -shift_x), order=5)
+        add_image_norm = normalizing(croping_after_shift(add_image_shift, shift_x, shift_y))
+        add_image_save = Image.fromarray(add_image_norm * 255)
+        additional_images_save.append(add_image_save)
+
+    return b_save, a_save, additional_images_save, (shift_x,shift_y)

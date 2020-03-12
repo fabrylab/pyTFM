@@ -620,9 +620,17 @@ class Addon(clickpoints.Addon):
              masks=self.masks,res_dict=self.res_dict,frames=frames,db_info=self.db_info)
 
     def drift_correction(self):# calculation of contractility and contractile energy
+        cdb_frame = self.cp.getCurrentFrame()
+        self.frame = self.db_info["cbd_frames_ref_dict"][cdb_frame]
+        self.mode = self.analysis_mode.currentText()  # only current frame or all frames
+        if self.mode == "current frame":  # only current frame
+            frames = self.frame
+        if self.mode == "all frames":  # all frames
+            frames = self.all_frames
         self.db_info, self.masks, self.res_dict = apply_to_frames(self.db, self.parameter_dict,
                                         analysis_function=simple_shift_correction,
-                        masks=self.masks,res_dict=self.res_dict, frames=self.all_frames,db_info=self.db_info)
+                        masks=self.masks,res_dict=self.res_dict, frames=frames,db_info=self.db_info)
+        print("calculation complete")
 
     def segmentation(self):# calculation of contractility and contractile energy
         self.cdb_frame = self.cp.getCurrentFrame()

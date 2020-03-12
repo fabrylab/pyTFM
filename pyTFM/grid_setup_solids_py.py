@@ -646,7 +646,7 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, verbose=False, **kwa
     stress_tensor = calculate_stress_tensor(S_nodes, nodes, dims=mask_area.shape)  # assembling the stress tensor
     return  UG_sol,stress_tensor
 
-def grid_setup(mask_area, f_x, f_y, E=1, sigma=1,edge_factor=0):
+def grid_setup(mask_area, f_x, f_y, E=1, sigma=0.5,edge_factor=0):
     '''
     setup of nodes, elements, loads and mats(elastic material properties) lists for solids pys finite elements analysis. Every pixel of
     the provided mask is used as a node. Values from f_x,f_y at these pixels are used as loads. Mats is just

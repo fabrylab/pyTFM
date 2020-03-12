@@ -469,6 +469,7 @@ def find_full_im_path(cdb_image, base_folder):
     return os.path.join(os.path.join(base_folder, rel_path), filename)
 
 
+
 def simple_shift_correction(frame, parameter_dict, res_dict, db,db_info=None,**kwargs):
     #load images from database
     im_a=db.getImage(id=db_info["file_order"][frame + "images_after"])
@@ -482,26 +483,13 @@ def simple_shift_correction(frame, parameter_dict, res_dict, db,db_info=None,**k
     im_b_path = find_full_im_path(im_b,db_info["path"])
     im_m_path = find_full_im_path(im_m,db_info["path"])
 
-    # find shift with image registration
-    shift_values = register_translation(image_before, image_after, upsample_factor=100)
-    shift_y = shift_values[0][0]
-    shift_x = shift_values[0][1]
 
-    # using interpolation to shift subpixel precision
-    img_shift_b = shift(image_before, shift=(-shift_y, -shift_x), order=5)
-    img_shift_bf = shift(image_membrane, shift=(-shift_y, -shift_x), order=5)
-
-    b = normalizing(croping_after_shift(img_shift_b, shift_x, shift_y))
-    a = normalizing(croping_after_shift(image_after, shift_x, shift_y))
-    bf = normalizing(croping_after_shift(img_shift_bf, shift_x, shift_y))
-    # saving images
-    b_save = Image.fromarray(b * 255)
-    a_save = Image.fromarray(a * 255)
-    bf_save = Image.fromarray(bf * 255)
-    print("save im b:",im_b_path,"save im a:",im_a_path,"save im m:",im_m_path )
+    # performig drift correction
+    b_save,a_save,[m_save],drift = correct_stage_drift(image_before, image_after, additional_images=[image_membrane])
+    print("\nframe %s: found drift of %s"%(frame, str(np.round(drift,3))))
     b_save.save(im_b_path)
     a_save.save(im_a_path)
-    bf_save.save(im_m_path)
+    m_save.save(im_m_path)
 
 def simple_segmentation(frame, parameter_dict,res_dict, db,db_info=None,masks=None,seg_threshold=0,seg_type="cell_area",im_filter=None,**kwargs):
 
@@ -855,7 +843,7 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Software/example_data_for_pyTFM/KO_analyzed/database.cdb", "r")
+        "/home/user/Software/example_data_for_pyTFM/clickpoints_tutorial/KO_analyzed/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict=defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
@@ -878,7 +866,7 @@ if __name__=="__main__":
     #
     #mask_membrane = masks.reconstruct_mask("01", 0, "membrane", raise_error=True)
 
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="04",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, simple_shift_correction, res_dict, frames="04",
                                                db_info=db_info, masks=None)
 
 
