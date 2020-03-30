@@ -102,7 +102,7 @@ def round_flexible_str(n,digits=2,sci_limit=3):
 
 def split_path_with_os(folder):
     if not os.path.split(folder)[1]=="":
-        parts =os.path.split(folder)[1]
+        parts = [os.path.split(folder)[1]]
         remaining = [os.path.split(folder)[0]]
     else:
         remaining1=os.path.split(folder)[0]
