@@ -92,7 +92,8 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
     :param vmax:  overwrites max_v and min_v if provided
     :return:
     '''
-    if not isinstance(plot_values[0],list):
+
+    if not isinstance(plot_values[0],(list,tuple)):
         plot_values=[plot_values]
 
     min_v = np.min([pv[3] for pv in plot_values]) # minimum over all objects
@@ -394,7 +395,7 @@ def set_background(ax, fig, shape, background_color, cmap=None , cbar_style=""):
         ax.imshow(np.zeros(shape), cmap=custom_cmap, vmin=0, vmax=1)
 
 
-def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str="",ax=None
+def show_map_clickpoints(values, figsize=(6.4, 4.8),cbar_str="",ax=None
                             ,cmap="rainbow",vmin=None, vmax=None, background_color = "cmap_0",cbar_width="2%",cbar_height="50%",
                          cbar_borderpad =0.15,cbar_tick_label_size=15,cbar_axes_fraction=0.2
                          ,cbar_style="clickpoints",plot_style="not-clickpoints",cbar_title_pad=1, plot_cbar=True,

@@ -23,6 +23,13 @@ def make_iterable(value):
     else:
         return value
 
+def convert_none_str(x):
+    if isinstance(x,str):
+        if x=="None":
+            return None
+    else:
+        return x
+
 def make_iterable_args(value):
     # in order to unpack array as one value we need need [array]
 

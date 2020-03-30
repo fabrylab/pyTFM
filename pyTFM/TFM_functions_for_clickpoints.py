@@ -383,8 +383,9 @@ def add_plot(plot_type, values, plot_function,frame, db_info, parameter_dict,db)
         create_layers_on_demand(db, db_info, [layer])
         plt.ioff()
         dpi = 200
-        fig_parameters_use = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame], dpi,fig_parameters,
+        fig_parameters_use = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame], dpi, fig_parameters,
                                             figtype=plot_type)
+        print(fig_parameters_use)
         fig,ax = plot_function(*values, **fig_parameters_use)
 
         # saving the the plot
@@ -785,10 +786,13 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,masks=Non
                                  **kwargs)
             plot_values.append(pv)
     # plotting the stress at cell borders
-    add_plot("FEM_borders", [plot_values], plot_continuous_boundary_stresses, frame, db_info, parameter_dict, db)
+    if len(plot_values)>0:
+        add_plot("FEM_borders", [plot_values], plot_continuous_boundary_stresses, frame, db_info, parameter_dict, db)
     # plotting the stress on the colony area
-    m_stresses=np.sum(m_stresses,axis=0)
-    add_plot("stress_map", [m_stresses], show_map_clickpoints, frame, db_info,  parameter_dict, db)
+
+    if len(m_stresses)>0:
+        m_stresses = np.sum(m_stresses, axis=0)
+        add_plot("stress_map", [m_stresses], show_map_clickpoints, frame, db_info,  parameter_dict, db)
 
 
 def provide_basic_objects(db,frames,parameter_dict,db_info,masks,res_dict):
@@ -843,15 +847,15 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Software/example_data_for_pyTFM/clickpoints_tutorial/KO_analyzed/database.cdb", "r")
+        "/home/andy/Desktop/KOshift/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict=defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
-    parameter_dict["overlapp"]=10
+    parameter_dict["overlapp"]=16
     parameter_dict["window_size"] = 20
     parameter_dict["FEM_mode"] = "colony"
         #parameter_dict["FEM_mode"] = "colony"
-        #default_fig_parameters["cmap"]="jet"
+    default_fig_parameters["cmap"]="coolwarm"
         #default_fig_parameters["vmax"] = {"traction":500,"FEM_borders":0.03}
         #default_fig_parameters["filter_factor"]=1.5
         #default_fig_parameters["scale_ratio"] = 0.15
@@ -866,8 +870,10 @@ if __name__=="__main__":
     #
     #mask_membrane = masks.reconstruct_mask("01", 0, "membrane", raise_error=True)
 
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, simple_shift_correction, res_dict, frames="04",
+
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12",
                                                db_info=db_info, masks=None)
+
 
 
 

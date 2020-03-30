@@ -2,8 +2,9 @@
 from __future__ import division, print_function
 import pyTFM
 from pyTFM.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
-from pyTFM.parameters_and_strings import tooltips,default_parameters
+from pyTFM.parameters_and_strings import tooltips, default_parameters
 from pyTFM.database_functions import *
+from pyTFM.utilities_TFM import convert_none_str
 
 #from TFM_functions_for_clickpoints import * local import
 
@@ -51,13 +52,13 @@ def load_config(file_path,parameters):
                     for k2, v2 in v.items():
                         if isinstance(v2, dict):
                             for k3, v3 in v2.items():
-                                parameters[k][k2][k3] = v3
+                                parameters[k][k2][k3] = convert_none_str(v3)
                                 print("setting","analysis_parameters",k,k2,k3,"to",v3)
                         else:
-                            parameters[k][k2] = v2
+                            parameters[k][k2] = convert_none_str(v2)
                             print("setting", "analysis_parameters", k, k2,"to", v2)
                 else:
-                    parameters[k] = v
+                    parameters[k] = convert_none_str(v)
                     print("setting", "analysis_parameters", k,"to", v)
         # adding to subdict "fig parameters in parameters
         if "fig_parameters" in c.keys():
@@ -66,13 +67,13 @@ def load_config(file_path,parameters):
                     for k2, v2 in v.items(): # second layer would be applied for specific plot types
                         if isinstance(v2, dict):
                             for k3, v3 in v2.items(): # third layer currently not used
-                                parameters["fig_parameters"][k][k2][k3] = v3
+                                parameters["fig_parameters"][k][k2][k3] = convert_none_str(v3)
                                 print("setting", "fig_parameters", k,k2,k3,"to",v3)
                         else:
-                            parameters["fig_parameters"][k][k2] = v2
+                            parameters["fig_parameters"][k][k2] = convert_none_str(v2)
                             print("setting", "fig_parameters", k, k2, "to", v2)
                 else:
-                    parameters["fig_parameters"][k] = defaultdict(lambda value=v: value) # needs to be defaultdict to work for all plot types
+                    parameters["fig_parameters"][k] = defaultdict(lambda value=convert_none_str(v): value) # needs to be defaultdict to work for all plot types
                     print("setting", "fig_parameters", k, "to", v)
 
     except Exception as e:
@@ -448,9 +449,9 @@ class Addon(clickpoints.Addon):
         self.config_path = os.path.join(self.folder, "config.yaml")
 
         if os.path.exists(self.config_path):
-            print("found exsisting config at",self.config_path)
+            print("found config at",self.config_path)
             self.parameter_dict=load_config(self.config_path, self.parameter_dict)
-
+            #print(self.parameter_dict["fig_parameters"])
 
         """ GUI Widgets"""
         # set the title and layout
