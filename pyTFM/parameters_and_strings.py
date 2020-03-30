@@ -107,7 +107,15 @@ default_parameters["fig_parameters"]=default_fig_parameters
 # default parameters for plotting
 def set_fig_parameters(shape, fig_shape, dpi, fig_parameters, figtype):
     # extracting value for this specific fig type
-    fp = {key:value[figtype] for key, value in fig_parameters.items() if isinstance(value,defaultdict) or figtype in value.keys()}
+    fp = {}
+    for key, value  in fig_parameters.items():
+        if isinstance(value, defaultdict): # read default value
+            fp[key]=value[figtype]
+        if isinstance(value,dict): # in case someone passed it as a dict; will cause error if figtype is missing as a key
+            if key in value.keys():
+                fp[key] = value[figtype]
+        if not isinstance(value, (dict, defaultdict)):
+            fp[key] = value
     # filtering: 1.minimal length of arrow, 2. draw only every n'th arrow (in x and y direction)
     fp["filter"]=[0, int(int(np.ceil(shape[0] / 50))*fp["filter_factor"])]
     # figsize, so that saving the figure with dpi=dpi, gives an image of the shape fig_shape[0]
