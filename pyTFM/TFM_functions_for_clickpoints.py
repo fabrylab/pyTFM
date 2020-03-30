@@ -179,7 +179,7 @@ def write_output_file(values,value_type, file_path,new_file=False):
                             name] + "\t" * (warn != "") + warn + "\n")
     return file_path
 
-def except_error(func, error,print_error=True, **kwargs):  # take functino and qkwarks
+def except_error(func, error, print_error=True, return_v=False, **kwargs):  # take functino and qkwarks
     '''
     wraper to handle errors and return false if the exception is encountered
     :param func:
@@ -194,7 +194,7 @@ def except_error(func, error,print_error=True, **kwargs):  # take functino and q
     except error as e:
         if print_error:
             print(e)
-        return False
+        return return_v
     return values
 
 def check_shape(x,y):

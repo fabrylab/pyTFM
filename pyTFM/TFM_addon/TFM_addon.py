@@ -437,7 +437,7 @@ class Addon(clickpoints.Addon):
         clickpoints.Addon.__init__(self, *args, **kwargs)
 
         #super().__init__(self.db)  # makein this class the parent class?? important for qthread
-        self.frame_number=self.db.getImageCount()
+        self.frame_number= except_error(self.db.getImageCount, TypeError, print_error=False, return_v=None)
         self.db_info, self.all_frames = get_db_info_for_analysis(self.db) # information about the path, image dimensions
         print_db_info(self.db_info)
         self.res_dict=defaultdict(list) # dictionary that catches all results
