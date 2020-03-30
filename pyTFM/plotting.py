@@ -151,12 +151,14 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
     plt.ylim(shape[0],0)
     #background_color=matplotlib.cm.get_cmap(cmap)(0) if background_color=="cmap_0" else background_color
     #ax.set_facecolor(background_color)
-    add_colorbar(min_v, max_v, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
-                 cbar_str,cbar_axes_fraction,cbar_title_pad)
+    add_colorbar(vmin, vmax, cmap, ax=ax, cbar_style=cbar_style, cbar_width=cbar_width, cbar_height=cbar_height,
+                 cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size, cbarr_str=cbar_str,
+                 cbar_axes_fraction=cbar_axes_fraction, cbar_title_pad=cbar_title_pad)
     return fig, ax
 
-def add_colorbar(vmin,vmax, cmap,ax,cbar_style,cbar_width,cbar_height,cbar_borderpad,cbar_tick_label_size,cbar_str,cbar_axes_fraction,cbar_title_pad):
-    # adding colorbars inside or outside of plots
+def add_colorbar(vmin, vmax, cmap="rainbow", ax=None, cbar_style= "not-clickpoints", cbar_width= "2%",
+                 cbar_height = "50%", cbar_borderpad = 0.1, cbar_tick_label_size = 15, cbar_str = "",
+                 cbar_axes_fraction= 0.2, shrink=0.8, aspect=20, cbar_title_pad = 1, **kwargs):
 
     norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
     sm = plt.cm.ScalarMappable(cmap=matplotlib.cm.get_cmap(cmap), norm=norm)
@@ -167,11 +169,12 @@ def add_colorbar(vmin,vmax, cmap,ax,cbar_style,cbar_width,cbar_height,cbar_borde
         with suppress(TypeError,AttributeError): cbaxes.set_title(cbar_str, color="white",pad=cbar_title_pad)
         cbaxes.tick_params(colors="white",labelsize=cbar_tick_label_size)
     else: # colorbar outide of the plot
-        cb0=plt.colorbar(sm, aspect=20, shrink=0.8,fraction=cbar_axes_fraction,pad=cbar_borderpad) # just exploiting the axis generation by a plt.colorbar
+        cb0 = plt.colorbar(sm, aspect=aspect, shrink=shrink, fraction=cbar_axes_fraction, pad=cbar_borderpad) # just exploiting the axis generation by a plt.colorbar
         cb0.outline.set_visible(False)
         cb0.ax.tick_params(labelsize=cbar_tick_label_size)
         with suppress(TypeError,AttributeError):
             cb0.ax.set_title(cbar_str, color="black",pad=cbar_title_pad)
+    return cb0
 
 def check_order(mask,coords):
     plt.figure()
@@ -302,10 +305,10 @@ def plot_grid(nodes,elements,inverted_axis=False,symbol_size=4,arrows=False,imag
 
 
 def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None,headlength=None,headaxislength=None,width=None,cmap="rainbow",
-                figsize=None, cbar_str="",ax=None,fig=None
+                figsize=None, cbar_str="",ax=None, fig=None
                 , vmin=None, vmax=None, cbar_axes_fraction=0.2, cbar_tick_label_size=15
                 , cbar_width="2%", cbar_height="50%", cbar_borderpad=0.1,
-                cbar_style="not-clickpoints",plot_style="not-clickpoints",cbar_title_pad=1, **kwargs):
+                cbar_style="not-clickpoints", plot_style="not-clickpoints", cbar_title_pad=1, plot_cbar=True, **kwargs):
     # list of all necessary quiver parameters
     quiver_parameters={"headwidth":headwidth,"headlength":headlength,"headaxislength":headaxislength,
                        "width":width,"scale_units":"xy","angles":"xy","scale":None}
@@ -322,15 +325,17 @@ def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None,headlength=Non
     im = plt.imshow(map_values,cmap=cmap,vmin=vmin,vmax=vmax) # imshowing
     if plot_style=="clickpoints":
         ax.set_position([0,0,1,1])
-        ax.set_axis_off()
+    ax.set_axis_off()
     # plotting arrows
     fx,fy,xs,ys=filter_values(fx,fy,abs_filter=filter[0],f_dist=filter[1]) # filtering every n-th value and every value smaller then x
     if scale_ratio: # optional custom scaling with the image axis lenght
         fx, fy=scale_for_quiver(fx,fy, dims=dims, scale_ratio=scale_ratio)
         quiver_parameters["scale"]=1 # disabeling the auto scaling behavior of quiver
     plt.quiver(xs, ys, fx, fy, **quiver_parameters) # plotting the arrows
-    add_colorbar(vmin, vmax, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
-                 cbar_str, cbar_axes_fraction,cbar_title_pad)
+    if plot_cbar:
+        add_colorbar(vmin, vmax, cmap, ax=ax, cbar_style=cbar_style, cbar_width=cbar_width, cbar_height=cbar_height,
+                     cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size,cbarr_str=cbar_str,
+                     cbar_axes_fraction=cbar_axes_fraction, cbar_title_pad=cbar_title_pad)
     return fig, ax
 
 
@@ -377,26 +382,50 @@ def set_vmin_vmax(x,vmin,vmax):
         vmin = vmax - 1 if vmin > vmax else None
     return vmin, vmax
 
-def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str=""
-                            ,cmap="rainbow",vmin=None,vmax=None,background_color = "cmap_0",cbar_width="2%",cbar_height="50%",
-                         cbar_borderpad=2.5,cbar_tick_label_size=15,cbar_axes_fraction=0.2,cbar_style="clickpoints",cbar_title_pad=1,**kwargs):
+def set_background(ax, fig, shape, background_color, cmap=None , cbar_style=""):
+    ## setting background for the whoel plot or for the ax area
+    background_color = matplotlib.cm.get_cmap(cmap)(0) if background_color == "cmap_0" else background_color
+    if cbar_style == "clickpoints":
+        fig.set_facecolor(background_color) # setting background for the whole image, otherwise there are small white s
+        # stripes at the edges
+        ax.set_facecolor(background_color)
+    else:
+        custom_cmap = matplotlib.colors.ListedColormap([background_color, "white"])
+        ax.imshow(np.zeros(shape), cmap=custom_cmap, vmin=0, vmax=1)
+
+
+def show_map_clickpoints(values,figsize=(6.4, 4.8),cbar_str="",ax=None
+                            ,cmap="rainbow",vmin=None, vmax=None, background_color = "cmap_0",cbar_width="2%",cbar_height="50%",
+                         cbar_borderpad =0.15,cbar_tick_label_size=15,cbar_axes_fraction=0.2
+                         ,cbar_style="clickpoints",plot_style="not-clickpoints",cbar_title_pad=1, plot_cbar=True,
+                          show_mask=None,**kwargs):
 
     values=values.astype("float64")
     dims=values.shape# save dims for use in scaling, otherwise porblems, because filtering will return flatten array
     values_show = np.zeros(dims)
     values_show.fill(np.nan)
-    values_show[values!=0]=values[values!=0]
+    show_mask = show_mask.astype(bool) if isinstance(show_mask,np.ndarray) else values != 0
+    values_show[show_mask]=values[show_mask]
     fig=plt.figure(figsize=figsize)
-    ax = fig.add_axes([0., 0., 1., 1.])
+    if not isinstance(ax,matplotlib.axes.Axes):
+        fig=plt.figure(figsize=figsize)
+        ax=plt.axes()
+    if plot_style == "clickpoints":
+        ax.set_position([0, 0, 1, 1])
+
     ax.set_axis_off()
-    background_color = matplotlib.cm.get_cmap(cmap)(0) if background_color == "cmap_0" else background_color
-    fig.set_facecolor(background_color)
-    ax.set_facecolor(background_color)
+    set_background(ax, fig, dims, background_color, cmap=cmap, cbar_style=cbar_style)
+
     # other wise the program behaves unexpectedly if the automatically set vmin is bigger the manually set vmax
     vmin, vmax = set_vmin_vmax(values, vmin, vmax)
     im = ax.imshow(values_show,cmap=cmap,vmin=vmin,vmax=vmax)
-    add_colorbar(vmin, vmax, cmap, ax, cbar_style, cbar_width, cbar_height, cbar_borderpad, cbar_tick_label_size,
-                 cbar_str, cbar_axes_fraction,cbar_title_pad)
+    if plot_cbar:
+        add_colorbar(vmin, vmax, cmap, ax=ax, cbar_style=cbar_style, cbar_width=cbar_width, cbar_height=cbar_height,
+                     cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size, cbarr_str=cbar_str,
+                     cbar_axes_fraction=cbar_axes_fraction, cbar_title_pad=cbar_title_pad)
+
+
+
     return fig,ax
 
 

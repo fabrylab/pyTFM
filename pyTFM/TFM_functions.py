@@ -299,7 +299,7 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
 
     #5.3) using filter
     if filter=="mean":
-        #tx_filter=uniform_filter(tx_cut,size=5)     # this would be non responsive to resolution of the image ### there should be a better way
+        #tx_filter=uniform_filter(tx_cut,size=5)     # this would be non responsive to resolution of the image
         #ty_filter=uniform_filter(ty_cut,size=5)
         tx_filter = uniform_filter(tx_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
         ty_filter = uniform_filter(ty_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
@@ -382,7 +382,7 @@ def calculate_deformation(im1,im2,window_size=64,overlap=32,std_factor=20):
     v[mask_std] = np.nan
 
     u, v = openpiv.filters.replace_outliers( u, v, method='localmean', max_iter=10, kernel_size=2 )
-    return (u,-v,mask,mask_std)    # return -v because of image inverted axis
+    return (u, -v, mask, mask_std)    # return -v because of image inverted axis
 
 
 
