@@ -107,6 +107,19 @@ def name_add(cb=False, dm=False):
         add=add + "cb"
     return add
 
+
+
+def draw_cbar_only(vmin,vmax,aspect=8,shrink=1,cbar_axes_fraction=1.2,cmap="coolwarm",tick_length=4,tick_width=2,labelsize=20,lablecolor="black"):
+    # cbar for stress
+    fig = plt.figure(figsize=(3.2, 4.75))
+    plt.gca().set_axis_off()
+    cbar = add_colorbar(vmin=vmin, vmax=vmax, aspect=aspect, shrink=shrink, cbar_axes_fraction=cbar_axes_fraction, cmap=cmap,
+                        cbar_style="not-clickpoints")
+    set_axis_attribute(cbar.ax, "set_color", "black")
+    cbar.ax.tick_params(axis="both", which="both", color="black", length=tick_length, width=tick_width, labelsize=labelsize, labelcolor=lablecolor)
+    return fig
+
+
 def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f_type="not circular",cmap="coolwarm",max_dict=defaultdict(lambda: None),
                     mean_normal_list=None, mask_exp_list=None,out_folder="",fx_f=None,fy_f=None,
                     fx_b=None, fy_b=None, mask_fm=None,mask_fem=None,
