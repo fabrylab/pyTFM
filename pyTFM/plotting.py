@@ -68,7 +68,7 @@ def hide_ticks(ax, interval):
 def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_vecs=False, plot_n_arrows=False, figsize=(10, 7),
                                       scale_ratio=0.2, border_arrow_filter=1, cbar_str="line stress in N/µm", vmin=None, vmax=None,
                                       cbar_width="2%", cbar_height="50%", cbar_axes_fraction=0.2, cbar_tick_label_size=20,
-                                      background_color="white", cbar_borderpad=0.1, linewidth=4, cmap="jet", cbar_style="clickpoints",
+                                      background_color="white", cbar_borderpad=0.1, linewidth=4, cmap="jet", plot_cbar=True, cbar_style="clickpoints",
                                       boundary_resolution=3, cbar_title_pad=1,
                                       **kwargs):
 
@@ -100,8 +100,8 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
     max_v = np.max([pv[4] for pv in plot_values]) # maximum over all objects
     shape = plot_values[0][0]                     # image shape, should be the same for all objects
     print("plotting cell border stresses")
-    min_v = vmin if isinstance(vmin,(float,int)) else min_v
-    max_v = vmax if isinstance(vmin, (float, int)) else max_v
+    min_v = vmin if isinstance(vmin, (float,int)) else min_v
+    max_v = vmax if isinstance(vmax, (float, int)) else max_v
     mask_boundaries=np.zeros(shape) if not isinstance(mask_boundaries,np.ndarray) else mask_boundaries
 
     fig = plt.figure(figsize=figsize)
@@ -152,9 +152,10 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
     plt.ylim(shape[0],0)
     #background_color=matplotlib.cm.get_cmap(cmap)(0) if background_color=="cmap_0" else background_color
     #ax.set_facecolor(background_color)
-    add_colorbar(vmin, vmax, cmap, ax=ax, cbar_style=cbar_style, cbar_width=cbar_width, cbar_height=cbar_height,
-                 cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size, cbarr_str=cbar_str,
-                 cbar_axes_fraction=cbar_axes_fraction, cbar_title_pad=cbar_title_pad)
+    if plot_cbar:
+        add_colorbar(min_v, max_v, cmap, ax=ax, cbar_style=cbar_style, cbar_width=cbar_width, cbar_height=cbar_height,
+                     cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size, cbarr_str=cbar_str,
+                     cbar_axes_fraction=cbar_axes_fraction, cbar_title_pad=cbar_title_pad)
     return fig, ax
 
 def add_colorbar(vmin, vmax, cmap="rainbow", ax=None, cbar_style= "not-clickpoints", cbar_width= "2%",
@@ -305,7 +306,7 @@ def plot_grid(nodes,elements,inverted_axis=False,symbol_size=4,arrows=False,imag
 
 
 
-def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None,headlength=None,headaxislength=None,width=None,cmap="rainbow",
+def show_quiver(fx,fy,filter=[0,1],scale_ratio=0.2,headwidth=None, headlength=None, headaxislength=None,width=None,cmap="rainbow",
                 figsize=None, cbar_str="",ax=None, fig=None
                 , vmin=None, vmax=None, cbar_axes_fraction=0.2, cbar_tick_label_size=15
                 , cbar_width="2%", cbar_height="50%", cbar_borderpad=0.1,

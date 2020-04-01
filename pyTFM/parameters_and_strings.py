@@ -1,11 +1,11 @@
 # contains the default parameters, parameters for plotting, messages that are printed while the programming is executed
 # and tooltips for the tfm addon
-from pyTFM.utilities_TFM import make_iterable,squeeze_list
+from pyTFM.utilities_TFM import make_iterable, squeeze_list, convert_none_str, try_float_convert
 from collections import defaultdict
 from itertools import chain
 from matplotlib import cm  # making list from colormap
 import numpy as np
-
+import re
 
 
 
@@ -55,11 +55,12 @@ default_fig_parameters={
     "vmax": None,  # maximal value displayed in the colormap
     "cbar_width": "2%",  # width of the color bar in % of the main image. Must be string with % at the end.
     "cbar_height": "50%",  # height of the color bar in % of the main image. Must be string with % at the end.
-    "cbar_borderpad": 0.1,  # distance between the edge of the image and the color bar (in pixels???)
+    "cbar_borderpad": 0.2,  # distance between the edge of the image and the color bar (in pixels???)
     "scale_ratio": 0.2,  # scale arrows so that the longest arrow is "maximum image dimension" * "scale ratio" long
     "cbar_title_pad": 10, # padding of the
     "headwidth": 3,  # width of the arrow heads (in pixels?)
     "headlength": 3,  # length of the arrow heads (in pixels?)
+    "headaxislength": None,
     "width": 0.002,  # width of the arrow shaft (what unit?)
     "plot_t_vecs": False, # plotting the stress vectors on the cell border stresses image
     "plot_n_arrows": False, # plotting normal vectors on the cell border stresses image
@@ -75,12 +76,14 @@ default_fig_parameters={
     "cbar_axes_fraction": 0.2, #fraction of the axes in horrizontal direction, that the colorbar takes up, when colorbar is plotted outside
     # of the graph
     "boundary_resolution": 6, # resolution when plotting the line tension. Highest is 1. Increase for lower resolution,
-    # label of the color bar
+    # label of the color bar,
+    "plot_cbar": True,
+
     "cbar_str": {"deformation": "deformation\n[pixel]", "traction": "traction\n[Pa]",
                  "FEM_borders": "line tension\n[N/m]",
                  "stress_map": "avg. normal stress\nin N/m", "energy_points": "contractile energy\nJ/pixel\n"
                  },
-
+    "resolution":200, #dpi when saving plots
     "file_names": {"deformation": "deformation.png", "traction": "traction.png"  # filenames under wich plots are saved
         , "FEM_borders": "border_stress.png", "stress_map": "mean_normal_stress.png",
                    "energy_points": "energy_distribution.png"},
@@ -216,6 +219,19 @@ units["sum traction forces on cell type 1"]="N/m2"
 units["sum deformations on cell type 2"]="pixels"
 units["sum traction forces on cell type 2"]="N/m2"
 units["sum deformations on cell colony"]="pixels"
+
+
+def convert_config_input(x,type):
+    x=convert_none_str(x)
+    if type=="background_color":
+        x = try_float_convert(x) # try convert to float
+        if not isinstance(x,float): # else check tuple
+            if re.search("\(.*\)",x):
+                x=x.replace("(", "")
+                x=x.replace(")", "")
+                x=x.replace(" ", "")
+                x=tuple([float(y) for y in x.split(",")])
+    return x
 
 #TODO but this in a proper config file (.init/.yaml..
 # could make options to read external config files in the addon and in normal applications.)

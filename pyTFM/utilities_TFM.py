@@ -25,10 +25,9 @@ def make_iterable(value):
 
 def convert_none_str(x):
     if isinstance(x,str):
-        if x=="None":
+        if x == "None":
             return None
-    else:
-        return x
+    return x
 
 def make_iterable_args(value):
     # in order to unpack array as one value we need need [array]
@@ -332,6 +331,24 @@ def is_int(s):
         return True
     except ValueError:
         return False
+
+def except_error(func, error, print_error=True, return_v=False, **kwargs):  # take functino and qkwarks
+    '''
+    wraper to handle errors and return false if the exception is encountered
+    :param func:
+    :param error:
+    :param kwargs:
+    :param return_values:
+    :return:
+    '''
+
+    try:
+        values = func(**kwargs)
+    except error as e:
+        if print_error:
+            print(e)
+        return return_v
+    return values
 
 def try_float_convert(s):
     '''

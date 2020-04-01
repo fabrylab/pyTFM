@@ -15,7 +15,7 @@ import os
 import re
 import warnings
 from tqdm import tqdm
-
+from peewee import DoesNotExist
 
 class Mask_Error(Exception):
     pass
@@ -178,24 +178,6 @@ def write_output_file(values,value_type, file_path,new_file=False):
                         f.write(frame + "\t"+ str(cell_id)+ "\t" + name + "\t" + str(round_flexible(res)) + "\t" + units[
                             name] + "\t" * (warn != "") + warn + "\n")
     return file_path
-
-def except_error(func, error, print_error=True, return_v=False, **kwargs):  # take functino and qkwarks
-    '''
-    wraper to handle errors and return false if the exception is encountered
-    :param func:
-    :param error:
-    :param kwargs:
-    :param return_values:
-    :return:
-    '''
-
-    try:
-        values = func(**kwargs)
-    except error as e:
-        if print_error:
-            print(e)
-        return return_v
-    return values
 
 def check_shape(x,y):
     s1=np.array(x.shape)
@@ -372,6 +354,16 @@ def get_db_info_for_analysis(db):
                }
     return db_info, unique_frames
 
+def write_image(db, layer, sort_index, filename):
+    try:  # deleting all entries that might have been in this sot_index/layer slot
+        prev_img = db.getImages(layer=layer, frame=sort_index)
+        for im in prev_img:
+            db.deleteImages(id=im.id)
+    except DoesNotExist:
+        pass
+    # setting a new image
+    except_error(db.setImage, IntegrityError, print_error=True, filename=filename,
+                 layer=layer, path=1, sort_index=sort_index)
 
 def add_plot(plot_type, values, plot_function,frame, db_info, parameter_dict,db):
     #values: values (args) that are needed as input for the plotting functions
@@ -385,16 +377,15 @@ def add_plot(plot_type, values, plot_function,frame, db_info, parameter_dict,db)
         dpi = 200
         fig_parameters_use = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame], dpi, fig_parameters,
                                             figtype=plot_type)
-        print(fig_parameters_use)
         fig,ax = plot_function(*values, **fig_parameters_use)
 
         # saving the the plot
         print("saving to "+os.path.join(db_info["path"], frame + file_name))
-        fig.savefig(os.path.join(db_info["path"], frame + file_name),facecolor=fig.get_facecolor(),edgecolor=fig.get_facecolor() , dpi=200)
+        fig.savefig(os.path.join(db_info["path"], frame + file_name), facecolor=fig.get_facecolor(),edgecolor=fig.get_facecolor() , dpi=fig_parameters_use["resolution"])
         plt.close(fig)
         # adding the plot to the database
-        except_error(db.setImage, IntegrityError, print_error=True, filename=frame + file_name,
-                     layer=layer, path=1,sort_index=db_info["frames_ref_dict"][frame])
+        write_image(db, layer=layer, sort_index=db_info["frames_ref_dict"][frame], filename=frame + file_name)
+
 
 
 
