@@ -444,27 +444,23 @@ def cut_arrays(fill,*args):
 
 
 if __name__=="__main__":
-    out_folder = "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_paper_gaussian_smooth"
+    out_folder = "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_paper_gaussian"
     young = 1
     h = 100
     pixelsize = 1
     border_ex_test = list(range(0))
-    filter = None
+    filter = "gaussian"
     exp_method = "manual"
     f_type = "circular"  # display_option
-
-    f_type = "non-circular"  # display_option
     mask = setup_geometry(im_shape=(300, 300), shape_size=150, shape="rectangle")
-    mask_fem = mask
-    stress_tensor_b = setup_stress_field(mask, distribution="gaussian_flattened_rectangle", sigma_n=1, sigma_shear=0,
-                                         sigma_gf=9, diameter_gf=35)
-
-
+    mask_fem = expand_mask(mask, 185, method=exp_method)  # highest aggreement (not completely sure
+    stress_tensor_b = setup_stress_field(mask, distribution="uniform", sigma_n=1, sigma_shear=0,
+                                         sigma_gf=6)
 
     fx_b, fy_b = traction_from_stress(stress_tensor_b, pixelsize, plot=False, grad_type="diff1")
 
     #u_b, v_b = finite_thickness_convolution(fx_b, fy_b, pixelsize, h, young, sigma=0.5,
-    #                                        kernel_size=None)  # somwhat of an approximation
+     #                                       kernel_size=None)  # somwhat of an approximation
 
     createFolder(out_folder)
     #np.save(os.path.join(out_folder, "u_b.npy"), u_b)
@@ -508,6 +504,8 @@ if __name__=="__main__":
                                                                                                    mask_fm)
     max_dict = get_max_values(u_b, v_b, fx_f, fy_f, fx_b, fy_b, stress_tensor_b,
                               exp_test=len(border_ex_test) > 0, mean_normal_list=mean_normal_list)
+
+
     plot_types = [""]
     plot_types.extend(["deformation_backward", "mask", "forces_forward", "forces_backward",
                        "shear_forward", "mean_normal_stress_forward",
@@ -518,12 +516,13 @@ if __name__=="__main__":
     plot_types = ["correlation", "key measures", "mean_normal_stress_backward", "mean_normal_stress_forward",
                   "forces_forward", "forces_backward", "mask_outline", "cbars_only"]
     #plot_types = ["correlation", "cbars_only"]
+    #max_dict["force"] = 1
+
     general_display(plot_types=plot_types, mask=mask, pixelsize=pixelsize, max_dict=max_dict, f_type=f_type,
                     out_folder=out_folder, cmap="coolwarm", fx_b=fx_b, fy_b=fy_b,
                     fx_f=fx_f, fy_f=fy_f, mask_fm=mask_fm, mask_fem=mask_fem, scalar_comaprisons=scalar_comaprisons,
                     border_ex_test=border_ex_test, stress_tensor_f=stress_tensor_f,
-                    stress_tensor_b=stress_tensor_b, key_values=key_values, plot_gt_exp=True, dm=False, at=False,
+                    stress_tensor_b=stress_tensor_b, key_values=key_values, plot_gt_exp=False, dm=False, at=False,
                     cb=False)
-
 
     plt.close("all")

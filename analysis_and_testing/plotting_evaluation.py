@@ -153,6 +153,8 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
     mask_fm_color = "C2"
     mask_fem_color = "#666666"
 
+    if isinstance(mask_fem,np.ndarray):
+        mask_fem = mask_fem.astype(bool)
 
 
     if types["def_f"] in plot_types or plot_types=="all":
@@ -181,7 +183,7 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
         # cbar for stress
         fig = plt.figure(figsize=(3.2, 4.75))
         plt.gca().set_axis_off()
-        cbar=add_colorbar(vmin=0, vmax=1.5+0.01,aspect=8, shrink=1, cbar_axes_fraction=1.2, cmap=cmap, cbar_style="not-clickpoints")
+        cbar=add_colorbar(vmin=0, vmax=1+0.01,aspect=8, shrink=1, cbar_axes_fraction=1.2, cmap=cmap, cbar_style="not-clickpoints")
         set_axis_attribute(cbar.ax, "set_color", "black")
         cbar.ax.tick_params(axis="both", which="both", color="black",length=4, width=2, labelsize=20, labelcolor="black")
         fig.savefig(os.path.join(out_folder, types["cbars"] + "force" + name_add(cb=cb, dm=dm) + ext))
@@ -268,6 +270,7 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
         fig.savefig(os.path.join(out_folder, types["sh_f"] + name_add(cb=cb, dm=dm) + ext))
     if types["norm_f"] in plot_types or plot_types=="all":
         mean_normal_stress = ((stress_tensor_f[:, :, 0, 0] + stress_tensor_f[:, :, 1, 1]) / 2)
+        mean_normal_stress[~mask_fem] = np.nan
         fig,ax = show_map_clickpoints(mean_normal_stress, show_mask=mask_fem, figsize=figsize, cbar_style="out", background_color="white",
                                       cmap=cmap,
                                       cbar_tick_label_size=30,vmin=0,vmax=max_dict["stress"], plot_cbar=cb)
@@ -290,6 +293,7 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
 
     if types["norm_b"] in plot_types or plot_types=="all":
         mean_normal_stress = ((stress_tensor_b[:, :, 0, 0] + stress_tensor_b[:, :, 1,1]) / 2)
+        mean_normal_stress[~mask_fem]=np.nan
         fig, ax = show_map_clickpoints(mean_normal_stress,show_mask=np.ones(mean_normal_stress.shape), figsize=figsize, cbar_style="out",background_color="white",
                                       cmap=cmap, cbar_tick_label_size=30, vmin=0,vmax=max_dict["stress"], plot_cbar=cb)
         draw_outline(ax,do=do)
@@ -317,8 +321,15 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
                 "mean normal stress","mean normal stress","mean shear stress","mean shear stress"]
         pos = list(chain.from_iterable([[p-0.2,p+0.2] for p in range(int(len(key_values)/2))]))
         fig = plt.figure()
-        plt.bar(pos[::2],values_r[::2],width=0.4, color="#729fcf",label="backwards",alpha=0.83)
-        plt.bar(pos[1::2], values_r[1::2], width=0.4, color="#cc0066",label="forwards",alpha=0.83)
+        #plt.bar(pos[::2],values_r[::2],width=0.4, color="#729fcf",label="backwards",alpha=0.83)
+        #plt.bar(pos[1::2], values_r[1::2], width=0.4, color="#cc0066",label="forwards",alpha=0.83)
+        plt.bar(pos[::2],values_r[::2],width=0.4, color="C1",label="backwards",alpha=1)
+        plt.bar(pos[1::2], values_r[1::2], width=0.4, color="C2",label="forwards",alpha=1)
+        for px,py,t in zip(pos[1::2],values_r[1::2],[str(x) for x in np.round(np.array(values_r[1::2]),2)]):
+            if py < np.inf:
+                print(px,py,t)
+                plt.text(px, py - 0.01, t, color="black", fontsize=20, horizontalalignment="center", verticalalignment="bottom")
+
         #plt.xticks(pos,lables,rotation="70",fontsize=15)
         plt.gca().tick_params(axis="both", which="both", color="black",length=4, width=2, labelsize=20, labelcolor="black",labelbottom=False)
         set_axis_attribute(plt.gca(),"set_color","black")
