@@ -69,7 +69,7 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
                                       scale_ratio=0.2, border_arrow_filter=1, cbar_str="line stress in N/µm", vmin=None, vmax=None,
                                       cbar_width="2%", cbar_height="50%", cbar_axes_fraction=0.2, cbar_tick_label_size=20,
                                       background_color="white", cbar_borderpad=0.1, linewidth=4, cmap="jet", plot_cbar=True, cbar_style="clickpoints",
-                                      boundary_resolution=3, cbar_title_pad=1,
+                                      boundary_resolution=3, cbar_title_pad=1, outer_cb_color="grey", outer_cb_style="-",
                                       **kwargs):
 
 
@@ -129,10 +129,9 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
             c = matplotlib.cm.get_cmap(cmap)((t_norm - min_v) / (max_v - min_v))  # normalization and creating a color range
             ## see how well that works
             if line_id in edge_lines: # plot lines at the edge
-                for i in range(0,len(x_new)-boundary_resolution,boundary_resolution):
-                    plt.plot([x_new[i],x_new[i+boundary_resolution]],[y_new[i],y_new[i+boundary_resolution]],color="gray",linewidth=linewidth)
+                plt.plot(x_new, y_new, outer_cb_style, color=outer_cb_color, linewidth=linewidth)
             else:
-                for i in range(0,len(x_new) - boundary_resolution,boundary_resolution):
+                for i in range(0,len(x_new) - boundary_resolution, boundary_resolution):
                     plt.plot([x_new[i], x_new[i + boundary_resolution]], [y_new[i], y_new[i + boundary_resolution]], color=c[i], linewidth=linewidth)
 
             # plotting stress vectors

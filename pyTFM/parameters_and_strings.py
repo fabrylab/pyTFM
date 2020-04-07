@@ -26,8 +26,10 @@ default_parameters={
                         # filed of view (mode: "cell layer"). In "cell layer you select two areas and calculate stress and
                         # contractile energy on them. In "colony" you select the area of a colony and draw cell borders. These
                         # borders are used to analyze stresses along these borders.
-    "min_obj_size":1500, # all objects (cell patches/ isolated cells) below this size (in pixel) will be ignored
-     "cv_pad": 0, # padding when calculating the coefficient of variation in µm// only necessary if the
+    "min_obj_size": 1500, # all objects (cell patches/ isolated cells) below this size (in pixel) will be ignored
+    "min_line_length": 0, # small lines below this value are filtered out. This is mainly for cosmetic reasons, as small
+    # lines won't contribute much to the average line tension anyway
+    "cv_pad": 0, # padding when calculating the coefficient of variation in µm// only necessary if the
     # mask for the FEM area fits very closely to the mask for membranes
     "mask_properties":{"cell type1":{"use":["defo","forces","area_layer","FEM_layer","stress_layer"],"FEM_mode":["cell layer"],"color":"#1322ff","index":1,"label":"cell type 1","name":"cell type1"},
                                       "cell type2":{"use":["defo","forces","area_layer","FEM_layer","stress_layer"],"FEM_mode":["cell layer"],"color":"#ebff05","index":2,"label":"cell type 2","name":"cell type2"},
@@ -55,7 +57,7 @@ default_fig_parameters={
     "vmax": None,  # maximal value displayed in the colormap
     "cbar_width": "2%",  # width of the color bar in % of the main image. Must be string with % at the end.
     "cbar_height": "50%",  # height of the color bar in % of the main image. Must be string with % at the end.
-    "cbar_borderpad": 0.2,  # distance between the edge of the image and the color bar (in pixels???)
+    "cbar_borderpad": 0.2,  # distance between the edge of the image and the color bar
     "scale_ratio": 0.2,  # scale arrows so that the longest arrow is "maximum image dimension" * "scale ratio" long
     "cbar_title_pad": 10, # padding of the
     "headwidth": 3,  # width of the arrow heads (in pixels?)
@@ -66,6 +68,10 @@ default_fig_parameters={
     "plot_n_arrows": False, # plotting normal vectors on the cell border stresses image
     "linewidth": 4, # line width when plotting the cell border stresses
     "border_arrow_filter": 1, # plot only every n'th arrow for on the cell border stresses image
+    "outer_cb_color": "grey", # color of the line plotting the cell colony edge
+    "outer_cb_style": "-", # linestyle of the line plotting the cell colony edge. "--" for dashed line
+    "boundary_resolution": 6, # resolution when plotting the line tension. Highest is 1. Increase for lower resolution,
+    # label of the color bar,
     "cbar_style": "clickpoints", # if "clickpoints" the color bar is plottetd inside of the figure
     "plot_style": "clickpoints",
     "filter_factor": 1, # this factor defines how many arrows are shown in deformation and traction images.
@@ -75,10 +81,7 @@ default_fig_parameters={
     "cbar_tick_label_size": 15, # size of the tick labels on the color bar
     "cbar_axes_fraction": 0.2, #fraction of the axes in horrizontal direction, that the colorbar takes up, when colorbar is plotted outside
     # of the graph
-    "boundary_resolution": 6, # resolution when plotting the line tension. Highest is 1. Increase for lower resolution,
-    # label of the color bar,
     "plot_cbar": True,
-
     "cbar_str": {"deformation": "deformation\n[pixel]", "traction": "traction\n[Pa]",
                  "FEM_borders": "line tension\n[N/m]",
                  "stress_map": "avg. normal stress\nin N/m", "energy_points": "contractile energy\nJ/pixel\n"
@@ -108,7 +111,7 @@ default_parameters["fig_parameters"]=default_fig_parameters
 
 
 # default parameters for plotting
-def set_fig_parameters(shape, fig_shape, dpi, fig_parameters, figtype):
+def set_fig_parameters(shape, fig_shape, fig_parameters, figtype):
     # extracting value for this specific fig type
     fp = {}
     for key, value  in fig_parameters.items():
@@ -123,7 +126,7 @@ def set_fig_parameters(shape, fig_shape, dpi, fig_parameters, figtype):
     fp["filter"]=[0, int(int(np.ceil(shape[0] / 50))*fp["filter_factor"])]
     # figsize, so that saving the figure with dpi=dpi, gives an image of the shape fig_shape[0]
     # used to match the other images in the database
-    fp["figsize"]=(fig_shape[1] / dpi, fig_shape[0] / dpi)
+    fp["figsize"]=(fig_shape[1] / fp["resolution"], fig_shape[0] / fp["resolution"])
     return fp
 
 
