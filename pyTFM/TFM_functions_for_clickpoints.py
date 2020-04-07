@@ -374,14 +374,13 @@ def add_plot(plot_type, values, plot_function,frame, db_info, parameter_dict,db)
 
         create_layers_on_demand(db, db_info, [layer])
         plt.ioff()
-        dpi = 200
-        fig_parameters_use = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame], dpi, fig_parameters,
+        fig_parameters_use = set_fig_parameters(db_info["defo_shape"], db_info["im_shape"][frame],fig_parameters,
                                             figtype=plot_type)
-        fig,ax = plot_function(*values, **fig_parameters_use)
+        fig, ax = plot_function(*values, **fig_parameters_use)
 
         # saving the the plot
         print("saving to "+os.path.join(db_info["path"], frame + file_name))
-        fig.savefig(os.path.join(db_info["path"], frame + file_name), facecolor=fig.get_facecolor(),edgecolor=fig.get_facecolor() , dpi=fig_parameters_use["resolution"])
+        fig.savefig(os.path.join(db_info["path"], frame + file_name), facecolor=fig.get_facecolor(), edgecolor=fig.get_facecolor(), dpi=fig_parameters_use["resolution"])
         plt.close(fig)
         # adding the plot to the database
         write_image(db, layer=layer, sort_index=db_info["frames_ref_dict"][frame], filename=frame + file_name)
@@ -443,7 +442,7 @@ def general_properties(frame, parameter_dict,res_dict, db,db_info=None,masks=Non
         if not isinstance(mask_membrane, np.ndarray): # this could be improved maybe....
             print("couldn't identify cell borders in frame %s patch %s" % (str(frame), str(obj_id)))
             continue
-        borders = find_borders(mask_membrane, int_shape, raise_error=False, type=parameter_dict["FEM_mode"])
+        borders = find_borders(mask_membrane, int_shape, raise_error=False, type=parameter_dict["FEM_mode"], min_length=parameter_dict["min_line_length"])
         if not isinstance(borders, Cells_and_Lines):
             print("couldn't identify cell borders in frame %s patch %s" % (str(frame), str(obj_id)))
             continue
@@ -691,7 +690,7 @@ def FEM_analysis_average_stresses(frame,res_dict,parameter_dict,db, db_info,stre
     #sigma_max_abs = np.maximum(np.abs(sigma_min), np.abs(sigma_max))  ### highest possible norm of the stress tensor
     return mean_normal_stress
 
-def FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tensor, ps_new, borders,obj_id, warn,**kwargs):
+def FEM_analysis_borders(frame, res_dict,db, db_info, parameter_dict, stress_tensor, ps_new, borders, obj_id, warn,**kwargs):
 
     # retrieving spline representation of borders
     lines_splines = borders.lines_splines
@@ -765,15 +764,15 @@ def FEM_full_analysis(frame, parameter_dict,res_dict, db, db_info=None,masks=Non
         # finding cell borders
         mask_borders, warn_borders = next(((v[1],v[3]) for v in mask_iter_borders if v[0]==obj_id),(None,""))
         if parameter_dict["FEM_mode"]=="layer": # additional cutting when in layer mode
-            mask_borders,w=cut_mask_from_edge(mask_borders,parameter_dict["edge_padding"]+parameter_dict["padding_cell_layer"],parameter_dict["TFM_mode"]=="colony")
+            mask_borders,w = cut_mask_from_edge(mask_borders,parameter_dict["edge_padding"]+parameter_dict["padding_cell_layer"],parameter_dict["TFM_mode"]=="colony")
         if isinstance(mask_borders,np.ndarray):
             warn += " " + warn_borders
-            borders = find_borders(mask_borders, mask_area.shape,raise_error=False,type=parameter_dict["FEM_mode"])
+            borders = find_borders(mask_borders, mask_area.shape,raise_error=False,type=parameter_dict["FEM_mode"], min_length=parameter_dict["min_line_length"])
             if not isinstance(borders,Cells_and_Lines): # maybe print something here
                 print("couldn't identify cell borders in frame %s patch %s"%(str(frame),str(obj_id)))
                 continue
             # analyzing line tension
-            k,f,pv=FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tensor, ps_new, borders,obj_id, warn,
+            k,f,pv = FEM_analysis_borders(frame, res_dict, db,db_info,parameter_dict, stress_tensor, ps_new, borders,obj_id, warn,
                                  **kwargs)
             plot_values.append(pv)
     # plotting the stress at cell borders
@@ -845,8 +844,10 @@ if __name__=="__main__":
     parameter_dict["overlapp"]=16
     parameter_dict["window_size"] = 20
     parameter_dict["FEM_mode"] = "colony"
+    parameter_dict["min_line_length"] = 10
         #parameter_dict["FEM_mode"] = "colony"
     default_fig_parameters["cmap"]="coolwarm"
+    default_fig_parameters["resolution"] = 200
         #default_fig_parameters["vmax"] = {"traction":500,"FEM_borders":0.03}
         #default_fig_parameters["filter_factor"]=1.5
         #default_fig_parameters["scale_ratio"] = 0.15

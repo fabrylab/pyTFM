@@ -235,16 +235,22 @@ def exclude_by_key(d,ex_list):
                  key not in ex_list}
     return ex_dict
 
-def join_dictionary(d1,d2):
-    d3=copy.deepcopy(d1)
-    max_key=np.max(list(d1.keys()))
-    for key,value in d2.items():
-        if key>max_key:
-            max_key+=1
-            d3[max_key]=value
-    return d3
+def join_dictionary(d1, d2, update_keys=False):
+    if update_keys:
+        d3 = update_keys(d1, d2)
+    else:
+        d3=d2
+    return {**d1, **d3}
     # note:z = {**x, **y} and "update" are nices tricks here
 
+def update_keys(d1, d2):
+    # recounts keys of d2 by starting with last key of d1. keys must all be integers
+    d3 = copy.deepcopy(d2)
+    max_key = np.max(list(d1.keys()))
+    for key, value in d2.items():
+        max_key += 1
+        d3[max_key] = value
+    return d3
 
 def produce_index_array(u):
     u_indices=np.zeros(np.shape(u))

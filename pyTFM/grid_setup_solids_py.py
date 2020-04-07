@@ -230,7 +230,7 @@ class Cells_and_Lines:
         # any point id is the index in the points array (contains coordinate of these points
         self.graph_wp = graph
         self.points_wp = points
-        self.graph, self.points,removed=remove_endpoints_wrapper(self.graph_wp, self.points_wp)
+        self.graph, self.points,removed = remove_endpoints_wrapper(self.graph_wp, self.points_wp)
         # masks, graph and points excluding dead-end lines
         self.mask_boundaries = graph_to_mask(self.graph, self.points, mask_boundaries.shape)  # rebuilding the mask
 
@@ -242,10 +242,10 @@ class Cells_and_Lines:
         self.points_dict={i:self.points[i] for i in range(len(self.points))}
 
         # lines as a dictionary with key=line id, values: ids of containg points (in correct order)
-        self.lines_points=identify_line_segments(self.graph)
+        self.lines_points = identify_line_segments(self.graph)
 
         # cells as a dictionary with key=cell id, values: ids of containing points (not ordered)
-        self.cells_points, self.cells_area=identify_cells(self.mask_boundaries, binary_fill_holes(self.mask_boundaries), self.points)
+        self.cells_points, self.cells_area = identify_cells(self.mask_boundaries, binary_fill_holes(self.mask_boundaries), self.points)
 
         # interpolate the area of individual cells to the size of deformation
         self.cells_area_interpol=interpolate_cell_area(self.cells_area,self.inter_shape)
@@ -254,11 +254,12 @@ class Cells_and_Lines:
         self.max_line_id = np.max(list(self.lines_points.keys()))
         self.de_lines_points, self.max_line_id = find_dead_end_lines(self.graph_wp, list(self.graph.keys()),
                                                                     self.max_line_id)
-        self.de_endpoints={key:(self.points[value[0]],self.points[value[-1]]) for key,value in self.de_lines_points.items()}# using exact endpoints for the dead end lines
-        self.allLines_points=join_dictionary(self.lines_points,self.de_lines_points)
+        self.de_endpoints = {key:(self.points[value[0]],self.points[value[-1]]) for key,value in self.de_lines_points.items()}# using exact endpoints for the dead end lines
+        self.allLines_points = join_dictionary(self.lines_points, self.de_lines_points)
+
 
         # dictionary with endpoints, needed to completely fill the gaps between all cell_lines
-        self.lines_endpoints_com,self.lines_endpoints = find_exact_line_endpoints(self.lines_points, self.points, self.graph)
+        self.lines_endpoints_com, self.lines_endpoints = find_exact_line_endpoints(self.lines_points, self.points, self.graph)
 
         # removing all lines that are predicted to be circular. Mostly a problem for very short lines
         remove_circular_line(self.lines_endpoints_com,self.lines_points,self.lines_endpoints)
@@ -268,11 +269,10 @@ class Cells_and_Lines:
 
 
         # center of mass of cells, calculated only from the hull points
-        self.cells_com=center_of_mass_cells(self.cells_points,self.points)
+        self.cells_com = center_of_mass_cells(self.cells_points,self.points)
         # dictionary to associate cells with correct lines, key is cell id, value is line_id
         self.cells_lines= defaultdict(list) ## improve by using endpoints for cell_line_association
         # dictionary to associate cells with correct lines, key is line id, value is cell
-
 
         self.lines_cells=defaultdict(list)
         for l_id, l in self.lines_points.items():
@@ -288,7 +288,7 @@ class Cells_and_Lines:
         # adding dead end endpoints only now to avoid complications when identifying cells
         self.de_endpoints = {key: (self.points[value[0]], self.points[value[-1]]) for key, value in
                              self.de_lines_points.items()}
-        self.lines_endpoints_com=join_dictionary(self.lines_endpoints_com,self.de_endpoints)
+        self.lines_endpoints_com = join_dictionary(self.lines_endpoints_com, self.de_endpoints)
         self.lines_endpoints_interpol = interpolate_points_dict(self.lines_endpoints_com, self.inter_shape,
                                                                 self.mask_boundaries.shape)
 
@@ -333,25 +333,43 @@ class Cells_and_Lines:
 
     def cut_to_FEM_grid(self, FEM_mask):
         '''
-        removing any points that line outside the FEM Grid
+        removing any points that lie outside the FEM Grid
         :param FEM_mask:
         :return:
         '''
         self.lines_outside = []
         # spline points is already interpolated to shape of self.mask_area
-        for line_id, line_points in list(self.lines_spline_points.items()):
+        for l_id, line_points in list(self.lines_spline_points.items()):
             line_points = np.round(line_points).astype(int)
             if np.sum(~FEM_mask[line_points[:, 1], line_points[:, 0]]) > 5:
-                self.lines_spline_points.pop(line_id, None)
-                self.allLines_points.pop(line_id, None)
-                self.line_lengths.pop(line_id, None)
-                self.lines_endpoints_com.pop(line_id, None)
-                self.de_lines_points.pop(line_id, None)
-                self.lines_points.pop(line_id, None)
-                with suppress(ValueError): self.edge_lines.remove(line_id)
-                with suppress(ValueError): self.edge_lines.remove(line_id)
-                with suppress(ValueError): self.edge_lines.remove(line_id)
-                self.lines_outside.append(line_id)
+                self.lines_spline_points.pop(l_id, None)
+                self.allLines_points.pop(l_id, None)
+                self.line_lengths.pop(l_id, None)
+                self.lines_endpoints_com.pop(l_id, None)
+                self.de_lines_points.pop(l_id, None)
+                self.lines_points.pop(l_id, None)
+                with suppress(ValueError): self.edge_lines.remove(l_id)
+                with suppress(ValueError): self.edge_lines.remove(l_id)
+                with suppress(ValueError): self.edge_lines.remove(l_id)
+                self.lines_outside.append(l_id)
+
+    def filter_small_de_line(self, min_length):
+        for l_id in copy.deepcopy(self.dead_end_lines): # does not filter small line segments around cells -
+            if self.line_lengths[l_id] < min_length:
+                with suppress(AttributeError): self.allLines_points.pop(l_id, None)
+                with suppress(AttributeError): self.lines_endpoints_com.pop(l_id, None)
+                with suppress(AttributeError): self.lines_endpoints_interpol.pop(l_id, None)
+                with suppress(AttributeError): self.lines_splines.pop(l_id, None)
+                with suppress(AttributeError): self.lines_n_vectors.pop(l_id, None)
+                with suppress(AttributeError):  self.lines_spline_points.pop(l_id, None)
+                with suppress(AttributeError):  self.line_lengths.pop(l_id, None)
+                with suppress(AttributeError): self.de_endpoints.pop(l_id, None)
+                with suppress(AttributeError): self.de_lines_points.pop(l_id, None)
+
+
+                with suppress(ValueError, AttributeError): self.line_ids.remove(l_id)  # list
+                with suppress(ValueError, AttributeError): self.dead_end_lines.remove(l_id)
+
     def return_n_array(self,fill_nan=True):
         '''
         writes (normal) vectors in a two dimensional array according to their position from spline interpolation
@@ -471,7 +489,7 @@ class Cells_and_Lines2(Cells_and_Lines):
         self.line_lengths={key:len(value) for key, value in self.lines_points.items()}
 
         # very rough estimate of cell number
-        label_mask,self.n_cells=label(~mask_boundaries,connectivity=1,return_num=True)
+        label_mask, self.n_cells=label(~mask_boundaries,connectivity=1,return_num=True)
 
 
 def prepare_mask_FEM(mask,shape):
@@ -503,7 +521,7 @@ def prepare_mask_FEM(mask,shape):
 
 
 
-def find_borders(mask,shape,raise_error=True,type="colony"):
+def find_borders(mask,shape,raise_error=True,type="colony", min_length=0):
  #### maybe reintroduce small cell filter
     # removing small bits
     mask = remove_small_objects(mask.astype(bool), 1000).astype(bool)
@@ -516,10 +534,12 @@ def find_borders(mask,shape,raise_error=True,type="colony"):
     # applying remove endpoints multiple times to deal with forking dead ends
 
     try :
-        if type=="colony":
-            c_l=Cells_and_Lines(mask_boundaries,shape, graph,points)
-        if type=="cell layer":
+        if type == "colony":
+            c_l = Cells_and_Lines(mask_boundaries,shape, graph,points)
+            c_l.filter_small_de_line(min_length)
+        if type == "cell layer":
             c_l = Cells_and_Lines2(mask_boundaries, shape, graph, points)
+            c_l.filter_small_de_line(min_length)
     except (RecursionError,FindingBorderError) as e:
         print("original error: ", e)
         if raise_error:
