@@ -16,10 +16,10 @@ from playing_with_strains import *
 
 
 
-def display_mask(fig,mask,display_type,type=1,color="C1",d=np.sqrt(2),ax=None, dm=True):
+def display_mask(fig,mask,display_type,type=1,color="C1",d=np.sqrt(2),ax=None, dm=True, lw=9):
     if not dm:
         return
-    mask=mask.astype(int)
+    mask = mask.astype(int)
     if display_type=="outline":
         out_line=mask-binary_erosion((mask))
         out_line=custom_edge_filter(out_line) # risky
@@ -28,10 +28,10 @@ def display_mask(fig,mask,display_type,type=1,color="C1",d=np.sqrt(2),ax=None, d
         circular_path.append(circular_path[0]) # to plot a fully closed loop
         if type == 1:
             ax = fig.axes[0] if ax is None else ax
-            ax.plot(points[circular_path][:,1],points[circular_path][:,0],"--",color=color, linewidth=9)
+            ax.plot(points[circular_path][:,1],points[circular_path][:,0],"--",color=color, linewidth=lw)
         if type == 2:
             for ax in fig.axes:
-                ax.plot(points[circular_path][:, 1], points[circular_path][:, 0], "--", color=color, linewidth=9)
+                ax.plot(points[circular_path][:, 1], points[circular_path][:, 0], "--", color=color, linewidth=lw)
 
 
     if display_type=="overlay":
@@ -99,8 +99,8 @@ def draw_outline(ax,do=True,lw=2,color="black"):
         set_axis_attribute(ax, "set_linewidth", lw)
         set_axis_attribute(ax, "set_color", color)
 
-def name_add(cb=False, dm=False):
-    add=""
+def name_add(add="", cb=False, dm=False):
+
     if dm:
         add=add + "ma"
     if cb:
@@ -120,10 +120,30 @@ def draw_cbar_only(vmin,vmax,aspect=8,shrink=1,cbar_axes_fraction=1.2,cmap="cool
     return fig
 
 
-def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f_type="not circular",cmap="coolwarm",max_dict=defaultdict(lambda: None),
+def show_forces_forward(fx_f=None,fy_f=None,figsize=None,arrow_scale=None,arrow_width=None
+                        ,headlength=None,headwidth=None,headaxislength=None,cmap=None,max_dict=None,cb=None,
+                        do=None, at=None, dm=None, types=None, mask=None, display_type=None,
+                        mask_fm=None, mask_fm_color=None, out_folder=None, ext=None, add_name="",**kwargs):
+
+        fig, ax = show_quiver(fx_f, fy_f, figsize=figsize, scale_ratio=arrow_scale - 0.03, filter=[0, 10],
+                              width=arrow_width,
+                              headlength=headlength, headwidth=headwidth,
+                              headaxislength=headaxislength, cbar_tick_label_size=30, cmap=cmap,
+                              cbar_style="not-clickpoints",
+                              vmin=0, vmax=max_dict["force"], plot_cbar=cb)
+        draw_outline(ax, do=do)
+        add_title(fig, types["f_f"], at=at)
+        display_mask(fig, mask, display_type=display_type, dm=dm)
+        display_mask(fig, mask_fm, display_type=display_type, color=mask_fm_color, d=np.sqrt(2), dm=dm)
+        plt.tight_layout()
+        fig.savefig(os.path.join(out_folder, types["f_f"] + name_add(add=add_name, cb=cb, dm=dm) + ext))
+        return fig, ax
+
+def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f_type="not circular",cmap="coolwarm"
+                ,max_dict=defaultdict(lambda: None),
                     mean_normal_list=None, mask_exp_list=None,out_folder="",fx_f=None,fy_f=None,
                     fx_b=None, fy_b=None, mask_fm=None,mask_fem=None,
-                    border_ex_test=None,scalar_comaprisons=None, stress_tensor_f=None,
+                    border_ex_test=None, be_avm_list=None, scalar_comaprisons=None, stress_tensor_f=None,
                     stress_tensor_b=None, key_values=None, plot_gt_exp=True, dm=True, at=True, cb=True, do=True):
 
     '''
@@ -140,18 +160,32 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
           "f_f":"forces_forward","f_b":"forces_backward","st_f":"full_stress_tensor_forward",
     "st_b":"full_stress_tensor_backward","sh_f":"shear_forward","sh_b":"shear_backward",
            "norm_f":"mean_normal_stress_forward","norm_b":"mean_normal_stress_backward",
-           "m":"key measures","r":"correlation","exp_test": "test for border expansion","exp_test2":"test for border expansion",
+           "m":"key measures","r":"correlation","exp_test1": "be1","exp_test2" : "be2",
+           "exp_test3": "be3", "exp_test4": "be4", "exp_test5": "be5",
            "mask_outline":"mask_outline","cbars":"cbars_only"}
 
     figsize = (7,7)
-    arrow_scale = 0.1
-    arrow_width = 0.007
+    arrow_scale = 0.13 #0.1
+    arrow_width = 0.004
     headlength = 4
-    headwidth = 6
+    headwidth = 4 #6
     headaxislength = 3
     ext = ".svg"
     mask_fm_color = "C2"
     mask_fem_color = "#666666"
+
+    ps_new_ex = 0.845 # pixelsize when using windowsiye 20, overlapp 19.25
+    vmax_x_ep = 100 * 0.845
+    pd={"figsize" : figsize,
+    "arrow_scale"  :arrow_scale,
+    "arrow_width"  : arrow_width,
+    "headlength"  : headlength,
+    "headwidth"  : headwidth,
+    "headaxislength"  : headaxislength,
+    "ext"  : ext,
+    "mask_fm_color"  : mask_fm_color,
+    "mask_fem_color"  : mask_fem_color}
+    paras={**locals(),**pd}
 
     if isinstance(mask_fem,np.ndarray):
         mask_fem = mask_fem.astype(bool)
@@ -216,17 +250,7 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
         display_mask(fig, mask_fem, display_type="outline", color=mask_fem_color, d=np.sqrt(2), dm=True)
 
     if types["f_f"] in plot_types or plot_types=="all":
-
-        fig, ax = show_quiver(fx_f, fy_f, figsize=figsize, scale_ratio=arrow_scale-0.03, filter=[0, 10], width=arrow_width,
-                              headlength=headlength, headwidth=headwidth,
-                                      headaxislength=headaxislength, cbar_tick_label_size=30, cmap=cmap, cbar_style="not-clickpoints",
-                                      vmin=0, vmax=max_dict["force"], plot_cbar=cb)
-        draw_outline(ax, do=do)
-        add_title(fig, types["f_f"], at=at)
-        display_mask(fig, mask,display_type=display_type, dm=dm)
-        display_mask(fig, mask_fm, display_type=display_type, color=mask_fm_color,d=np.sqrt(2), dm=dm)
-        plt.tight_layout()
-        fig.savefig(os.path.join(out_folder, types["f_f"] + name_add(cb=cb, dm=dm) + ext))
+        show_forces_forward(**paras)
 
     if types["f_b"] in plot_types or plot_types=="all":
 
@@ -356,27 +380,47 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
         plt.tight_layout()
         fig.savefig(os.path.join(out_folder, types["r"] + ext))
 
-    if types["exp_test"] in plot_types or plot_types=="all" and len(mean_normal_list)>0:
-        fig=show_exp_test(mean_normal_list=mean_normal_list,max_dict=max_dict,mask_exp_list=mask_exp_list)
-        fig.savefig(os.path.join(out_folder, types["exp_test"] + ext))
+    if types["exp_test1"] in plot_types or plot_types=="all" and len(mean_normal_list)>0:
+
+        fig = show_exp_test(mean_normal_list=mean_normal_list,max_dict=max_dict,mask_exp_list=mask_exp_list)
+        fig.savefig(os.path.join(out_folder, types["exp_test1"] + ext))
 
     if types["exp_test2"] in plot_types or plot_types=="all" and len(mean_normal_list)>0:
-
-        fig =plt.figure()
-        avg_normal_stress_be_rel=[x/mean_normal_stress_b for x in avg_normal_stress_be]
+    # average normal stress relative to groundtruth stress
+        fig = plt.figure()
+        be = np.array(border_ex_test) * ps_new_ex
         if plot_gt_exp:
-            plt.plot(border_ex_test, avg_normal_stress_be_rel,color="C3")
-            plt.plot(border_ex_test, [1]*(len(border_ex_test)),color="C4")
-            plt.ylim((0, mean_normal_stress_b * 1.2))
+            plt.plot(be, be_avm_list, color="C3", linewidth=5)
+            plt.plot(be, [1]*(len(be_avm_list)),color="C4", linewidth=5)
+            plt.ylim((0, max_dict["stress"] * 1.2))
         else:
-            plt.plot(border_ex_test,  [x/np.max(avg_normal_stress_be) for x in avg_normal_stress_be], color="C3")
-            plt.ylim((0,1.1))
-        plt.xticks(fontsize=20,rotation="70")
-        plt.yticks(fontsize=20)
-        plt.title(types["exp_test"])
+            plt.plot(be, be_avm_list, color="C3", linewidth=5)
+            plt.ylim((0, max_dict["stress"] * 1.2))
+        plt.xlim(0, vmax_x_ep)
+        plt.gca().tick_params(axis="both", which="both", color="black", length=4, width=2, labelsize=20,
+                          labelcolor="black")
+        set_axis_attribute(plt.gca(), "set_color", "black")
+        set_axis_attribute(plt.gca(), "set_linewidth", 2)
+
+       # plt.title(types["exp_test2"])
         plt.tight_layout()
-        fig.savefig(os.path.join(out_folder, types["exp_test"] + "2" + ext))
-    if types["exp_test2"] in plot_types or plot_types=="all" and len(mean_normal_list)>0:
+        fig.savefig(os.path.join(out_folder, types["exp_test2"] + ext))
+
+    if types["exp_test3"] in plot_types or plot_types=="all" and len(mean_normal_list)>0:
+        # displaying forces and masks
+        nf = createFolder(os.path.join(out_folder, "exp_plots_forces"))
+        for i, m_exp in enumerate(mask_exp_list):
+            pl = copy.deepcopy(paras)
+            pl["dm"] = True
+            pl["mask_fm"] = m_exp.astype(bool)
+            pl["add_name"]="m_exp"+ str(i)
+            pl["out_folder"]=nf
+            try:
+                fig, ax = show_forces_forward(**pl)
+            except RecursionError:
+                pass
+
+    if types["exp_test4"] in plot_types or plot_types=="all" and len(mean_normal_list)>0:
         sub_folder_stress = createFolder(os.path.join(out_folder,"stresses"))
         sub_folder_force = createFolder(os.path.join(out_folder, "forces"))
         for i,(ms,mask_expand) in enumerate(zip(mean_normal_list,mask_exp_list)):
@@ -385,7 +429,7 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
             add_title(fig, types["norm_b"], at=at)
             display_mask(fig, mask, display_type=display_type, color="#FFEF00")
             display_mask(fig, mask_expand, display_type=display_type,color="C3")
-            fig.savefig(os.path.join(sub_folder_stress, types["exp_test"] + "%s"%str(i)+ ext))
+            fig.savefig(os.path.join(sub_folder_stress, types["exp_test4"] + "%s"%str(i)+ ext))
 
             fig, ax = show_quiver(fx_f, fy_f, figsize=figsize, scale_ratio=arrow_scale, filter=[0, 10], width=arrow_width, headlength=3,
                               headwidth=4,
@@ -395,7 +439,40 @@ def general_display(plot_types=[],mask=None,pixelsize=1,display_type="outline",f
             display_mask(fig, mask, display_type=display_type, color="#FFEF00", dm=dm)
             display_mask(fig, mask_expand, display_type=display_type, color="C3", dm=dm)
             plt.tight_layout()
-            fig.savefig(os.path.join(sub_folder_force, types["exp_test"] + "%s"%str(i)+ ext))
+            fig.savefig(os.path.join(sub_folder_force, types["exp_test4"] + "%s"%str(i)+ ext))
+
+    if types["exp_test5"] in plot_types or plot_types=="all" and len(mean_normal_list)>0:
+        pl = copy.deepcopy(paras)
+        pl["dm"] = False
+        pl["figsize"] = (np.mean(paras["figsize"])*mask.shape[1]/mask.shape[0],np.mean(paras["figsize"])*1.022*mask.shape[0]/mask.shape[1])
+        try:
+            fig, ax = show_forces_forward(**pl)
+            ax.set_xlim(-0.5,0.5+mask.shape[1])
+            ax.set_ylim(0.5 + mask.shape[0],-0.5)
+            add_title(fig, types["f_f"], at=at)
+
+            be = np.array(border_ex_test) * ps_new_ex
+
+            #display_mask(fig, mask_exp_list[0], display_type=display_type, color=mask_fm_color, d=np.sqrt(2), dm=True, lw=7)
+            max_id = np.argmax(be_avm_list)
+            #max_id=23
+            display_mask(fig, mask_exp_list[max_id], display_type=display_type, color=mask_fm_color, d=np.sqrt(2), dm=True, lw=7)
+            end_id=np.argmin(np.abs(be-vmax_x_ep))
+            display_mask(fig, mask_exp_list[end_id], display_type=display_type, color=mask_fm_color, d=np.sqrt(2),
+                         dm=True, lw=7)
+            display_mask(fig, mask, display_type=display_type, color="C1", dm=True, lw=7)
+            ax.set_position([0,0,1,1])
+            fig.set_frameon(False)
+            if ext==".svg":
+                fig.savefig(os.path.join(out_folder, types["exp_test5"] + ext))
+            else:
+                fig.savefig(os.path.join(out_folder, types["exp_test5"] + ext),dpi=300)
+
+
+        except RecursionError:
+            pass
+
+
 
 
 def show_exp_test(mean_normal_list=None,max_dict=None,mask_exp_list=None):

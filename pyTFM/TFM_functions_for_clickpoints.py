@@ -583,7 +583,7 @@ def get_contractillity_contractile_energy(frame, parameter_dict,res_dict, db,db_
 
 
 
-def traction_force(frame, parameter_dict,res_dict, db, db_info=None,masks=None,**kwargs):
+def traction_force(frame, parameter_dict, res_dict, db, db_info=None,masks=None,**kwargs):
 
     # trying to laod deformation
     u,v=try_to_load_deformation(db_info["path"], frame, warn=False)
@@ -597,14 +597,14 @@ def traction_force(frame, parameter_dict,res_dict, db, db_info=None,masks=None,*
                                pixelsize2=ps_new,
                                h=parameter_dict["h"], young=parameter_dict["young"],
                                sigma=parameter_dict["sigma"],
-                               filter="gaussian")
+                               filter="gaussian", fs=parameter_dict["filter_size"])
 
     if parameter_dict["TFM_mode"] == "infinite_thickness":
         tx, ty = ffttc_traction(u, v, pixelsize1=parameter_dict["pixelsize"],
                                                  pixelsize2=ps_new,
                                                  young=parameter_dict["young"],
                                                  sigma=parameter_dict["sigma"],
-                                                 filter="gaussian")
+                                                 filter="gaussian", fs=parameter_dict["filter_size"])
 
 
     # add a plot of the trackitoon filed to the database

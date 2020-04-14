@@ -18,7 +18,7 @@ from pyTFM.utilities_TFM import suppress_warnings
 
 
 
-def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="gaussian"):
+def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="gaussian", fs=None):
     '''
     fourier transform based calculation of the traction force. U and v must be given  as deformations in pixel. Size of
     these pixels must be the pixelsize (size of a pixel in the deformation field u or v). Note that thePiv deformation
@@ -106,20 +106,20 @@ def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="gaussian")
 
     #5.3) using filter
     if filter=="mean":
-        #tx_filter=uniform_filter(tx_cut,size=5)     # this would be non responsive to resolution of the image ### there should be a better way
-        #ty_filter=uniform_filter(ty_cut,size=5)
-        tx_filter = uniform_filter(tx_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
-        ty_filter = uniform_filter(ty_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
+        fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length,ax2_length)))/16)
+        tx_filter = uniform_filter(tx_cut, size=fs)
+        ty_filter = uniform_filter(ty_cut, size=fs)
     if filter == "gaussian":
-        tx_filter = gaussian_filter(tx_cut, sigma=int(np.max((ax1_length,ax2_length)))/50)
-        ty_filter = gaussian_filter(ty_cut, sigma=int(np.max((ax1_length,ax2_length)))/50)
+        fs = fs if isinstance(fs, (float,int)) else int(np.max((ax1_length,ax2_length)))/50
+        tx_filter = gaussian_filter(tx_cut, sigma=fs)
+        ty_filter = gaussian_filter(ty_cut, sigma=fs)
     if filter == "median":
-        tx_filter = median_filter(tx_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
-        ty_filter = median_filter(ty_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
+        fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length, ax2_length))) / 16)
+        tx_filter = median_filter(tx_cut, size=fs)
+        ty_filter = median_filter(ty_cut, size=fs)
     if not filter:
         tx_filter = tx_cut
         ty_filter = ty_cut
-    #show_quiver(tx_filter,ty_filter)
 
     return (tx_filter,ty_filter)
 
@@ -127,7 +127,7 @@ def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="gaussian")
 
 
 
-def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean"):
+def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "mean", fs=None):
     '''
      limiting case for h*k==0
     Xavier Trepat, Physical forces during collective cell migration, 2009
@@ -198,16 +198,17 @@ def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.
 
     #5.3) using filter
     if filter=="mean":
-        #tx_filter=uniform_filter(tx_cut,size=5)     # this would be non responsive to resolution of the image ### there should be a better way
-        #ty_filter=uniform_filter(ty_cut,size=5)
-        tx_filter = uniform_filter(tx_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
-        ty_filter = uniform_filter(ty_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
+        fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length,ax2_length)))/16)
+        tx_filter = uniform_filter(tx_cut, size=fs)
+        ty_filter = uniform_filter(ty_cut, size=fs)
     if filter == "gaussian":
-        tx_filter = gaussian_filter(tx_cut, sigma=int(np.max((ax1_length,ax2_length)))/50)
-        ty_filter = gaussian_filter(ty_cut, sigma=int(np.max((ax1_length,ax2_length)))/50)
+        fs = fs if isinstance(fs, (float,int)) else int(np.max((ax1_length,ax2_length)))/50
+        tx_filter = gaussian_filter(tx_cut, sigma=fs)
+        ty_filter = gaussian_filter(ty_cut, sigma=fs)
     if filter == "median":
-        tx_filter = median_filter(tx_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
-        ty_filter = median_filter(ty_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
+        fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length, ax2_length))) / 16)
+        tx_filter = median_filter(tx_cut, size=fs)
+        ty_filter = median_filter(ty_cut, size=fs)
     if not filter:
         tx_filter = tx_cut
         ty_filter = ty_cut
@@ -215,7 +216,7 @@ def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.
     return (tx_filter, ty_filter)
 
 
-def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "gaussian"):
+def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter = "gaussian", fs=None):
     '''
     FTTC with correction for finite substrate thikness according to
     Xavier Trepat, Physical forces during collective cell migration, 2009
@@ -230,6 +231,8 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
     :param sigma: poission ratio of the gel
     :param bf_image: give the brightfield image as an array before cells where removed
     :param filter: str, values: "mean","gaussian","median". Diffrent smoothing methods for the traction field.
+    :param fs: float, size of the filter (std of gaussian or size of the filter window) in µm
+     if fs
     :return: tx_filter,ty_filter: traction forces in x and y direction in Pa
     '''
 
@@ -299,40 +302,42 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
 
     #5.3) using filter
     if filter=="mean":
-        #tx_filter=uniform_filter(tx_cut,size=5)     # this would be non responsive to resolution of the image
-        #ty_filter=uniform_filter(ty_cut,size=5)
-        tx_filter = uniform_filter(tx_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
-        ty_filter = uniform_filter(ty_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
+        fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length,ax2_length)))/16)
+        tx_filter = uniform_filter(tx_cut, size=fs)
+        ty_filter = uniform_filter(ty_cut, size=fs)
     if filter == "gaussian":
-        tx_filter = gaussian_filter(tx_cut, sigma=int(np.max((ax1_length,ax2_length)))/50)
-        ty_filter = gaussian_filter(ty_cut, sigma=int(np.max((ax1_length,ax2_length)))/50)
+        fs = fs if isinstance(fs, (float,int)) else int(np.max((ax1_length,ax2_length)))/50
+        tx_filter = gaussian_filter(tx_cut, sigma=fs)
+        ty_filter = gaussian_filter(ty_cut, sigma=fs)
     if filter == "median":
-        tx_filter = median_filter(tx_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
-        ty_filter = median_filter(ty_cut, size=int(int(np.max((ax1_length,ax2_length)))/16))
+        fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length, ax2_length))) / 16)
+        tx_filter = median_filter(tx_cut, size=fs)
+        ty_filter = median_filter(ty_cut, size=fs)
     if not filter:
         tx_filter = tx_cut
         ty_filter = ty_cut
     #show_quiver(tx_filter,ty_filter)
     return (tx_filter, ty_filter)
 
-def TFM_tractions(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter ="gaussian"):
+def TFM_tractions(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter ="gaussian", fs=None):
     '''
     height correction breaks down due to numerical reasons at large gel height and small wavelengths of deformations.
     In this case the height corrected ffttc-function returns Nans. THis function falls back to the non height-corrected ffttc
     function if this happens
     :return:
     '''
+    fs = fs/pixelsize2 # translate the filter size to pixels of traction field
     if isinstance(h,(int,float)):
         with suppress_warnings(RuntimeWarning):
             tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, h=h, young=young,
-                                                             sigma=sigma, filter=filter)    # unit is N/m**2
+                                                             sigma=sigma, filter=filter, fs=fs)    # unit is N/m**2
         # fails for large substrate heights --> falling back to infinite height assumption
         if np.isnan(tx).all() and np.isnan(ty).all():
             tx, ty = ffttc_traction(u, v, pixelsize1 = pixelsize1, pixelsize2 = pixelsize2, young=young, sigma=sigma,
-                                    filter=filter)
+                                    filter=filter, fs=fs)
     elif h=="infinite":
         tx, ty = ffttc_traction(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, young=young, sigma=sigma,
-                                filter=filter)
+                                filter=filter, fs=fs)
     else:
         raise ValueError("illegal value for h")
     return tx, ty

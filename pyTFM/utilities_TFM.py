@@ -226,9 +226,11 @@ def createFolder(directory):
     '''
     try:
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            nd = os.makedirs(directory)
     except OSError:
         print('Error: Creating directory. ' + directory)
+
+    return directory
 
 def exclude_by_key(d,ex_list):
     ex_dict = {key: values for key, values in d.items() if

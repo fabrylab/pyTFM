@@ -154,11 +154,11 @@ def standard_measures(mask,pixelsize_tract=1,pixelsize_og=1,mean_normal_list=Non
 
     mask=mask.astype(bool)
     mask_exp=binary_dilation(mask,iterations=15) #           addapt to
-    global cont_energy_b, cont_energy_f, contractile_force_b,contractile_force_f,\
-        mean_normal_stress_b, mean_normal_stress_f,mean_shear_b,mean_shear_f,avg_normal_stress_be,rel_av_norm_stress
+    global cont_energy_b,cont_energy_f,contractile_force_b,contractile_force_f,\
+        mean_normal_stress_b,mean_normal_stress_f,mean_shear_b,mean_shear_f,avg_normal_stress_be
 
     cont_energy_b, cont_energy_f, contractile_force_b, contractile_force_f,\
-       mean_normal_stress_b, mean_normal_stress_f, mean_shear_b, mean_shear_f,avg_normal_stress,rel_av_norm_stress=[None for i in range(10)]
+       mean_normal_stress_b, mean_normal_stress_f, mean_shear_b, mean_shear_f,avg_normal_stress=[None for i in range(9)]
 
     # suppress is equivalent to try and expect...pass
     with suppress(TypeError, NameError): shear_f=stress_tensor_f[:, :, 0, 1] / (pixelsize_tract )  # shear component of the stress tensor
@@ -185,9 +185,6 @@ def standard_measures(mask,pixelsize_tract=1,pixelsize_og=1,mean_normal_list=Non
 
     with suppress(TypeError, NameError):
         avg_normal_stress_be=[np.nanmean(ms[mask]) for ms in mean_normal_list]
-    with suppress(TypeError, NameError):
-        rel_av_norm_stress = [x /mean_normal_stress_b for x in avg_normal_stress_be]
-
 
     return mask_exp
     #return mean_normal_stress,mean_shear,cont_energy,contractile_force
@@ -249,7 +246,6 @@ def compare_scalar_fields(f1,f2,plot_diffrence=False):
         axs[1,1].axis("off")
         plt.show()
     return res
-
 def full_field_comparision():
     res_dict={}
     with suppress(NameError): res_dict["forces"]=compare_scalar_fields(np.sqrt(fx_b**2+fy_b**2),np.sqrt(fx_f**2+fy_f**2))
@@ -403,10 +399,11 @@ def load_exp_border(exp_range=[],out_folder=None):
     return stress_tensors, mean_normal_list, mask_exp_list
 
 
+
 def exp_border_real_data():
     out_folder = "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_paper_rd_expansion"
     createFolder(out_folder)
-    border_ex_test=(list(range(0,80,1)))
+    border_ex_test=(list(range(0,100,2)))
     f_type = "non-circular"
     young = 1
     h = 100
@@ -416,13 +413,11 @@ def exp_border_real_data():
     db = clickpoints.DataFile(os.path.join(folder,"database.cdb"), "r")
     mask = db.getMask(frame=2).data == 3
     db.db.close()
-    fx_f, fy_f =np.load(os.path.join(out_folder,"u.npy")), np.load(os.path.join(out_folder,"v.npy"))
+    fx_f, fy_f =np.load(os.path.join(out_folder,"03u.npy")), np.load(os.path.join(out_folder,"03v.npy"))
     mask = interpolation(mask, dims=fx_f.shape, min_cell_size=100)
     mask = binary_fill_holes(mask)
-
+    np.save(os.path.join(out_folder,"mask.npy"), mask)
     stress_tensors, mean_normal_list, mask_exp_list = exp_border(exp_range=border_ex_test, fx_f=fx_f, fy_f=fy_f, mask=mask, out_folder=out_folder, method="binary_dilation")
-    stress_tensors, mean_normal_list, mask_exp_list = load_exp_border(exp_range=border_ex_test,out_folder=out_folder)
-
 
     stress_tensor_b=stress_tensors[0]
     max_dict = get_max_values(fx_f=fx_f, fy_f=fy_f, stress_tensor_b=stress_tensor_b,
@@ -445,40 +440,32 @@ def exp_border_real_data():
                     fx_f=fx_f,fy_f=fy_f,mask_exp=mask_exp,scalar_comaprisons=scalar_comaprisons,border_ex_test=border_ex_test,plot_gt_exp=False)
     plt.close("all")
 
-
-
-def cut_arrays(fill,arrs):
+def cut_arrays(fill,*args):
     ret_list=[]
-    for ar in arrs:
-        if isinstance(ar,np.ndarray):
-            ret_list.append(ar[fill[0]:fill[1], fill[2]:fill[3]])
-        else:
-            ret_list.append(None)
-
+    for ar in args:
+        ret_list.append(ar[fill[0]:fill[1],fill[2]:fill[3]])
     return ret_list
 
-#exp_border_real_data()
-if __name__ == "__main__":
-    out_folder = "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_paper_expansion5"
-    createFolder(out_folder)
+exp_border_real_data()
+if __name__=="_main__":
+    out_folder = "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_paper_expansion"
     young = 1
     h = 100
     pixelsize = 1
-    border_ex_test = list(range(150,350,4))
+    border_ex_test = list(range(150,230))
     filter = "gaussian"
     exp_method = "manual"
     f_type = "circular"  # display_option
-    mask = setup_geometry(im_shape=(450, 450), shape_size=150, shape="rectangle")
-    np.save(os.path.join(out_folder, "mask.npy"), mask)
-    mask_fem = expand_mask(mask, 150, mask.shape, method= "manual")  # highest aggreement (not completely sure
+    mask = setup_geometry(im_shape=(300, 300), shape_size=150, shape="rectangle")
+    mask_fem = expand_mask(mask, 185, mask.shape, method= "manual")  # highest aggreement (not completely sure
     stress_tensor_b = setup_stress_field(mask, distribution="uniform", sigma_n=1, sigma_shear=0,
                                          sigma_gf=6)
     fx_b, fy_b = traction_from_stress(stress_tensor_b, pixelsize, plot=False, grad_type="diff1")
 
     u_b, v_b = finite_thickness_convolution(fx_b, fy_b, pixelsize, h, young, sigma=0.5,
-                                           kernel_size=None)  # somwhat of an approximation
+                                            kernel_size=None)  # somwhat of an approximation
 
-    #createFolder(out_folder)
+    createFolder(out_folder)
     np.save(os.path.join(out_folder, "u_b.npy"), u_b)
     np.save(os.path.join(out_folder, "v_b.npy"), v_b)
     u_b, v_b = np.load(os.path.join(out_folder, "u_b.npy")), np.load(os.path.join(out_folder, "v_b.npy"))
@@ -491,7 +478,7 @@ if __name__ == "__main__":
                                   filter=filter)  # assuming pixelsize == 1
 
     # stress from tractions
-    UG_sol, stress_tensor_f = stress_wrapper(mask_fem, fx_f, fy_f, young, sigma=0.5, fs=6)
+    UG_sol, stress_tensor_f = stress_wrapper(mask_fem, fx_f, fy_f, young, sigma=0.5)
     np.save(os.path.join("/home/user/Desktop/", "stress_tensor_f.npy"), stress_tensor_f)
     np.save(os.path.join(out_folder, "stress_tensor_f.npy"), stress_tensor_f)
     stress_tensor_f = np.load(os.path.join(out_folder, "stress_tensor_f.npy"))
@@ -509,7 +496,6 @@ if __name__ == "__main__":
     save_arr = np.array([np.round(np.array(avg_normal_stress_be),5),np.array(border_ex_test)]).T
     np.savetxt(os.path.join(out_folder,"avg_norm_stress.txt"), save_arr, fmt="%.5f", delimiter=",")
 
-
     mask_fm = binary_dilation(mask, iterations=25)
     scalar_comaprisons = full_field_comparision()  # r gives  mostly the spatial distribution
     del scalar_comaprisons["forces"]
@@ -518,13 +504,12 @@ if __name__ == "__main__":
 
     # cutting to ignore effects close to image edge #### mention this when talking to benn
     fx_b, fy_b, fx_f, fy_f, stress_tensor_b, stress_tensor_f, mask, mask_fem, mask_fm = cut_arrays([20, -20, 20, -20],
-                                                                                                   [fx_b, fy_b, fx_f,
+                                                                                                   fx_b, fy_b, fx_f,
                                                                                                    fy_f,
                                                                                                    stress_tensor_b,
                                                                                                    stress_tensor_f,
                                                                                                    mask, mask_fem,
-                                                                                                   mask_fm])
-    mask_exp_list=cut_arrays([20, -20, 20, -20], mask_exp_list)
+                                                                                                   mask_fm)
     max_dict = get_max_values(u_b, v_b, fx_f, fy_f, fx_b, fy_b, stress_tensor_b,
                               exp_test=len(border_ex_test) > 0, mean_normal_list=mean_normal_list)
 
@@ -537,15 +522,14 @@ if __name__ == "__main__":
     # ,"test for border expansion"])
     # plot_types = [ "forces_backward", "full_stress_tensor_backward"]
     plot_types = ["correlation", "key measures", "mean_normal_stress_backward", "mean_normal_stress_forward",
-                  "forces_forward", "forces_backward", "mask_outline", "cbars_only", "test for border expansion"]
+                  "forces_forward", "forces_backward", "mask_outline", "cbars_only"]
     #plot_types = ["correlation", "cbars_only"]
     #max_dict["force"] = 1
 
     general_display(plot_types=plot_types, mask=mask, pixelsize=pixelsize, max_dict=max_dict, f_type=f_type,
                     out_folder=out_folder, cmap="coolwarm", fx_b=fx_b, fy_b=fy_b,
                     fx_f=fx_f, fy_f=fy_f, mask_fm=mask_fm, mask_fem=mask_fem, scalar_comaprisons=scalar_comaprisons,
-                    border_ex_test=border_ex_test, be_avm_list=rel_av_norm_stress, mask_exp_list=mask_exp_list,
-                    mean_normal_list=mean_normal_list, stress_tensor_f=stress_tensor_f,
+                    border_ex_test=border_ex_test, stress_tensor_f=stress_tensor_f,
                     stress_tensor_b=stress_tensor_b, key_values=key_values, plot_gt_exp=False, dm=False, at=False,
                     cb=False)
 
