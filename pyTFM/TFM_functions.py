@@ -319,14 +319,14 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
     #show_quiver(tx_filter,ty_filter)
     return (tx_filter, ty_filter)
 
-def TFM_tractions(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter ="gaussian", fs=None):
+def TFM_tractions(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.49, filter ="gaussian", fs=6):
     '''
     height correction breaks down due to numerical reasons at large gel height and small wavelengths of deformations.
     In this case the height corrected ffttc-function returns Nans. THis function falls back to the non height-corrected ffttc
     function if this happens
     :return:
     '''
-    fs = fs/pixelsize2 # translate the filter size to pixels of traction field
+    fs = fs/pixelsize2 if isinstance(fs, (int,float)) else None # translate the filter size to pixels of traction field
     if isinstance(h,(int,float)):
         with suppress_warnings(RuntimeWarning):
             tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, h=h, young=young,
