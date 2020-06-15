@@ -13,7 +13,7 @@ sys.path.insert(0, '/media/user/GINA1-BK/Andreas-Python/tracktion_force_microsco
 from pyTFM.TFM_functions import *
 from pyTFM.plotting import *
 from scipy.ndimage.morphology import distance_transform_edt
-from scipy.signal import convolve2d
+from scipy.signal import convolve2d, fftconvolve
 from skimage.filters import gaussian
 import threading, queue
 
@@ -369,7 +369,7 @@ def infinite_thickness_convolution(fx,fy,pixelsize,young,sigma,kernel_size=None,
 
 
 
-def finite_thickness_convolution(fx, fy,pixelsize, h, young, sigma=0.5,kernel_size=None,force_shift=0):
+def finite_thickness_convolution(fx, fy,pixelsize, h, young, sigma=0.5, kernel_size=None, force_shift=0, method="fftconvolve"):
     '''
     convolution with the greens tensor for finite thikness calculation
     :param fx: forces in x direction
@@ -385,15 +385,23 @@ def finite_thickness_convolution(fx, fy,pixelsize, h, young, sigma=0.5,kernel_si
     fy = fy.astype(np.float128)
 
     # greens tensor, As are central elements of the tensor
-    ([K1, K2, K3, K4, K5, K6, K7, K8, K9], [A1, A2, A3, A4])= finite_thickness_convolution_greens_tensor(fx,
-                                                            fy,pixelsize, h, young, sigma=0.5,kernel_size=None,force_shift=force_shift)
+    ([K1, K2, K3, K4, K5, K6, K7, K8, K9], [A1, A2, A3, A4]) = finite_thickness_convolution_greens_tensor(fx,
+                                                            fy,pixelsize, h, young, sigma=sigma,kernel_size=kernel_size,force_shift=force_shift)
     #deformation by convolution with the kernels
     #v1,v2,v3,v4 = execute_as_thread([convolve2d]*4,[(fx, K1),(fy, K2),(fx, K4),(fx, K4),fy, K5],[{"mode":"same", "boundary":"fill", "fillvalue":0}]*4)
 
     #def_x=v1+v2
-    #def_y=v3+v4
-    def_x = convolve2d(fx, K1, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K2, mode="same", boundary="fill", fillvalue=0)
-    def_y = convolve2d(fx, K4, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K5, mode="same", boundary="fill", fillvalue=0)
+    #def_y=v3+v2
+    if method=="convolve2d":
+        def_x = convolve2d(fx, K1, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K2, mode="same",
+                                                                                           boundary="fill", fillvalue=0)
+        def_y = convolve2d(fx, K4, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K5, mode="same",
+                                                                                           boundary="fill", fillvalue=0)
+    if method=="fftconvolve": # this is always nearly faster and better??
+        def_x = fftconvolve(fx, K1, mode="same") + fftconvolve(fy, K2, mode="same")
+        def_y = fftconvolve(fx, K4, mode="same") + fftconvolve(fy, K5, mode="same")
+
+    #def_z = convolv
     #def_z = convolve2d(fx, K7, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K8, mode="same", boundary="fill", fillvalue=0)
 
     return def_x,def_y,#def_z
@@ -455,3 +463,31 @@ def finite_thickenss_convolution_only(fx,fy,greens_tensor):
     def_y = convolve2d(fx, K4, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K5, mode="same", boundary="fill", fillvalue=0)
     def_z = convolve2d(fx, K7, mode="same", boundary="fill", fillvalue=0) + convolve2d(fy, K8, mode="same", boundary="fill", fillvalue=0)
     return def_x,def_y,def_z
+
+
+def deformation_by_upsampling(fx, fy, factor, pixelsize=1, sigma=0.5, young=1, h=100, kernel_size=(30,30),method="convolve2d"):
+   # org_size=fx.shape[0] # only squared shapes
+    fxn, fyn = np.zeros((fx.shape[0] * factor, fx.shape[1] * factor)), np.zeros((fx.shape[0]  * factor, fx.shape[1]  * factor))
+    # represent g forces by stretches
+    fx_pos = np.array(np.where(fx != 0)).T
+    fx_stretch = np.array([fx_pos[:, 0] - 0.5, fx_pos[:, 0] + 0.5, fx_pos[:, 1] - 0.5, fx_pos[:, 1] + 0.5]).T
+    fy_pos = np.array(np.where(fy != 0)).T
+    fy_stretch = np.array([fy_pos[:, 0] - 0.5, fy_pos[:, 0] + 0.5, fy_pos[:, 1] - 0.5, fy_pos[:, 1] + 0.5]).T
+    # positions of forces in expanded array
+    fxnp = np.array([np.meshgrid(np.linspace(sx1 * factor, sx2 * factor - 1, factor),
+                                 np.linspace(sy1 * factor, sy2 * factor - 1, factor)) for sx1, sx2, sy1, sy2 in
+                     fx_stretch]).astype(int)
+    fynp = np.array([np.meshgrid(np.linspace(sx1 * factor, sx2 * factor - 1, factor),
+                                 np.linspace(sy1 * factor, sy2 * factor - 1, factor)) for sx1, sx2, sy1, sy2 in
+                     fy_stretch]).astype(int)
+    for p, stretch in zip(fx_pos, fxnp):
+        fxn[stretch[0], stretch[1]] = fx[p[0], p[1]] / (factor ** 2)
+    for p, stretch in zip(fy_pos, fynp):
+        fyn[stretch[0], stretch[1]] = fy[p[0], p[1]] / (factor ** 2)
+
+    # calcualte deformation
+    u, v = finite_thickness_convolution(fxn, fyn, pixelsize / factor, h, young, sigma=sigma,
+                                        kernel_size=kernel_size, method=method)  # somwhat of an approximation
+    all_pos = np.array(np.meshgrid(np.arange(fx.shape[0]), np.arange(fx.shape[1] ),indexing="ij")).astype(int) * factor
+    ub, vb = u[all_pos[0], all_pos[1]], v[all_pos[0], all_pos[1]]
+    return ub, vb

@@ -95,14 +95,15 @@ def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="gaussian",
     #4.1) calculate tractions in fourrier space T=K⁻¹*U, U=[u,v]  here with individual matrix elelemnts..
     tx_ft = kix * u_ft  +  kid * v_ft
     ty_ft = kid * u_ft  +  kiy * v_ft
-    ##plt.imshow(tx_ft.real)
-    #4.2) go back to real space
-    tx=np.fft.ifft2(tx_ft).real
-    ty=np.fft.ifft2(ty_ft).real
 
-    #5.2) cut back to oringinal shape
-    tx_cut=tx[0:ax1_length,0:ax2_length]
-    ty_cut=ty[0:ax1_length,0:ax2_length]
+    #4.2) go back to real space
+    tx = np.fft.ifft2(tx_ft).real
+    ty = np.fft.ifft2(ty_ft).real
+
+        # 5.2) cut back to oringinal shape
+    tx_cut = tx[0:ax1_length, 0:ax2_length]
+    ty_cut = ty[0:ax1_length, 0:ax2_length]
+
 
     #5.3) using filter
     if filter=="mean":
@@ -117,7 +118,7 @@ def ffttc_traction(u,v,pixelsize1,pixelsize2,young,sigma=0.49,filter="gaussian",
         fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length, ax2_length))) / 16)
         tx_filter = median_filter(tx_cut, size=fs)
         ty_filter = median_filter(ty_cut, size=fs)
-    if not filter:
+    if not isinstance(filter, str):
         tx_filter = tx_cut
         ty_filter = ty_cut
 
@@ -209,7 +210,7 @@ def ffttc_traction_pure_shear(u, v, pixelsize1, pixelsize2, h, young, sigma = 0.
         fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length, ax2_length))) / 16)
         tx_filter = median_filter(tx_cut, size=fs)
         ty_filter = median_filter(ty_cut, size=fs)
-    if not filter:
+    if not isinstance(filter, str):
         tx_filter = tx_cut
         ty_filter = ty_cut
     #show_quiver(tx_filter,ty_filter)
@@ -237,8 +238,8 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
     '''
 
      # 0) substracting mean(better name for this step)
-    u_shift = (u - np.mean(u))*pixelsize1  # also try without dis
-    v_shift = (v - np.mean(v))*pixelsize1
+    u_shift = (u - np.mean(u)) * pixelsize1
+    v_shift = (v - np.mean(v)) * pixelsize1
 
     ## bens algortithm:
     # 1)Zero padding to get sqauerd array with even index number
@@ -301,7 +302,7 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
     ty_cut = ty[max_ind - ax1_length:max_ind, max_ind - ax2_length:max_ind]
 
     #5.3) using filter
-    if filter=="mean":
+    if filter == "mean":
         fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length,ax2_length)))/16)
         tx_filter = uniform_filter(tx_cut, size=fs)
         ty_filter = uniform_filter(ty_cut, size=fs)
@@ -313,7 +314,7 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
         fs = fs if isinstance(fs, (float, int)) else int(int(np.max((ax1_length, ax2_length))) / 16)
         tx_filter = median_filter(tx_cut, size=fs)
         ty_filter = median_filter(ty_cut, size=fs)
-    if not filter:
+    if not isinstance(filter,str):
         tx_filter = tx_cut
         ty_filter = ty_cut
     #show_quiver(tx_filter,ty_filter)
@@ -373,7 +374,7 @@ def calculate_deformation(im1,im2,window_size=64,overlap=32,std_factor=20):
         frame_b = im2
 
     u, v, sig2noise = openpiv.process.extended_search_area_piv( frame_a, frame_b, window_size=window_size, overlap=overlap,
-                                                                dt=1,subpixel_method="gaussian", search_area_size=window_size, sig2noise_method='peak2peak' )
+                                                                dt=1, subpixel_method="gaussian", search_area_size=window_size, sig2noise_method='peak2peak' )
 
     u, v, mask = openpiv.validation.sig2noise_val( u, v, sig2noise, threshold = 1.05 )
 

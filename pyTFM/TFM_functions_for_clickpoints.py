@@ -388,7 +388,7 @@ def add_plot(plot_type, values, plot_function,frame, db_info, parameter_dict,db)
 
 
 
-def calc_on_area(frame,res_dict,parameter_dict,label,masks,mask_types=None,obj_ids=[],x=None,y=None,sumtype="abs",add_cut_factor=None,db_info=None):
+def calc_on_area(frame, res_dict, parameter_dict, label,masks, mask_types=None, obj_ids=[], x=None, y=None, sumtype="abs", add_cut_factor=None, db_info=None):
     fill_holes=True if parameter_dict["FEM_mode"]=="colony" else False
     mask_iter=masks.reconstruct_masks_frame(frame, mask_types,obj_ids=obj_ids, raise_error=False, fill_holes=fill_holes)
     for obj_id,mask,mtype,warn in mask_iter:
@@ -410,9 +410,9 @@ def calc_on_area(frame,res_dict,parameter_dict,label,masks,mask_types=None,obj_i
             res_dict[frame]["%s of %s" % (label, label2)].append([obj_id,area,warn])
         if sumtype=="cv":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
-            ps_new=parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"][frame]) / np.array(x.shape))
-            border_pad=int(np.round(parameter_dict["cv_pad"]/ps_new))
-            res_dict[frame]["%s of %s" % (label, label2)].append([obj_id,coefficient_of_variation(mask_int, x, border_pad),warn])
+            ps_new = parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"][frame]) / np.array(x.shape))
+            border_pad = int(np.round(parameter_dict["cv_pad"]/ps_new))
+            res_dict[frame]["%s of %s" % (label, label2)].append([obj_id, coefficient_of_variation(mask_int, x, border_pad),warn])
 
 
 def general_properties(frame, parameter_dict,res_dict, db,db_info=None,masks=None, **kwargs):
@@ -597,14 +597,14 @@ def traction_force(frame, parameter_dict, res_dict, db, db_info=None,masks=None,
                                pixelsize2=ps_new,
                                h=parameter_dict["h"], young=parameter_dict["young"],
                                sigma=parameter_dict["sigma"],
-                               filter="gaussian", fs=parameter_dict["filter_size"])
+                               filter=parameter_dict["filter_type"], fs=parameter_dict["filter_size"])
 
     if parameter_dict["TFM_mode"] == "infinite_thickness":
         tx, ty = ffttc_traction(u, v, pixelsize1=parameter_dict["pixelsize"],
                                                  pixelsize2=ps_new,
                                                  young=parameter_dict["young"],
                                                  sigma=parameter_dict["sigma"],
-                                                 filter="gaussian", fs=parameter_dict["filter_size"])
+                                                 filter=parameter_dict["filter_type"], fs=parameter_dict["filter_size"])
 
 
     # add a plot of the trackitoon filed to the database
@@ -837,39 +837,20 @@ if __name__=="__main__":
     ## setting up necessary paramteres
     #db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/andy/Desktop/KOshift/database.cdb", "r")
+        "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/KOshift/database.cdb", "r")
     parameter_dict = default_parameters
-    res_dict=defaultdict(lambda: defaultdict(list))
+    res_dict = defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
-    parameter_dict["overlapp"]=16
-    parameter_dict["window_size"] = 20
-    parameter_dict["FEM_mode"] = "colony"
-    parameter_dict["min_line_length"] = 10
-        #parameter_dict["FEM_mode"] = "colony"
-    default_fig_parameters["cmap"]="coolwarm"
-    default_fig_parameters["resolution"] = 200
-        #default_fig_parameters["vmax"] = {"traction":500,"FEM_borders":0.03}
-        #default_fig_parameters["filter_factor"]=1.5
-        #default_fig_parameters["scale_ratio"] = 0.15
-        #default_fig_parameters["cbar_style"] = "clickpoints"
-        #default_fig_parameters["background_color"]="white"
-        #default_fig_parameters["plots"]["colony"].append("energy_points")
-
-        #default_fig_parameters["headwidth"] = 3
-        #default_fig_parameters["width"] = 0.003
-        #default_fig_parameters["cbar_tick_label_size"] = 35
-        #default_fig_parameters["cbar_axes_fraction"] = 0.25
-    #
-    #mask_membrane = masks.reconstruct_mask("01", 0, "membrane", raise_error=True)
-
-
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12",
+    default_fig_parameters["cmap"] = "coolwarm"
+    parameter_dict["overlapp"] = 10
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
                                                db_info=db_info, masks=None)
 
 
-
-
-
+    #parameter_dict["filter_type"]=None
+   # default_fig_parameters["file_names"]["traction"] = "t_none.png"
+   # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="12",
+    #                                       db_info=db_info, masks=None)
 
 '''
     ###### problem: produces empty entries when try to acces non-exisitng str

@@ -251,7 +251,7 @@ def calculate_stress_tensor(S_nodes,nodes,dims=None):
     return stress_tensor
 
 
-def coefficient_of_variation(mask,x,border_pad=0):
+def coefficient_of_variation(mask, x, border_pad=0):
     # leave some space away from the edge
     mask_cp=copy.deepcopy(mask)
     if border_pad > 0:

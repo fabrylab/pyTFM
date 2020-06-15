@@ -939,12 +939,20 @@ def calculate_rotation(a1, a2, mask):
     c_x, c_y = np.meshgrid(range(mask.shape[1]), range(mask.shape[0]))
     r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
     r[:, :, 1] = c_y
-    com=(np.mean(r[:,:,0][mask]),np.mean(r[:,:,1][mask]))
+    com = (np.mean(r[:,:,0][mask]),np.mean(r[:,:,1][mask]))
     r = r - np.array(com)
     r[~mask] = 0
     d[:, :, 0][mask] = dx[mask].flatten()  # note maybe its also enough to chose any point as refernece point
     d[:, :, 1][mask] = dy[mask].flatten()
     return np.sum(np.cross(r, d, axisa=2, axisb=2))
+
+# applying rotation
+def rot_displacement(p, r, r_n):
+    r_n[:, :, 0] = + np.cos(p) * (r[:, :, 0]) - np.sin(p) * (r[:, :, 1])  # rotation of postional vectors
+    r_n[:, :, 1] = + np.sin(p) * (r[:, :, 0]) + np.cos(p) * (r[:, :, 1])
+    disp = r - r_n
+    return disp  # norma error measure
+
 
 
 def correct_rotation(def_x, def_y, mask):
@@ -974,12 +982,7 @@ def correct_rotation(def_x, def_y, mask):
     d[:,:, 0][mask]= def_xc1[mask].flatten()  # note maybe its also enough to chose any point as refernece point
     d[:, :, 1][mask] = def_yc1[mask].flatten()
 
-    # applying rotation
-    def rot_displacement(p):
-        r_n[:, :, 0] = + np.cos(p) * (r[:, :, 0]) - np.sin(p) * (r[:, :, 1])  # rotation of postional vectors
-        r_n[:, :, 1] = + np.sin(p) * (r[:, :, 0]) + np.cos(p) * (r[:, :, 1])
-        disp = r - r_n
-        return disp  # norma error measure
+
 
     # fit to corect rotation
     def displacement_error(p):
@@ -995,7 +998,7 @@ def correct_rotation(def_x, def_y, mask):
                       max_nfev=100000000, xtol=3e-32, ftol=3e-32, gtol=3e-32, args=())["x"]  # trust region algorithm,
     ## note only works if displacement can be reached in "one rotation!!!!
     # get the part of displacement originating form a rotation of p
-    d_rot = rot_displacement(p)
+    d_rot = rot_displacement(p, r, r_n)
     d_n[mask] = d[mask] - d_rot[mask]  # correcting this part of rotation
     return d_n[:, :, 0], d_n[:, :, 1], trans,p
 
@@ -1061,7 +1064,7 @@ def custom_solver(mat, rhs, mask_area,nodes,IBC,verbose=False):
     r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
     r[:, :, 1] = c_y
     nodes_xy_ordered,x_points,y_points=find_eq_position(nodes, IBC, len_disp) # solidspy function that is used to construct the loads vector (rhs)
-    r=r[nodes_xy_ordered[:,1],nodes_xy_ordered[:,0],:] # ordering r in the same order as rhs
+    r = r[nodes_xy_ordered[:,1],nodes_xy_ordered[:,0],:] # ordering r in the same order as rhs
     r = r - np.array(com)
 
     zero_disp_x[x_points] = 1

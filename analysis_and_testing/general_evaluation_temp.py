@@ -30,9 +30,9 @@ from scipy.ndimage.morphology  import distance_transform_edt
 from itertools import product
 
 
-def traction_wrapper(u, v, pixelsize, h, young,mask=None, filter="gaussian"):
-    tx, ty = TFM_tractions(u, v, pixelsize1=pixelsize, pixelsize2=pixelsize, h=h,
-                           young=young, sigma=0.49, filter=filter)
+def traction_wrapper(u, v, pixelsize, h, young,mask=None, filter="gaussian",fs=6):
+    tx, ty = TFM_tractions(u, v, pixelsize1=pixelsize, pixelsize2=pixelsize,h=h,
+                           young=young, sigma=0.49, filter=filter, fs=fs)
     fx, fy = tx*(pixelsize**2), ty*(pixelsize**2)
     check_unbalanced_forces(fx, fy)
     fx_corr, fy_corr = force_and_torque_correction(fx, fy, mask)  # correct forces
@@ -401,19 +401,22 @@ def load_exp_border(exp_range=[],out_folder=None):
 
 
 def exp_border_real_data():
-    out_folder = "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_paper_rd_expansion"
+    out_folder = "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_paper_rd_expansion_fs3"
     createFolder(out_folder)
     border_ex_test=(list(range(0,100,2)))
     f_type = "non-circular"
     young = 1
     h = 100
     pixelsize = 1
+    filter="gaussian"
     #  retrieving clickpoints mask and traction forces
     folder="/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/KOshift/"
     db = clickpoints.DataFile(os.path.join(folder,"database.cdb"), "r")
     mask = db.getMask(frame=2).data == 3
     db.db.close()
-    fx_f, fy_f =np.load(os.path.join(out_folder,"03u.npy")), np.load(os.path.join(out_folder,"03v.npy"))
+    u, v = np.load(os.path.join(out_folder,"u.npy")), np.load(os.path.join(out_folder,"v.npy"))
+    fx_f, fy_f = traction_wrapper(u, v, pixelsize, h, young, mask=mask,
+                                  filter="gaussian", fs=3) # this filtersize is equal to 3*0.85 ~3.5 µm for real data
     mask = interpolation(mask, dims=fx_f.shape, min_cell_size=100)
     mask = binary_fill_holes(mask)
     np.save(os.path.join(out_folder,"mask.npy"), mask)

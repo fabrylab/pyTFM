@@ -27,6 +27,7 @@ default_parameters={
                         # contractile energy on them. In "colony" you select the area of a colony and draw cell borders. These
                         # borders are used to analyze stresses along these borders.
     "filter_size": 6, # size (sigma) of the gauss filter applied to the traction field in µm.
+    "filter_type": "gaussian",  # size (sigma) of the gauss filter applied to the traction field in µm.
     "min_obj_size": 1500, # all objects (cell patches/ isolated cells) below this size (in pixel) will be ignored
     "min_line_length": 0, # small lines below this value are filtered out. This is mainly for cosmetic reasons, as small
     # lines won't contribute much to the average line tension anyway
