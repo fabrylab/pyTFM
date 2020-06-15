@@ -4,4 +4,4 @@ pyTFM is a python package that allows you to analyze force generation and stress
 also includes the line tension, a measure for the force transfer exclusively across cell-cell boundaries. 
 pyTFM includes an addon for the image annotation tool [clickpoints](https://clickpoints.readthedocs.io/en/latest/) allowing you to quickly analyze and vizualize large datasets.
 
-Please refer to the [Documentation](https://pytfm.readthedocs.io/en/latest/) of pyTFm for detailed instructions on installation and usage.
+Please refer to the [Documentation](https://pytfm.readthedocs.io/en/latest/) of pyTFM for detailed instructions on installation and usage.
