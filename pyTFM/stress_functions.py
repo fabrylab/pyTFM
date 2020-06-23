@@ -267,7 +267,7 @@ def all_stress_measures(st, px_size=1):
     # principal (normal stresses)
     sigma_max = (sig_x + sig_y) / 2 + np.sqrt(((sig_x - sig_y) / 2) ** 2 + tau_xy ** 2)
     sigma_min = (sig_x + sig_y) / 2 - np.sqrt(((sig_x - sig_y) / 2) ** 2 + tau_xy ** 2)
-    sigma_max_abs = np.maxium(np.abs(sigma_max, sigma_max))
+    sigma_max_abs = np.maximum(np.abs(sigma_max), np.abs(sigma_min))
     # maximum shear stress
     tau_max = np.sqrt(((sig_x - sig_y) / 2) ** 2 + tau_xy ** 2)
     # angle of maximal principal stress

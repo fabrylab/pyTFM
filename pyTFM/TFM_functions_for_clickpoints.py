@@ -864,18 +864,17 @@ if __name__ == "__main__":
     ## setting up necessary paramteres
     # db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
     db = clickpoints.DataFile(
-        "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/KOshift/database.cdb",
-        "r")
+        "/home/andy/Desktop/KOshift/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict = defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
     default_fig_parameters["cmap"] = "coolwarm"
-    parameter_dict["overlapp"] = 10
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
+    parameter_dict["overlapp"] = 17
+    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
+   #                                            db_info=db_info, masks=None)
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="12",
                                                db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="01",
-                                               db_info=db_info, masks=masks)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="01",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12",
                                                db_info=db_info, masks=masks)
 
     # parameter_dict["filter_type"]=None

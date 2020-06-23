@@ -6,7 +6,7 @@ import platform
 
 
 
-install_requires=['numpy' ,'cython','openpiv==0.20.8',
+install_requires=['numpy' ,'cython','openpiv',
 		      'scipy', 'scikit-image', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy','clickpoints >= 1.9.0']
 
 version='1.2' # adding a version file automatically
@@ -24,7 +24,7 @@ try:
 		print(local_openpiv)
 		if os.system("pip install "+ local_openpiv)!=0: # checking if exit code 0 (successfull)
 			raise Exception
-		install_requires.remove('openpiv==0.20.8')
+		install_requires.remove('openpiv')
 except Exception as e:
 	print('\033[91m' + "Failed to install openpiv from local files")
 	print("Error:", e)
