@@ -1,11 +1,11 @@
 # all function concerning clauclation of stress measures (maximum principal stress, stress vectors) also calcualtion of nomral vectors on diffrent
 # line representations
+from itertools import product
+
 from pyTFM.graph_theory_for_cell_boundaries import *
 from pyTFM.utilities_TFM import exclude_by_key
 from scipy.interpolate import splev, interp2d
-from itertools import product
 from scipy.ndimage import binary_erosion
-from pyTFM.utilities_TFM import round_flexible
 
 
 def order_points(graph, points):
@@ -260,7 +260,6 @@ def coefficient_of_variation(mask, x, border_pad=0):
 
 
 def all_stress_measures(st, px_size=1):
-
     sig_x = st[:, :, 0, 0]  # normal stress in x direction
     sig_y = st[:, :, 1, 1]  # normal stress in x direction
     tau_xy = st[:, :, 0, 1]  # shear stress
@@ -268,7 +267,7 @@ def all_stress_measures(st, px_size=1):
     # principal (normal stresses)
     sigma_max = (sig_x + sig_y) / 2 + np.sqrt(((sig_x - sig_y) / 2) ** 2 + tau_xy ** 2)
     sigma_min = (sig_x + sig_y) / 2 - np.sqrt(((sig_x - sig_y) / 2) ** 2 + tau_xy ** 2)
-    sigma_max_abs = np.maxium(np.abs(sigma_max,sigma_max))
+    sigma_max_abs = np.maxium(np.abs(sigma_max, sigma_max))
     # maximum shear stress
     tau_max = np.sqrt(((sig_x - sig_y) / 2) ** 2 + tau_xy ** 2)
     # angle of maximal principal stress
@@ -278,7 +277,7 @@ def all_stress_measures(st, px_size=1):
     # side note:  (phi_n-phi_shear) = pi/4 should always hold
     sigma_mean = (sigma_max + sigma_min) / 2  # mean normal stress
 
-    return sigma_max/px_size, sigma_min/px_size, sigma_max_abs/px_size, tau_max/px_size, phi_n, phi_shear, sigma_mean/px_size
+    return sigma_max / px_size, sigma_min / px_size, sigma_max_abs / px_size, tau_max / px_size, phi_n, phi_shear, sigma_mean / px_size
 
 
 def reorder_vectors_inward(borders, lines_interpol, cell_id, line_ids, plot_n_vecs=False, mask_boundaries=None):

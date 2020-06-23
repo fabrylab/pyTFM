@@ -1,21 +1,20 @@
 ﻿### function integrating Traktion force microscopy into a clcikpoints database
 
+import os
+import warnings
+
+import clickpoints
+from peewee import DoesNotExist
+from peewee import IntegrityError
+from pyTFM.TFM_functions import *
+from pyTFM.frame_shift_correction import *
 from pyTFM.grid_setup_solids_py import *
+from pyTFM.parameters_and_strings import *
 from pyTFM.plotting import *
 from pyTFM.stress_functions import *
 from pyTFM.utilities_TFM import *
-from pyTFM.TFM_functions import *
-from pyTFM.parameters_and_strings import *
-from pyTFM.frame_shift_correction import *
-from peewee import IntegrityError
-import clickpoints
 from skimage.morphology import label
-from skimage.filters import threshold_otsu
-import os
-import re
-import warnings
 from tqdm import tqdm
-from peewee import DoesNotExist
 
 
 class Mask_Error(Exception):
@@ -85,7 +84,7 @@ class cells_masks():
                     # extracting only one mask type in only one object
                     warn = check_mask_size(mask, self.warn_thresh, print_out=True, mask_name=mask_name, frame=frame)
                     self._masks_dict[frame][obj_id][mask_name] = (
-                    coords_final, shape)  # writing to dict only the coordinates of true values
+                        coords_final, shape)  # writing to dict only the coordinates of true values
                     self._warns_dict[frame][obj_id][mask_name] = warn + " " * (warn != "") + warn_edge
                     self._masks_dict[frame][obj_id]["com"] = r.centroid
 
@@ -229,7 +228,7 @@ def warn_small_FEM_area(mask_area, threshold):
 def check_empty_mask(mask, mtype="---", frame="---", cell_id="---", add_str_error=""):
     if not isinstance(mask, np.ndarray):
         raise Mask_Error("mask empty for mask type %s in frame %s for patch %s" % (
-        str(mtype), str(frame), str(cell_id)) + " " + add_str_error)
+            str(mtype), str(frame), str(cell_id)) + " " + add_str_error)
 
 
 def check_small_or_empty_mask(mask, frame, mtype, warn_thresh=None, raise_error=True, add_str_error="",
@@ -634,7 +633,6 @@ def traction_force(frame, parameter_dict, res_dict, db, db_info=None, masks=None
 
 
 def FEM_grid_setup(frame, parameter_dict, mask_grid, db_info=None, warn="", **kwargs):
-
     '''
     :param frame:
     :param parameter_dict:
@@ -680,7 +678,8 @@ def FEM_grid_setup(frame, parameter_dict, mask_grid, db_info=None, warn="", **kw
 def FEM_analysis_average_stresses(frame, res_dict, parameter_dict, db, db_info, stress_tensor, ps_new, masks, obj_id,
                                   **kwargs):
     # analyzing the FEM results with average stresses
-    sigma_max, sigma_min, sigma_max_abs, tau_max, phi_n, phi_shear, sigma_mean = all_stress_measures(stress_tensor, px_size = ps_new * 10 ** -6)
+    sigma_max, sigma_min, sigma_max_abs, tau_max, phi_n, phi_shear, sigma_mean = all_stress_measures(stress_tensor,
+                                                                                                     px_size=ps_new * 10 ** -6)
 
     if parameter_dict["FEM_mode"] == "cell layer":
         use_type = "stress_layer"
@@ -695,7 +694,8 @@ def FEM_analysis_average_stresses(frame, res_dict, parameter_dict, db, db_info, 
                  x=sigma_mean, sumtype="mean_abs", add_cut_factor=add_cut_factor)
     calc_on_area(frame, res_dict, parameter_dict, "max normal stress", masks, mask_types=mtypes, obj_ids=[obj_id],
                  x=sigma_max_abs, sumtype="mean_abs", add_cut_factor=add_cut_factor)
-    calc_on_area(frame, res_dict, parameter_dict, "max shear stress", masks, mask_types=mtypes, obj_ids=[obj_id], x=tau_max,
+    calc_on_area(frame, res_dict, parameter_dict, "max shear stress", masks, mask_types=mtypes, obj_ids=[obj_id],
+                 x=tau_max,
                  sumtype="mean_abs", add_cut_factor=add_cut_factor)
 
     calc_on_area(frame, res_dict, parameter_dict, "cv mean normal stress", masks, mask_types=mtypes, obj_ids=[obj_id],

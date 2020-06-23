@@ -1,15 +1,16 @@
 # correction for frame shift in the images of beads
 
-from pyTFM.utilities_TFM import createFolder,get_group
-from collections import defaultdict
-import numpy as np
-import matplotlib.pyplot as plt
-from skimage.feature import register_translation
-from scipy.ndimage.interpolation import shift
-from PIL import Image
+import copy
 import os
 import re
-import copy
+from collections import defaultdict
+
+import numpy as np
+from PIL import Image
+from pyTFM.utilities_TFM import createFolder, get_group
+from scipy.ndimage.interpolation import shift
+from skimage.feature import register_translation
+
 
 def normalizing(img):
     img = img - np.percentile(img, 1)  # 1 Percentile
@@ -18,25 +19,27 @@ def normalizing(img):
     img[img > 1] = 1.0
     return img
 
+
 def croping_after_shift(image, shift_x, shift_y):
     if shift_x <= 0:
         image = image[:, int(np.ceil(-shift_x)):]
     else:
         image = image[:, :-int(np.ceil(shift_x))]
-    if shift_y  <= 0:
+    if shift_y <= 0:
         image = image[int(np.ceil(-shift_y)):, :]
     else:
         image = image[:-int(np.ceil(shift_y)), :]
     return np.array(image, dtype=np.float)
 
-def check_subdirs(after_identifier,before_identifier,dirs):
-    after_subdir=None
-    before_subdir=None
+
+def check_subdirs(after_identifier, before_identifier, dirs):
+    after_subdir = None
+    before_subdir = None
     for sd in dirs:
-        if re.match(after_identifier,sd):
-            after_subdir=sd
-        if re.match(before_identifier,sd):
-            before_subdir=sd
+        if re.match(after_identifier, sd):
+            after_subdir = sd
+        if re.match(before_identifier, sd):
+            before_subdir = sd
     return after_subdir, before_subdir
 
 
@@ -54,46 +57,47 @@ def check_files_dict(files_dict):
                     except KeyError:
                         pass
 
-def find_files_for_shifting(folder,identifier_list):
-    after_folder_identifier, before_folder_identifier, after_file_identifier,before_file_identifier,bf_file_identifier=identifier_list
+
+def find_files_for_shifting(folder, identifier_list):
+    after_folder_identifier, before_folder_identifier, after_file_identifier, before_file_identifier, bf_file_identifier = identifier_list
     files_dict = {}
     for subdir, dirs, files in os.walk(folder):
-        after_subdir, before_subdir=check_subdirs(after_folder_identifier,before_folder_identifier,dirs)
+        after_subdir, before_subdir = check_subdirs(after_folder_identifier, before_folder_identifier, dirs)
         if after_subdir is None or before_subdir is None:
             continue  # making sure the folder contains both "before" and "after" images
         else:
-            experiment=os.path.split(subdir)[1] # selecting experiment name: the current directory
-            files_dict[experiment]=defaultdict(dict)
-            after_subdir_f=os.path.join(subdir,after_subdir)
-            before_subdir_f=os.path.join(subdir,before_subdir)
+            experiment = os.path.split(subdir)[1]  # selecting experiment name: the current directory
+            files_dict[experiment] = defaultdict(dict)
+            after_subdir_f = os.path.join(subdir, after_subdir)
+            before_subdir_f = os.path.join(subdir, before_subdir)
 
             for file in os.listdir(after_subdir_f):
-                frame_after=get_group(re.search(after_file_identifier, file),1)
+                frame_after = get_group(re.search(after_file_identifier, file), 1)
                 frame_bf = get_group(re.search(bf_file_identifier, file), 1)
                 if frame_after:  # finding fluo images of beads
-                    files_dict[experiment][frame_after]["after"]=os.path.join(after_subdir_f, file)
+                    files_dict[experiment][frame_after]["after"] = os.path.join(after_subdir_f, file)
                 if frame_bf:
-                    files_dict[experiment][ frame_bf]["bf"]=os.path.join(after_subdir_f, file)
+                    files_dict[experiment][frame_bf]["bf"] = os.path.join(after_subdir_f, file)
 
             for file in os.listdir(before_subdir_f):
                 frame_before = get_group(re.search(before_file_identifier, file), 1)
                 frame_bf = get_group(re.search(bf_file_identifier, file), 1)
                 if frame_before:  # finding fluo images of beads
-                    files_dict[experiment][frame_before]["before"]=os.path.join(before_subdir_f, file)
+                    files_dict[experiment][frame_before]["before"] = os.path.join(before_subdir_f, file)
                 if frame_bf:
-                    files_dict[experiment][frame_bf]["bf"]=os.path.join(before_subdir_f, file)
+                    files_dict[experiment][frame_bf]["bf"] = os.path.join(before_subdir_f, file)
     check_files_dict(files_dict)
     return files_dict
 
-def cut_images(folder,files_dict,names=["after_shift.tif","before_shift.tif","bf_before_shift.tif"]):
 
-    for exp,frames_dict in files_dict.items():
-        new_folder =os.path.join(folder, exp + "_shift")
+def cut_images(folder, files_dict, names=["after_shift.tif", "before_shift.tif", "bf_before_shift.tif"]):
+    for exp, frames_dict in files_dict.items():
+        new_folder = os.path.join(folder, exp + "_shift")
         createFolder(new_folder)
         for frame, img_files in frames_dict.items():
-            print("experiment",exp)
-            print("frame",frame)
-            print("image_file",img_files)
+            print("experiment", exp)
+            print("frame", frame)
+            print("image_file", img_files)
 
             img_b = np.asarray(Image.open(img_files["before"]))
             img_a = np.asarray(Image.open(img_files["after"]))
@@ -115,9 +119,11 @@ def cut_images(folder,files_dict,names=["after_shift.tif","before_shift.tif","bf
             a_save = Image.fromarray(a * 255)
             bf_save = Image.fromarray(bf * 255)
 
-            b_save.save(os.path.join(new_folder, frame+"after_shift.tif"))
-            a_save.save(os.path.join(new_folder,  frame+"before_shift.tif"))
-            bf_save.save(os.path.join(new_folder,  frame+"bf_before_shift.tif"))
+            b_save.save(os.path.join(new_folder, frame + "after_shift.tif"))
+            a_save.save(os.path.join(new_folder, frame + "before_shift.tif"))
+            bf_save.save(os.path.join(new_folder, frame + "bf_before_shift.tif"))
+
+
 # correcting frame shift between images of beads before and after cell removal.
 
 # the correction is done by finding the shift between two images using image registration. Then the images are cropped
@@ -125,8 +131,6 @@ def cut_images(folder,files_dict,names=["after_shift.tif","before_shift.tif","bf
 # of view. The output is saved to the input folder. For each "experiment" a new folder is created. An experiment is
 # identified as a directory that contains one folder for the images before cell removal and one folder with images after
 # the cell removal.
-
-
 
 
 def correct_frame_shift(folder):
@@ -139,18 +143,19 @@ def correct_frame_shift(folder):
     # identifier for the folder with images before cell removal:
     before_folder_identifier = re.compile("before", re.IGNORECASE)
 
-
     after_file_identifier = re.compile("(\d{0,3})_{0,1}fluo", re.IGNORECASE)
     before_file_identifier = re.compile("(\d{0,3})_{0,1}fluo", re.IGNORECASE)
     bf_file_identifier = re.compile("(\d{0,3})_{0,1}BF_before", re.IGNORECASE)
     # putting identifiers in one list
-    identifier_list=[after_folder_identifier, before_folder_identifier, after_file_identifier, before_file_identifier, bf_file_identifier]
+    identifier_list = [after_folder_identifier, before_folder_identifier, after_file_identifier, before_file_identifier,
+                       bf_file_identifier]
 
-    names=["after_shift.tif","before_shift.tif","bf_before_shift.tif"]
-    files_dict=find_files_for_shifting(folder, identifier_list)
-    cut_images(folder,files_dict,names)
+    names = ["after_shift.tif", "before_shift.tif", "bf_before_shift.tif"]
+    files_dict = find_files_for_shifting(folder, identifier_list)
+    cut_images(folder, files_dict, names)
 
-def correct_stage_drift(image1,image2,additional_images=[]):
+
+def correct_stage_drift(image1, image2, additional_images=[]):
     # find shift with image registration
     shift_values = register_translation(image1, image2, upsample_factor=100)
     shift_y = shift_values[0][0]
@@ -166,11 +171,11 @@ def correct_stage_drift(image1,image2,additional_images=[]):
     a_save = Image.fromarray(a * 255)
 
     # doing the same with additional images
-    additional_images_save=[]
+    additional_images_save = []
     for add_image in additional_images:
         add_image_shift = shift(add_image, shift=(-shift_y, -shift_x), order=5)
         add_image_norm = normalizing(croping_after_shift(add_image_shift, shift_x, shift_y))
         add_image_save = Image.fromarray(add_image_norm * 255)
         additional_images_save.append(add_image_save)
 
-    return b_save, a_save, additional_images_save, (shift_x,shift_y)
+    return b_save, a_save, additional_images_save, (shift_x, shift_y)
