@@ -168,3 +168,40 @@ show_quiver(fx_f1,fy_f1)
 plt.figure();plt.imshow(ep1);plt.colorbar()
 plt.figure();plt.imshow(ep2);plt.colorbar()
 
+### illustrating the method
+plt.close("all")
+fx = np.random.uniform(-1,1,(10,10))
+fy = np.random.uniform(-1,1,(10,10))
+
+fx = np.zeros((10,10))
+fy = np.zeros((10,10))
+fx[4,4] = 1
+fy[4,4] = 1
+us, vs, u, v, fxn, fyn  = deformation_by_upsampling(fx, fy, factor=5, pixelsize=1, sigma=0.5, young=1, h=100, kernel_size=(30,30), method="convolve2d", return_upsampled=True)
+
+
+f, ax = show_quiver(fx,fy, cmap="coolwarm",scale_ratio=0.1, vmax=1.25, width= 0.006,headwidth=7, headaxislength=5, headlength=7)
+ax.set_axis_on()
+ax.set_yticks(np.arange(-0.5,fx.shape[0],1), minor="true")
+ax.set_xticks(np.arange(-0.5,fx.shape[1],1), minor="true")
+ax.grid(which="minor", linewidth=1, color="black")
+
+f, ax = show_quiver(us,vs, cmap="coolwarm",scale_ratio=0.05, width= 0.006,headwidth=7, headaxislength=5, headlength=7)
+ax.set_axis_on()
+ax.set_yticks(np.arange(-0.5,us.shape[0],1), minor="true")
+ax.set_xticks(np.arange(-0.5,us.shape[1],1), minor="true")
+ax.grid(which="minor", linewidth=1, color="black")
+
+f, ax = show_quiver(fxn, fyn, cmap="coolwarm",scale_ratio=0.02, vmax=1.25, width= 0.003,headwidth=7, headaxislength=5, headlength=7)
+ax.set_axis_on()
+ax.set_yticks(np.arange(0, u.shape[0],1))
+ax.set_xticks(np.arange(0, u.shape[1],1))
+ax.set_yticks(np.arange(-0.5,fxn.shape[0],1), minor="true")
+ax.set_xticks(np.arange(-0.5,fxn.shape[1],1), minor="true")
+ax.grid(which="major", linewidth=1, color="black")
+
+f, ax = show_quiver(u,v, cmap="coolwarm", scale_ratio=0.03, width= 0.003,headwidth=7, headaxislength=5, headlength=7)
+ax.set_axis_on()
+ax.set_yticks(np.arange(-0.5,u.shape[0],1), minor="true")
+ax.set_xticks(np.arange(-0.5,u.shape[1],1), minor="true")
+ax.grid(which="minor", linewidth=1, color="black")

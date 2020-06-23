@@ -465,7 +465,7 @@ def finite_thickenss_convolution_only(fx,fy,greens_tensor):
     return def_x,def_y,def_z
 
 
-def deformation_by_upsampling(fx, fy, factor, pixelsize=1, sigma=0.5, young=1, h=100, kernel_size=(30,30),method="convolve2d"):
+def deformation_by_upsampling(fx, fy, factor, pixelsize=1, sigma=0.5, young=1, h=100, kernel_size=(30,30), method="convolve2d", return_upsampled=True):
    # org_size=fx.shape[0] # only squared shapes
     fxn, fyn = np.zeros((fx.shape[0] * factor, fx.shape[1] * factor)), np.zeros((fx.shape[0]  * factor, fx.shape[1]  * factor))
     # represent g forces by stretches
@@ -490,4 +490,9 @@ def deformation_by_upsampling(fx, fy, factor, pixelsize=1, sigma=0.5, young=1, h
                                         kernel_size=kernel_size, method=method)  # somwhat of an approximation
     all_pos = np.array(np.meshgrid(np.arange(fx.shape[0]), np.arange(fx.shape[1] ),indexing="ij")).astype(int) * factor
     ub, vb = u[all_pos[0], all_pos[1]], v[all_pos[0], all_pos[1]]
-    return ub, vb
+    if return_upsampled:
+        return ub, vb, u, v, fxn, fyn
+    else:
+        return ub, vb
+
+
