@@ -52,6 +52,11 @@ def convert_axis_tick_unit(ax, factor):
     ax.set_yticklabels([str(np.round(l * factor)) for l in yticks])
 
 
+def convert_str_none(string):
+    # converts "None" or "none" to None
+    return string if not (string == "None" or string == "none") else None
+
+
 def make_rank_list(values, dtype=int):
     '''
     produce a list containing the corresponding rank of input values. Ties

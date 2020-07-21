@@ -349,7 +349,11 @@ def get_db_info_for_analysis(db):
     im_shapes = {}  # exact list of image shapes
 
     for frame in unique_frames:
-        im_shapes[frame] = db.getImages(frame=frames_ref_dict[frame])[0].data.shape
+        images = db.getImages(frame=frames_ref_dict[frame])
+        if len(images) > 0:
+            im_shapes[frame] = db.getImages(frame=frames_ref_dict[frame])[0].data.shape
+        else:
+            im_shapes[frame] = ()
 
     mask_types = [m.name for m in db.getMaskTypes()]  # list mask types
     db_info = {"file_order": file_order,

@@ -107,27 +107,31 @@ def setup_database_internal(db, keys_dict, folders_dict):
                     "images_before": {"folder": folders_dict["folder_before"],
                                       "file_key": [re.compile(k + file_endings) for k in key2]},
                     "membranes": {"folder": folders_dict["folder_cells"],
-                                  "file_key": [re.compile(k + file_endings) for k in key3]}
+                                  "file_key": [re.compile(k + file_endings) if k is not None else None for k in key3]}
                     }
+
     # filtering all files in the folder
     all_patterns = list(itertools.chain(*layer_search.values()))
     images = []
+    expected_frames = 0
     for layer in layer_search.keys():
         folder = layer_search[layer]["folder"]
         skey = layer_search[layer]["file_key"]
-        images.append([os.path.join(folder, x) for x in os.listdir(folder) if any([pat.match(x) for pat in skey])])
+        if skey[0] is not None and folder is not None:
+            expected_frames += 1
+            images.append([os.path.join(folder, x) for x in os.listdir(folder) if any([pat.match(x) for pat in skey])])
     images = list(itertools.chain(*images))
 
     # identifying frames by evaluating the leading number.
     frames = [get_group(re.search(key_frame, os.path.split(x)[1]), 1) for x in images]  # extracting frame
     # generating a list of sort_ids for the clickpoints database (allows you to miss some frames)
     sort_id_list = make_rank_list(frames, dtype=int)  # list of sort indexes (frames) of images in the database
-    warn_incorrect_files(frames)  # checking if there where more or less then three images per frame
+    warn_incorrect_files(frames, expected_frames)  # checking if there where more or less then three images per frame
 
     # initializing layer in the database
     if len(images) == 0:
         return
-    layer_list = ["images_after", "images_before", "membranes"]
+    layer_list = ["images_after", "images_before", "membranes"][:expected_frames]
     base_layer = db.getLayer(layer_list[0], create=True, id=0)
     for l in layer_list[1:]:
         db.getLayer(l, base_layer=base_layer, create=True)
@@ -145,8 +149,10 @@ def setup_database_internal(db, keys_dict, folders_dict):
             layer = "images_after"
         if any([pat.match(os.path.split(im)[1]) for pat in layer_search["images_before"]["file_key"]]):
             layer = "images_before"
-        if any([pat.match(os.path.split(im)[1]) for pat in layer_search["membranes"]["file_key"]]):
-            layer = "membranes"
+        if expected_frames == 3:
+            if any([pat.match(os.path.split(im)[1]) for pat in layer_search["membranes"]["file_key"]]):
+                layer = "membranes"
+
         print("file:", im, "frame:", frame, "layer:", layer)
         image_object = db.setImage(id=id, filename=im, sort_index=sort_index_id,
                                    layer=layer)
@@ -231,7 +237,7 @@ def fill_patches_for_cell_layer(frame, parameter_dict, res_dict, db, db_info=Non
     db.setMask(image=image, data=mask)  # udapting mask in clickpoints
 
 
-def warn_incorrect_files(frames):
+def warn_incorrect_files(frames, expected=3):
     '''
     throws a waring when there more or less then three images per frame are found.
     :param frames:
@@ -239,9 +245,9 @@ def warn_incorrect_files(frames):
     '''
     frames = np.array(frames)
     unique_frames, counts = np.unique(frames, return_counts=True)
-    problems = np.where(counts != 3)[0]
+    problems = np.where(counts != expected)[0]
     if len(problems) > 0:
-        warn = "There seems to be a problem with the your images."
+        warn = "There seems to be a problem with the your images:"
         for p_id in problems:
             warn += "Found %s files for frame %s. " % (counts[p_id], unique_frames[p_id])
-        warnings.warn(warn + "Excpeted three files per frame.")
+        warnings.warn(warn + "Excpeted %s files per frame."%str(expected))

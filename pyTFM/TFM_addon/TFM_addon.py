@@ -1,6 +1,7 @@
 
 from __future__ import division, print_function
 import pyTFM
+import shutil
 from pyTFM.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
 from pyTFM.parameters_and_strings import tooltips, default_parameters, convert_config_input
 from pyTFM.database_functions import *
@@ -42,7 +43,7 @@ class ConfigError(Exception):
 
 
 
-def load_config(file_path,parameters):
+def load_config(file_path, parameters):
     try:
         with open(file_path, "r") as f:
             c = yaml.safe_load(f)
@@ -268,9 +269,9 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.main_window.outfile_path=os.path.join(os.getcwd(),"out.txt")
       
         if re.match("tmp\d*\.cdb",os.path.split(self.main_window.db._database_filename)[1]): # check if clickpoints file is temporary file
-            self.db_name ="database.cdb"
+            self.db_name = "database.cdb"
         else:
-            self.db_name =self.main_window.db._database_filename # if not use current filename as default filename
+            self.db_name = self.main_window.db._database_filename # if not use current filename as default filename
         self.cwd = os.getcwd()
         self.default_folder = self.cwd
         self.folders = {"folder_after": os.getcwd(),
@@ -374,66 +375,85 @@ class FileSelectWindow(QtWidgets.QWidget):
             dirname = dialog.selectedFiles()
             text_field=self.objects[button_name[:-7]]["object"]
             text_field.setText(dirname[0])
-            self.default_folder=os.path.split(dirname[0])[0]
+            self.default_folder = os.path.split(dirname[0])[0]
         self.update_dirs()
 
     def update_dirs(self,*args):
         # updating the selected folders and search keys
-        self.folders={key:self.objects[key]["object"].text() for key in self.folders.keys()}
-        self.earch_keys={key:self.objects[key]["object"].text() for key in self.search_keys.keys()}
-        self.db_name=self.objects["db_name_text"]["object"].text()
+        self.folders = {key: self.objects[key]["object"].text() for key in self.folders.keys()}
+        # replace "none" if necessary
+        self.folders ={key: convert_none_str(value) for key, value in self.folders.items()}
+
+        self.search_keys = {key: self.objects[key]["object"].text() for key in self.search_keys.keys()}
+        # replace "none" if necessary
+        self.search_keys = {key: convert_none_str(value) for key, value in self.search_keys.items()}
+        self.db_name = self.objects["db_name_text"]["object"].text()
 
     def collect_files(self):
+        filename = os.path.join(self.folders["folder_out"], self.db_name)
+        old_filename =  self.main_window.db._database_filename
+        if os.path.exists(filename):
+            choice = QtWidgets.QMessageBox.question(self, 'continue',
+                                                    "Database file already exists. Do you want to override it?",
+                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if choice == QtWidgets.QMessageBox.No:
+                return
 
-       ## maybe make a backup somewhere??
+        # save database to target
+        if not filename == old_filename:
+            # copying original database to temporary file:
+            shutil.copy(old_filename,old_filename+"_tmp")
+
+            self.main_window.db.deletePaths()  # removes existing paths
+            print("saved database to " + filename)
+            self.main_window.cp.window.SaveDatabase(srcpath=filename)
+
+            # restore paths in older database file
+            if os.path.exists(old_filename+"-shm"):
+                os.remove(old_filename+"-shm")
+            if os.path.exists(old_filename + "-wal"):
+                os.remove(old_filename + "-wal")
+            #os.remove(old_filename)
+            #shutil.copy(old_filename + "_tmp", old_filename)
+            shutil.move(old_filename + "_tmp", old_filename)
+
         # clearing database
         self.main_window.db.deleteImages()  # delete existing images
         self.main_window.db.deleteLayers()  # delete existing layers
-        self.main_window.db.deletePaths() # removes existing paths
-
-        filename=self.save_database_automatically()
+        self.main_window.db.deletePaths()  # removes existing paths
 
         # searching,sorting and adding new images// also updating the options
-        setup_database_internal(self.main_window.db,self.search_keys,self.folders)# sort in images
+        setup_database_internal(self.main_window.db, self.search_keys, self.folders) # sort in images
         # update display
         print(self.main_window.db.getOption("frames_ref_dict")) ## reduce the output here...
         self.main_window.cp.updateImageCount()  # reload the image bar
 
         # update output folder
         self.main_window.outfile_path = os.path.join(self.folders["folder_out"], "out.txt")
-        self.folder = self.main_window.db.setOption("folder",self.folders["folder_out"])
+
+        self.main_window.db._AddOption(key="folder", value=self.folders["folder_out"])
+        self.folder = self.main_window.db.setOption("folder", self.folders["folder_out"])
         # update db info
         self.main_window.db_info, self.main_window.all_frames = get_db_info_for_analysis(self.main_window.db) # update meta info
-        self.main_window.res_dict = defaultdict(lambda: defaultdict(list))  #reseting res dict and masks just to be sure
+        self.main_window.res_dict = defaultdict(lambda: defaultdict(list))  # reseting res dict and masks just to be sure
         self.main_window.masks = None
-        # reinitiate masks (deletes the old masks)
-        setup_mask_wrapper(self, self.main_window.db,self.main_window.db_info, self.main_window.parameter_dict, delete_all=True)
+        # reinitialise masks (deletes the old masks)
+        setup_mask_wrapper(self, self.main_window.db,self.main_window.db_info, self.main_window.parameter_dict, delete_all=True, warn_popup=False)
         self.main_window.cp.reloadMaskTypes()
-        self.main_window.cp.window.SaveDatabase(srcpath=filename)
 
-        #reading config if set:
-
+        #reading config
         config_path = os.path.join(self.folders["folder_out"], "config.yaml")
         # trying to read config:
         if os.path.exists(config_path):
-            print("found exsisting config at",self.config_path)
+            print("found exsisting config at", config_path)
             self.main_window.config_path = config_path
             self.main_window.parameter_dict = load_config(config_path, self.main_window.parameter_dict)
 
+        # reloading all displayed images
+        self.main_window.reload_all()
 
-    def save_database_automatically(self):
-        # saving the database in the current folder if a temporary filename
-        filename = os.path.join(self.folders["folder_out"], self.db_name)
-        if not os.path.exists(filename): # save if no file with same name is around
-            filename_new=filename
-        else: # try some other filenames
-            for i in range(100000):
-                filename_new=os.path.splitext(filename)[0]+str(i)+".cdb"
-                if not os.path.exists(filename_new):
-                    break
-        print("saved database to " + filename)
-        self.main_window.cp.window.SaveDatabase(srcpath=filename_new)
-        return filename_new
+
+
 
 
 
@@ -722,12 +742,15 @@ class Worker(QtCore.QThread):
     def run(self):
         self.main.start()
 
-def setup_mask_wrapper(window,db,db_info,parameter_dict,delete_all=False):
+def setup_mask_wrapper(window,db,db_info,parameter_dict,delete_all=False, warn_popup=True):
     other_masks=check_existing_masks(db, parameter_dict)
     del_str="all previous masks" if delete_all else "the masks "+str(other_masks)[1:-1]
-    if len(other_masks)>0 or delete_all:
-        choice = QtWidgets.QMessageBox.question(window, 'continue',
-                                                "This will delete %s. Do you want to continue?"%del_str,
-                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-        if choice == QtWidgets.QMessageBox.Yes:
-            setup_masks(db, db_info, parameter_dict, delete_all=delete_all, delete_specific=other_masks)
+    if warn_popup:
+        if (len(other_masks) > 0 or delete_all):
+            choice = QtWidgets.QMessageBox.question(window, 'continue',
+                                                    "This will delete %s. Do you want to continue?" % del_str,
+                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if choice == QtWidgets.QMessageBox.Yes:
+                setup_masks(db, db_info, parameter_dict, delete_all=delete_all, delete_specific=other_masks)
+    else:
+        setup_masks(db, db_info, parameter_dict, delete_all=delete_all, delete_specific=other_masks)
