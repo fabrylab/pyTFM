@@ -2,6 +2,23 @@
 import clickpoints
 from pyTFM.database_functions import *
 
+# renaming new convention:
+import os
+import copy
+import shutil
+rename_dict = {"x-1_y-1":0,"x-1_y0":1,"x0_y-1":2,"x0_y0":3,"x0_y1":4,"x1_y0":5,"x1_y1":6,"x-1_y1":7,"x1_y-1":8}
+folder = os.getcwd()
+files = os.listdir(folder)
+for f in files:
+    match = [k for k in rename_dict.keys() if k in f]
+    if len(match)==1:
+        f_new = copy.deepcopy(f)
+        f_new.replace(match[0])
+        shutil.move(f,f_new)
+
+
+
+
 def test_n(phi, st):
     n = np.array([np.cos(phi), np.sin(phi)])
     n_f = np.abs(np.dot(np.matmul(st, n), n))
