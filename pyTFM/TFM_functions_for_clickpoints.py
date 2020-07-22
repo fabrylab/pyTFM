@@ -588,15 +588,18 @@ def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, d
         # calculate contractillity only in "colony" mode
         if parameter_dict["FEM_mode"] == "colony":
             contractile_force, proj_x, proj_y, center = contractillity(t_x, t_y, ps_new, mask_int)
-            res_dict[frame]["contractillity on " + default_parameters["mask_properties"][mtype]["label"]].append(
+            res_dict[frame]["contractility" + default_parameters["mask_properties"][mtype]["label"]].append(
                 [obj_id, contractile_force, warn])
+        mask_area = np.sum(mask) * (parameter_dict["pixelsize"] ** 2)
+        res_dict[frame]["area_force_measurement"].append([obj_id,mask_area, warn])
+
         # calculate contractile energy if deformations are provided
         if isinstance(u, np.ndarray):
             check_shape(u, t_x)
             contr_energy = np.sum(energy_points[mask_int])  # sum of contractile energy on on mask
-            res_dict[frame]["strain energy on " + default_parameters["mask_properties"][mtype]["label"]].append(
+            res_dict[frame]["strain energy" + default_parameters["mask_properties"][mtype]["label"]].append(
                 [obj_id, contr_energy, warn])
-        print("strain energy=", round_flexible(contr_energy), "contractillity=", round_flexible(contractile_force))
+        print("strain energy=", round_flexible(contr_energy), "contractility=", round_flexible(contractile_force))
 
     return (contractile_force, contr_energy), frame
 
