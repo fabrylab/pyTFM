@@ -98,9 +98,9 @@ def bar_plots_pylu(key_values):
     values1 = [key_values["contractile_force_b"] / key_values["contractile_force_b"],
                key_values["contractile_force_f"] / key_values["contractile_force_b"]]
     labels1 = ["contractility", "contractility"]
-    values2 = [key_values['mean_normal_stress_b'], key_values['mean_normal_stress_f'], key_values["mean_shear_b"],
-               key_values["mean_shear_f"]]
-    labels2 = ["mean normal stress", "mean normal stress", "meanshear stress", "mean shear stress"]
+    values2 = [key_values['mean_normal_stress_b'], key_values['mean_normal_stress_f'], key_values["max_shear_b"],
+               key_values["max_shear_f"]]
+    labels2 = ["mean normal stress", "mean normal stress", "mean shear stress", "mean shear stress"]
     values3 = [key_values["cv_b"], key_values["cv_f"]]
     lables3 = ["cv", "cv"]
 
@@ -150,7 +150,7 @@ def bar_plots_pylu(key_values):
     fig.ax_dict = {ax.get_label(): ax for ax in fig.axes}
 
     fig.axes[1].texts[2].set_position([0.772830, 0.021978])
-    fig.axes[1].texts[3].set_text("0.016")
+    fig.axes[1].texts[3].set_text(str(np.round(values2[3],3)))
     # % start: automatic generated code from pylustrator
     fig.ax_dict = {ax.get_label(): ax for ax in fig.axes}
     # import matplotlib as mpl

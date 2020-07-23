@@ -164,16 +164,21 @@ def standard_measures(mask, pixelsize_tract=1, pixelsize_og=1, mean_normal_list=
     mask_fm = mask_fm.astype(bool)
 
     cv_f, cv_b, cont_energy_b, cont_energy_f, contractile_force_b, contractile_force_f, \
-    mean_normal_stress_b, mean_normal_stress_f, mean_shear_b, mean_shear_f, avg_normal_stress, rel_av_norm_stress = [
-        None for i in range(12)]
+    mean_normal_stress_b, mean_normal_stress_f, mean_shear_b, mean_shear_f, avg_normal_stress, rel_av_norm_stress,max_shear_b,max_shear_f = [
+        None for i in range(14)]
 
     # suppress is equivalent to try and expect...pass
     with suppress(TypeError, NameError): shear_f = stress_tensor_f[:, :, 0, 1] / (
         pixelsize_tract)  # shear component of the stress tensor
-    with suppress(TypeError, NameError): mean_normal_stress_f = ((stress_tensor_f[:, :, 0, 0] + stress_tensor_f[:, :, 1,
-                                                                                                1]) / 2) / (
+    # max_shear_stress
+    with suppress(TypeError, NameError):
+        max_shear_f = np.sqrt(((stress_tensor_f[:, :, 0, 0] - stress_tensor_f[:, :, 1, 1])/2)**2 + stress_tensor_f[:, :, 0, 1]**2)/pixelsize_tract
+        max_shear_f =np.mean(max_shear_f[binary_erosion(mask)])
+    with suppress(TypeError, NameError):
+        mean_normal_stress_f = ((stress_tensor_f[:, :, 0, 0] + stress_tensor_f[:, :, 1, 1]) / 2) / (
                                                                     pixelsize_tract)
-    with suppress(TypeError, NameError): mean_normal_stress_f = np.mean(mean_normal_stress_f[binary_erosion(mask)])
+        mean_normal_stress_f = np.mean(mean_normal_stress_f[binary_erosion(mask)])
+
     with suppress(TypeError, NameError): mean_shear_f = np.mean(np.abs(shear_f[binary_erosion(mask)]))
     # line tension
     # forces
@@ -184,13 +189,18 @@ def standard_measures(mask, pixelsize_tract=1, pixelsize_og=1, mean_normal_list=
     with suppress(TypeError, NameError): contractile_force_f, proj_x, proj_y, center = contractillity(fx_f, fy_f,
                                                                                                       pixelsize_tract,
                                                                                                       mask_fm)
-
+    # shear component of the stress tensor
     with suppress(TypeError, NameError): shear_b = stress_tensor_b[:, :, 0, 1] / (
-        pixelsize_tract)  # shear component of the stress tensor
-    with suppress(TypeError, NameError): mean_normal_stress_b = ((stress_tensor_b[:, :, 0, 0] + stress_tensor_b[:, :, 1,
-                                                                                                1]) / 2) / (
-                                                                    pixelsize_tract)
-    with suppress(TypeError, NameError): mean_normal_stress_b = np.mean(mean_normal_stress_b[binary_erosion(mask)])
+        pixelsize_tract)
+    # max_shear_stress
+    with suppress(TypeError, NameError):
+        max_shear_b = np.sqrt(((stress_tensor_b[:, :, 0, 0] - stress_tensor_b[:, :, 1, 1])/2)**2 + stress_tensor_b[:, :, 0, 1]**2)/pixelsize_tract
+        max_shear_b =np.mean(max_shear_b[binary_erosion(mask)])
+    with suppress(TypeError, NameError):
+        mean_normal_stress_b = ((stress_tensor_b[:, :, 0, 0] + stress_tensor_b[:, :, 1,
+                                                    1]) / 2) / (pixelsize_tract)
+        mean_normal_stress_b = np.mean(mean_normal_stress_b[binary_erosion(mask)])
+
     with suppress(TypeError, NameError): mean_shear_b = np.mean(np.abs(shear_b[binary_erosion(mask)]))
     # line tension
     # forces
@@ -214,7 +224,7 @@ def standard_measures(mask, pixelsize_tract=1, pixelsize_og=1, mean_normal_list=
                 "cont_energy_f": cont_energy_f, "contractile_force_b": contractile_force_b,
                 "contractile_force_f": contractile_force_f,
                 "mean_normal_stress_b": mean_normal_stress_b, "mean_normal_stress_f": mean_normal_stress_f,
-                "mean_shear_b": mean_shear_b, "mean_shear_f": mean_shear_f,
+                "mean_shear_b": mean_shear_b, "mean_shear_f": mean_shear_f, "max_shear_f":max_shear_f, "max_shear_b":max_shear_b,
                 "avg_normal_stress_be": avg_normal_stress_be, "rel_av_norm_stress": rel_av_norm_stress}
     return measures
     # return mean_normal_stress,mean_shear,cont_energy,contractile_force

@@ -10,12 +10,6 @@ from plotting_evaluation import *
 stress_tensor_f, u_b, v_b = None, None, None
 
 
-
-
-
-
-
-
 out_folder =  "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/ev_paper_expansion"
 
 display_bd = None
@@ -117,7 +111,7 @@ plot_types = ["cbars_only"]
 plot_types = ["correlation", "key measures", "mean_normal_stress_backward", "mean_normal_stress_forward",
               "forces_forward", "forces_backward", "mask_outline", "cbars_only", "test for border expansion", "be5", "be3", "be2"]
 #plot_types = ["key measures"]
-plot_types = ["be5"]
+plot_types = ["key measures"]
 #plot_types = ["correlation", "cbars_only"]
 # max_dict["force"] = 1
 plt.ioff()
