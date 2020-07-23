@@ -486,21 +486,37 @@ def simple_shift_correction(frame, parameter_dict, res_dict, db, db_info=None, *
     # load images from database
     im_a = db.getImage(id=db_info["file_order"][frame + "images_after"])
     im_b = db.getImage(id=db_info["file_order"][frame + "images_before"])
-    im_m = db.getImage(id=db_info["file_order"][frame + "membranes"])
+
     image_after = im_a.data
     image_before = im_b.data
-    image_membrane = im_m.data
+    try:
+        im_m = db.getImage(id=db_info["file_order"][frame + "membranes"])
+        image_membrane = im_m.data
+        im_m_path = find_full_im_path(im_m, db_info["path"])
+        n_frames = 3
+    except KeyError:
+        n_frames = 2
+
+
     # get paths for saving later
     im_a_path = find_full_im_path(im_a, db_info["path"])
     im_b_path = find_full_im_path(im_b, db_info["path"])
-    im_m_path = find_full_im_path(im_m, db_info["path"])
+
 
     # performig drift correction
-    b_save, a_save, [m_save], drift = correct_stage_drift(image_before, image_after, additional_images=[image_membrane])
+    if n_frames == 2:
+        b_save, a_save, [], drift = correct_stage_drift(image_before, image_after,
+                                                              additional_images=[])
+    if n_frames == 3:
+        b_save, a_save, [m_save], drift = correct_stage_drift(image_before, image_after,
+                                                              additional_images=image_membrane)
+
     print("\nframe %s: found drift of %s" % (frame, str(np.round(drift, 3))))
     b_save.save(im_b_path)
     a_save.save(im_a_path)
-    m_save.save(im_m_path)
+
+    if n_frames == 3:
+        m_save.save(im_m_path)
 
 
 def simple_segmentation(frame, parameter_dict, res_dict, db, db_info=None, masks=None, seg_threshold=0,
@@ -584,13 +600,14 @@ def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, d
             print("couldn't identify mask %s in frame %s patch %s" % (str(mtype), str(frame), str(obj_id)))
             continue
         # interpolation to size of traction force array
+        mask_area = np.sum(mask) * (parameter_dict["pixelsize"] ** 2)
         mask_int = interpolation(mask, t_x.shape)
         # calculate contractillity only in "colony" mode
         if parameter_dict["FEM_mode"] == "colony":
             contractile_force, proj_x, proj_y, center = contractillity(t_x, t_y, ps_new, mask_int)
             res_dict[frame]["contractility" + default_parameters["mask_properties"][mtype]["label"]].append(
                 [obj_id, contractile_force, warn])
-        mask_area = np.sum(mask) * (parameter_dict["pixelsize"] ** 2)
+
         res_dict[frame]["area_force_measurement"].append([obj_id,mask_area, warn])
 
         # calculate contractile energy if deformations are provided
@@ -870,18 +887,16 @@ def apply_to_frames(db, parameter_dict, analysis_function, leave_basics=False, r
 if __name__ == "__main__":
     ## setting up necessary paramteres
     # db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
-    db = clickpoints.DataFile(
-        "/home/andy/Desktop/KOshift/database.cdb", "r")
+    db = clickpoints.DataFile("/home/user/Desktop/plate2/beads_yuko_forced/png/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict = defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
-    default_fig_parameters["cmap"] = "coolwarm"
-    parameter_dict["overlapp"] = 17
+
     #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
    #                                            db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, res_dict, frames="12",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="1",
                                                db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="12",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="1",
                                                db_info=db_info, masks=masks)
 
     # parameter_dict["filter_type"]=None

@@ -43,7 +43,7 @@ def read_output_file(file_path):
             elements = line.strip().split("\t")  # removing tailing "\n" and splitting at "\t"
             if len(elements) > 1:  # skip if no values can be separated
                 if is_int(elements[0]):  # adding to output results if the line starts with the frame
-                    res_dict[elements[0]][elements[2]] = [elements[1], try_float_convert(elements[3])]  # no warnings
+                    res_dict[elements[0]][elements[2]].append([elements[1], try_float_convert(elements[3])])  # no warnings
                 elif len(elements) > 1:  # else add to parameters dict
                     parameter_dict[elements[0]] = try_float_convert(elements[1])
     return parameter_dict, res_dict
@@ -63,6 +63,8 @@ def prepare_values(res_dict, exclude=[]):
             frames: list of frames that were pooled. This can be used to reconstruct from which frame an individual
             value comes from.
     """
+    ## TODO: implement support for mutlipe objects in a singel image
+
 
     values_dict = defaultdict(list)  # out put dictionary
     frames = []  # list of frames that were pooled
@@ -70,7 +72,7 @@ def prepare_values(res_dict, exclude=[]):
         if frame not in exclude:  # ignoring any frame you want ot exclude
             frames.append(frame)  # save the frame
             for name, value in subdict.items():  # iterating through the measured quantities
-                values_dict[name].append(value[1])  # appending the value for every frame to values_dict
+                values_dict[name].extend([v[1] for v in value])  # appending the value for every frame to values_dict
                 # cells are just thrown in together
     for key, value in values_dict.items():  # conversion to array. This is necessary to simplify subsequent calculations.
         values_dict[key] = np.array(value)
