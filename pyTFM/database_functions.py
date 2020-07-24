@@ -84,7 +84,7 @@ def setup_database_internal(db, keys_dict, folders_dict):
     Don't include the file ending. Typical image endings (.png,.tif ... ) are added automatically.
     key1: image after bead removal, key2: image before bead removal, key3: image of the
     cells.
-    :param frame_key: reguar expression that defines how the frame number is searched. You must
+    :param frame_key: regular expression that defines how the frame number is searched. You must
     mark the group that contains the frame with parenthesis "()".
     :return:
     '''
@@ -121,7 +121,6 @@ def setup_database_internal(db, keys_dict, folders_dict):
 
     # number of layers either 3 or 2 if no image of the cells is provided
     expected_layers = len(images.keys())
-    #images = list(itertools.chain(*images))
 
     # breaking if no images at all are found
     if all([len(ims) == 0 for ims in images.values()]):
@@ -288,8 +287,5 @@ def filter_incorrect_files(frames, frame_sort_index, expected=3):
     # updating the dictionaries accordingly
     frames_cp = {old_new_si[s_id]: layer_im for s_id, layer_im in frames_cp.items() if s_id not in deleted_sort_indices}
     frame_sort_index_cp = {frame: old_new_si[s_id] for frame, s_id in frame_sort_index.items() if s_id not in deleted_sort_indices}
-
-    print("######",sorted(list(frames_cp.keys())))
-    print("######",sorted(list(frame_sort_index_cp.values())))
 
     return frames_cp, frame_sort_index_cp

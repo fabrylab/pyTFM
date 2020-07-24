@@ -8,8 +8,9 @@ from pyTFM.TFM_functions_for_clickpoints import *
 db = clickpoints.DataFile("/home/andy/Desktop/KOshift/database.cdb","r")
 parameter_dict = default_parameters
 db_info, all_frames = get_db_info_for_analysis(db)
-db_info, masks, res_dict = apply_to_frames(db, parameter_dict, traction_force, frames=all_frames[0],
+db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, frames=all_frames[0],
                                          db_info=db_info, masks=None)
+
 db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, frames=all_frames,
                                          db_info=db_info, masks=None)
 db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, frames=all_frames,

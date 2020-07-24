@@ -151,7 +151,7 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
     # ax.set_facecolor(background_color)
     if plot_cbar:
         add_colorbar(min_v, max_v, cmap, ax=ax, cbar_style=cbar_style, cbar_width=cbar_width, cbar_height=cbar_height,
-                     cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size, cbarr_str=cbar_str,
+                     cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size, cbar_str=cbar_str,
                      cbar_axes_fraction=cbar_axes_fraction, cbar_title_pad=cbar_title_pad)
     return fig, ax
 
