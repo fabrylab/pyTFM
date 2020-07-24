@@ -144,7 +144,7 @@ def find_lines_simple(graph):
         if len(line) > 2:
             lines_points[i] = line
             i += 1
-        if i > 100000:
+        if i > 10000:
             raise FindingBorderError("found more than 100000 lines; something went wrong")
             break
     return lines_points
@@ -215,10 +215,10 @@ def find_line_segement(graph, start, path=[], left_right=0):
     if len(path) == 1:
         new_p = new_ps[left_right]  # just choose one point
     else:
-        new_p = new_ps[new_ps != path[-2]][0]  # next point that wasnt the previous point
-
+        new_p = new_ps[new_ps != path[-2]][0]  # next point that wasn't the previous point
     # recursive function
     newpath = find_line_segement(graph, new_p, path)  # next step
+
     if newpath:
         return newpath  # return if recursion is completed
 

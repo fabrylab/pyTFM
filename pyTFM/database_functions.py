@@ -111,58 +111,80 @@ def setup_database_internal(db, keys_dict, folders_dict):
                     }
 
     # filtering all files in the folder
-    all_patterns = list(itertools.chain(*layer_search.values()))
-    images = []
-    expected_frames = 0
+    # all_patterns = list(itertools.chain(*layer_search.values()))
+    images = {}
     for layer in layer_search.keys():
         folder = layer_search[layer]["folder"]
         skey = layer_search[layer]["file_key"]
         if skey[0] is not None and folder is not None:
-            expected_frames += 1
-            images.append([os.path.join(folder, x) for x in os.listdir(folder) if any([pat.match(x) for pat in skey])])
-    images = list(itertools.chain(*images))
+            images[layer] = [os.path.join(folder, x) for x in os.listdir(folder) if any([pat.match(x) for pat in skey]) and re.search(key_frame, x)]
 
-    # identifying frames by evaluating the leading number.
-    frames = [get_group(re.search(key_frame, os.path.split(x)[1]), 1) for x in images]  # extracting frame
-    # generating a list of sort_ids for the clickpoints database (allows you to miss some frames)
-    sort_id_list = make_rank_list(frames, dtype=int)  # list of sort indexes (frames) of images in the database
-    warn_incorrect_files(frames, expected_frames)  # checking if there where more or less then three images per frame
+    # number of layers either 3 or 2 if no image of the cells is provided
+    expected_layers = len(images.keys())
+    #images = list(itertools.chain(*images))
 
-    # initializing layer in the database
-    if len(images) == 0:
+    # breaking if no images at all are found
+    if all([len(ims) == 0 for ims in images.values()]):
+        warnings.warn("no images found")
         return
-    layer_list = ["images_after", "images_before", "membranes"][:expected_frames]
+
+    # finding the frame of all images
+    all_frames = []
+    image_frames = {}
+    for layer, ims in images.items():
+        frs = [get_group(re.search(key_frame, os.path.split(x)[1]), 1) for x in ims]
+        all_frames.extend(frs)
+        image_frames[layer] = {i:f for i, f in zip(ims, frs)}
+
+    # defining which frame belongs to which sortindex
+    all_s_id, frames_ids = make_rank_list(all_frames)
+
+    # merge to single dictionary that associates one file with a sort index
+    # and layer in the clickpoints database
+    image_sort_id= defaultdict(dict)
+    for layer, im_frame in image_frames.items():
+        for im, fr in im_frame.items():
+            image_sort_id[frames_ids[fr]][layer] = im
+
+    # checking if there where more or less then three images per frame
+    image_sort_id, frames_ids = filter_incorrect_files(image_sort_id, frames_ids, expected_layers)
+    ids_frames = {s_id: frame for frame, s_id in frames_ids.items()}
+
+    # creating the layers
+    layer_list = default_layer_names[:expected_layers]
     base_layer = db.getLayer(layer_list[0], create=True, id=0)
     for l in layer_list[1:]:
         db.getLayer(l, base_layer=base_layer, create=True)
-    # sorting images into layers
+    # inserting path to output text file
     db.setPath(folders_dict["folder_out"], id=1)
-    # db.setPath(folders_dict["folder_after"], id=2)
-    # db.setPath(folders_dict["folder_before"], id=3)
-    # db.setPath(folders_dict["folder_cell"], id=4)
 
-    frames_ref_dict = {}
+    # sorting images into layers
     file_order = {}
     id_frame_dict = {}
-    for id, (sort_index_id, frame, im) in enumerate(zip(sort_id_list, frames, images)):
-        if any([pat.match(os.path.split(im)[1]) for pat in layer_search["images_after"]["file_key"]]):
-            layer = "images_after"
-        if any([pat.match(os.path.split(im)[1]) for pat in layer_search["images_before"]["file_key"]]):
-            layer = "images_before"
-        if expected_frames == 3:
-            if any([pat.match(os.path.split(im)[1]) for pat in layer_search["membranes"]["file_key"]]):
-                layer = "membranes"
 
-        print("file:", im, "frame:", frame, "layer:", layer)
-        image_object = db.setImage(id=id, filename=im, sort_index=sort_index_id,
-                                   layer=layer)
-        frames_ref_dict[frame] = sort_index_id
-        file_order[frame + layer] = image_object.id
-        id_frame_dict[image_object.id] = frame
-    unique_frames = np.unique(list(frames_ref_dict.keys()))
+    for sort_index in list(sorted(image_sort_id.keys())):
+        try:
+            for layer in layer_list:
+                frame = ids_frames[sort_index]
+                im = image_sort_id[sort_index][layer]
+                print("file:", im, "frame:", frame, "layer:", layer)
+                image_object = db.setImage(filename=im, sort_index=sort_index,
+                                           layer=layer)
+                file_order[frame + layer] = image_object.id
+                id_frame_dict[image_object.id] = frame
+        except Exception as e:
+            print("Someting whent wrong when setting images in frame %s:"%ids_frames[sort_index])
+            print(e)
 
-    db._AddOption(key="frames_ref_dict", value=frames_ref_dict)
-    db.setOption(key="frames_ref_dict", value=frames_ref_dict)
+    # writing meta information to the database:
+    # dictionaries mapping the layer and the frame to the image id (file_order),
+    # image to the frame (id_frame_dict), and the frame to the sort_index (frames_ref_dict)
+    # and a list of sorted (by the associated sort indices) frames
+    unique_frames = sorted(frames_ids.items() , key=lambda x: x[1])
+    unique_frames = [x[0] for x in unique_frames]
+
+    db._AddOption(key="frames_ref_dict", value=frames_ids)
+    db.setOption(key="frames_ref_dict", value=frames_ids)
     db._AddOption(key="file_order", value=file_order)
     db.setOption(key="file_order", value=file_order)
     db._AddOption(key="unique_frames", value=unique_frames)
@@ -237,17 +259,37 @@ def fill_patches_for_cell_layer(frame, parameter_dict, res_dict, db, db_info=Non
     db.setMask(image=image, data=mask)  # udapting mask in clickpoints
 
 
-def warn_incorrect_files(frames, expected=3):
+def filter_incorrect_files(frames, frame_sort_index, expected=3):
+
     '''
     throws a waring when there more or less then three images per frame are found.
     :param frames:
     :return:
     '''
-    frames = np.array(frames)
-    unique_frames, counts = np.unique(frames, return_counts=True)
-    problems = np.where(counts != expected)[0]
-    if len(problems) > 0:
-        warn = "There seems to be a problem with the your images:"
-        for p_id in problems:
-            warn += "Found %s files for frame %s. " % (counts[p_id], unique_frames[p_id])
-        warnings.warn(warn + "Excpeted %s files per frame."%str(expected))
+    frames_cp = frames.copy()
+    deleted_sort_indices = []
+    for sort_index, layers in frames.items():
+        if len(layers) != expected:
+            frame = [f for f, s_id in frame_sort_index.items() if s_id == sort_index]
+            frame = frame[0] if len(frame)==1 else "unidentified"
+            warn = "Found %s files for frame %s. " % (str(len(layers)), frame)
+            warnings.warn(warn + "Expected %s files per frame." % str(expected))
+            # delete all images from the uncorrect sort index
+            deleted_sort_indices.append(sort_index)
+
+    # how to reorganize sort indices after some are removed
+    old_new_si = {s_id: s_id for s_id in frame_sort_index.values()}
+    # iterating through all deleted sort indices
+    # at every iteration the deleted sort_index is dropped and all new sort indices, that refer to an old
+    # sort index that is larger then then deleted one are subtracted by -1
+    for s_id in deleted_sort_indices:
+        old_new_si =  {si_old: si_new - (si_old > s_id) for si_old, si_new in old_new_si.items() if si_old != s_id}
+
+    # updating the dictionaries accordingly
+    frames_cp = {old_new_si[s_id]: layer_im for s_id, layer_im in frames_cp.items() if s_id not in deleted_sort_indices}
+    frame_sort_index_cp = {frame: old_new_si[s_id] for frame, s_id in frame_sort_index.items() if s_id not in deleted_sort_indices}
+
+    print("######",sorted(list(frames_cp.keys())))
+    print("######",sorted(list(frame_sort_index_cp.values())))
+
+    return frames_cp, frame_sort_index_cp

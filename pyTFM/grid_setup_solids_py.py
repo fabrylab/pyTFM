@@ -538,7 +538,7 @@ def find_borders(mask, shape, raise_error=True, type="colony", min_length=0):
         if type == "cell layer":
             c_l = Cells_and_Lines2(mask_boundaries, shape, graph, points)
             c_l.filter_small_de_line(min_length)
-    except (RecursionError, FindingBorderError) as e:
+    except (RecursionError, FindingBorderError, IndexError) as e:
         print("original error: ", e)
         if raise_error:
             raise FindingBorderError

@@ -3,7 +3,7 @@ import copy
 import os
 import warnings
 from collections import defaultdict
-
+import natsort
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter
@@ -57,18 +57,20 @@ def convert_str_none(string):
     return string if not (string == "None" or string == "none") else None
 
 
-def make_rank_list(values, dtype=int):
+def make_rank_list(values):
+
     '''
     produce a list containing the corresponding rank of input values. Ties
-    get the same rank. This is used for optaining the correct sort indices 
+    get the same rank. This is used for obtaining the correct sort indices
     (frames in the cdb database) for the list of frames.
+    Sorting is performed by the natsort package, wich should recognize signs and scientific notation
     '''
 
-    values_conv = np.array(values, dtype=dtype)  # allows only int or string that can be converted
-    unique_values = np.unique(values_conv)  # already sorted
+    unique_values = set(values)
+    unique_values = natsort.natsorted(unique_values,alg=natsort.REAL)
     unique_values_dict = {value: rank for rank, value in enumerate(unique_values)}  # value:rank of the frame
-    rank_list = [unique_values_dict[value] for value in values_conv]
-    return rank_list
+    rank_list = [unique_values_dict[value] for value in values]
+    return rank_list, unique_values_dict
 
 
 def invert_dictionary(d):

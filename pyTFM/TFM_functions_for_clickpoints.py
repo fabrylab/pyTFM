@@ -39,7 +39,7 @@ class cells_masks():
 
     # dictionaries properties because iterating through these dictionaries often adds empty entries,due to the
     # default dict structure. This will for example generate empty cell (cell colonies in a frame when trying to load a
-    # mask that is not exisiting
+    # mask that is not existing
     @property
     def masks_dict(self):
         return copy.deepcopy(self._masks_dict)
@@ -52,8 +52,8 @@ class cells_masks():
         print("loading masks: ")
         frames = make_iterable(frames)
         for frame in tqdm(frames):
-            mask = try_mask_load(self.db, self.db_info["frames_ref_dict"][frame], raise_error=False,
-                                 mtype="all")  # loading mask
+            # loading mask
+            mask = try_mask_load(self.db, self.db_info["frames_ref_dict"][frame], raise_error=False, mtype="all")
             if not isinstance(mask, np.ndarray):  # checking if mask instance could be loaded
                 for mask_name, index in self.indices.items():
                     self._masks_dict[frame][0][mask_name] = None  # writing to dict
@@ -61,7 +61,7 @@ class cells_masks():
                 continue
             # optional cutting close to image edge
             mask_full = mask > 0  # mask as one block
-            mask_full = binary_fill_holes(mask_full)  # fillingthe whole area
+            mask_full = binary_fill_holes(mask_full)  # filling the whole area
             mask_cut, warn_edge = cut_mask_from_edge_wrapper(self.parameter_dict["edge_padding"], mask,
                                                              self.parameter_dict, cut=True)  # just for the warning here
             mask_full = remove_small_objects(mask_full, min_size=min_size)  # cleanup
@@ -118,7 +118,7 @@ class cells_masks():
                 raise Mask_Error("no mask found in frame %s for type %s" % (str(frame), mtype))
         return mask
 
-    def reconstruct_masks_frame(self, frame, mtype, raise_error=True, fill_holes=False, obj_ids=[]):
+    def reconstruct_masks_frame(self, frame, mtype="mask", raise_error=True, fill_holes=False, obj_ids=[], indices=None):
         # retrieves the a list of all masks and cell ids in one frame
         ret = []
         mtypes = make_iterable(mtype)
@@ -151,7 +151,7 @@ class cells_masks():
         return ret_final
 
     def get_warning(self, frame, cell_id, mtype):
-        return (self.warns_dict[frame][cell_id][mtype])
+        return self.warns_dict[frame][cell_id][mtype]
 
 
 def check_mask_size(mask, warn_tresh, print_out=True, mask_name="", frame=""):
@@ -304,27 +304,37 @@ def create_layers_on_demand(db, db_info, layer_list):
                 db.getLayer(pl, base_layer=base_layer, create=True)
 
 
-def split_dict_str(string):
+def split_dict_str(string, convert_key=False, convert_value=False, **kwargs):
     string = string.strip("{").strip("}")
     string_list = string.split(",")
     dict_obj = {}
     for e in string_list:
         key, value = [sub_str.strip(" ") for sub_str in e.split(":")]
-        dict_obj[try_int_strip(key)] = try_int_strip(value)
+        if convert_key:
+            key = try_int_strip(key)
+        else:
+            key = key.strip("'")
+        if convert_value:
+            value = try_int_strip(value)
+        else:
+            value = value.strip("'")
+        dict_obj[key] = value
+
     return dict_obj
 
 
-def split_list_str(string):
+def split_list_str(string, **kwargs):
+    # for example when original input was list
     string = string.strip("[").strip("]")
-    string_list = string.split(" ")
-    list_obj = [try_int_strip(v) for v in string_list]
+    string_list = string.split(", ")
+    list_obj = [v.strip("'") for v in string_list]
     return list_obj
 
 
-def get_option_wrapper(db, key, unpack_funct=None, empty_return=list):
+def get_option_wrapper(db, key, unpack_funct=None, empty_return=list, **kwargs):
     try:
         if unpack_funct:
-            return unpack_funct(db.table_option.select().where(db.table_option.key == key).get().value)
+            return unpack_funct(db.table_option.select().where(db.table_option.key == key).get().value, **kwargs)
         else:
             return db.table_option.select().where(db.table_option.key == key).get().value
     except:
@@ -332,30 +342,34 @@ def get_option_wrapper(db, key, unpack_funct=None, empty_return=list):
 
 
 def get_db_info_for_analysis(db):
+    # list of all frames, order according to their sort index
     unique_frames = get_option_wrapper(db, "unique_frames", split_list_str)
-    file_order = get_option_wrapper(db, "file_order", split_dict_str)
-    frames_ref_dict = get_option_wrapper(db, "frames_ref_dict", split_dict_str, empty_return=dict)
-    id_frame_dict = get_option_wrapper(db, "id_frame_dict", split_dict_str, empty_return=dict)
+    file_order = get_option_wrapper(db, "file_order", split_dict_str, convert_value=True)
+    frames_ref_dict = get_option_wrapper(db, "frames_ref_dict", split_dict_str, empty_return=dict, convert_value=True)
+    id_frame_dict = get_option_wrapper(db, "id_frame_dict", split_dict_str, empty_return=dict, convert_key=True)
 
-    cbd_frames_ref_dict = {value: key for key, value in frames_ref_dict.items()}  # inverse of frames_ref_dict
+    # inverse of frames_ref_dict
+    cbd_frames_ref_dict = {value: key for key, value in frames_ref_dict.items()}
 
     layers = [l.name for l in db.getLayers()]
     try:
         path = get_option_wrapper(db, "folder", None)
     except:
         path = db.getPath(id=1).path
-    if path == ".":  # if empty path object in clickpoints use the path where clickpoints is saved
+    # if empty path object in clickpoints use the path where clickpoints is saved
+    if path == ".":
         path = os.path.split(db._database_filename)[0]
-    im_shapes = {}  # exact list of image shapes
 
+    # TODO: think about optimizing that// this esentially loads one image per frame each time it is called
+    im_shapes = {}  # exact list of image shapes
     for frame in unique_frames:
         images = db.getImages(frame=frames_ref_dict[frame])
         if len(images) > 0:
             im_shapes[frame] = db.getImages(frame=frames_ref_dict[frame])[0].data.shape
         else:
             im_shapes[frame] = ()
-
-    mask_types = [m.name for m in db.getMaskTypes()]  # list mask types
+    # list of exiting mask types
+    mask_types = [m.name for m in db.getMaskTypes()]
     db_info = {"file_order": file_order,
                "frames_ref_dict": frames_ref_dict,
                "path": path,
@@ -404,7 +418,7 @@ def add_plot(plot_type, values, plot_function, frame, db_info, parameter_dict, d
 
 
 def calc_on_area(frame, res_dict, parameter_dict, label, masks, mask_types=None, obj_ids=[], x=None, y=None,
-                 sumtype="abs", add_cut_factor=None, db_info=None):
+                 sumtype="abs", add_cut_factor=None, db_info=None, label2=None):
     fill_holes = True if parameter_dict["FEM_mode"] == "colony" else False
     mask_iter = masks.reconstruct_masks_frame(frame, mask_types, obj_ids=obj_ids, raise_error=False,
                                               fill_holes=fill_holes)
@@ -415,29 +429,34 @@ def calc_on_area(frame, res_dict, parameter_dict, label, masks, mask_types=None,
         if isinstance(add_cut_factor, float):  # additional cutting when in layer-mode
             mask, w = cut_mask_from_edge(mask, add_cut_factor, parameter_dict["TFM_mode"] == "colony")
         check_empty_mask(mask, mtype, frame, obj_id)
-        label2 = default_parameters["mask_properties"][mtype]["label"]
+        if label2 == None:
+            _label2 = default_parameters["mask_properties"][mtype]["label"]
+        else:
+            _label2 = label2
         if sumtype == "abs":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
-            res_dict[frame]["%s on %s" % (label, label2)].append(
+            res_dict[frame]["%s%s" % (label, _label2)].append(
                 [obj_id, np.sum(np.sqrt(x[mask_int] ** 2 + y[mask_int] ** 2)), warn])
         if sumtype == "mean":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
-            res_dict[frame]["%s on %s" % (label, label2)].append([obj_id, np.mean(x[mask_int]), warn])
+            res_dict[frame]["%s%s" % (label, _label2)].append([obj_id, np.mean(x[mask_int]), warn])
         if sumtype == "mean_abs":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
-            res_dict[frame]["%s on %s" % (label, label2)].append([obj_id, np.mean(np.abs(x[mask_int])), warn])
+            res_dict[frame]["%s%s" % (label, _label2)].append([obj_id, np.mean(np.abs(x[mask_int])), warn])
         if sumtype == "area":  # area of original mask, without interpolation
             area = np.sum(mask) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
-            res_dict[frame]["%s of %s" % (label, label2)].append([obj_id, area, warn])
+            res_dict[frame]["%s%s" % (label, _label2)].append([obj_id, area, warn])
         if sumtype == "cv":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
             ps_new = parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"][frame]) / np.array(x.shape))
             border_pad = int(np.round(parameter_dict["cv_pad"] / ps_new))
-            res_dict[frame]["%s of %s" % (label, label2)].append(
+            res_dict[frame]["%s%s" % (label, _label2)].append(
                 [obj_id, coefficient_of_variation(mask_int, x, border_pad), warn])
 
 
+
 def general_properties(frame, parameter_dict, res_dict, db, db_info=None, masks=None, **kwargs):
+
     '''
     Number of cells, area of the cell colony...
     :param frame:
@@ -497,16 +516,14 @@ def simple_shift_correction(frame, parameter_dict, res_dict, db, db_info=None, *
     except KeyError:
         n_frames = 2
 
-
     # get paths for saving later
     im_a_path = find_full_im_path(im_a, db_info["path"])
     im_b_path = find_full_im_path(im_b, db_info["path"])
 
-
     # performig drift correction
     if n_frames == 2:
         b_save, a_save, [], drift = correct_stage_drift(image_before, image_after,
-                                                              additional_images=[])
+                                                        additional_images=[])
     if n_frames == 3:
         b_save, a_save, [m_save], drift = correct_stage_drift(image_before, image_after,
                                                               additional_images=image_membrane)
@@ -521,6 +538,7 @@ def simple_shift_correction(frame, parameter_dict, res_dict, db, db_info=None, *
 
 def simple_segmentation(frame, parameter_dict, res_dict, db, db_info=None, masks=None, seg_threshold=0,
                         seg_type="cell_area", im_filter=None, **kwargs):
+    # only for cell layer mode
     if seg_type == "cell_area":
         mtypes = get_masks_by_key(default_parameters, "use", "stress_layer")
         if all([m in db_info["mask_types"] for m in mtypes]):
@@ -535,6 +553,7 @@ def simple_segmentation(frame, parameter_dict, res_dict, db, db_info=None, masks
             og_mask[~mask] = 2
             og_mask[memb_mask] = parameter_dict["mask_properties"]["membrane"]["index"]
             db.setMask(frame=db_info["frames_ref_dict"][frame], data=og_mask.astype("uint8"))
+    # only for colony mode
     if seg_type == "membrane":
         mtypes = get_masks_by_key(default_parameters, "use", "borders")
         if all([m in db_info["mask_types"] for m in mtypes]):
@@ -551,6 +570,30 @@ def simple_segmentation(frame, parameter_dict, res_dict, db, db_info=None, masks
     return im_filter
 
 
+def cover_entire_image_with_mask(frame, parameter_dict, res_dict, db, db_info=None, masks=None,
+                                 mask_type="force_measures", mode="fill out image", **kwargs):
+    mtype = db.getMaskTypes(name=mask_type)[:]
+    if len(mtype) == 0:
+        print("mask " + mask_type + " not found")
+        return
+    index = mtype[0].index
+
+    # filling the entire image with the index
+    if mode == "fill out image":
+        data = np.ones(db_info["im_shape"][frame]) * index
+        db.setMask(frame=db_info["frames_ref_dict"][frame], data=data.astype(np.uint8))
+    # marking the outer perimeter of the image with the mask
+    # perimeter directly at the edge doesnt work for binary fill holes method later one
+    # perimeter is set index-pixels distant to the image edge, so that you can set multiple masks with this method
+    if mode == "encircle image":
+        data = try_mask_load(db, db_info["frames_ref_dict"][frame], raise_error=False, mtype="all", ret_type="zeros")
+        data[(index, -(index+1)), index:-index] = index
+        data[index:-index, (index, -(index+1))] = index
+        db.setMask(frame=db_info["frames_ref_dict"][frame], data=data.astype(np.uint8))
+
+    return None, frame
+
+
 def deformation(frame, parameter_dict, res_dict, db, db_info=None, masks=None, **kwargs):
     # deformation for 1 frame
     im1 = db.getImage(id=db_info["file_order"][frame + "images_after"]).data
@@ -563,7 +606,7 @@ def deformation(frame, parameter_dict, res_dict, db, db_info=None, masks=None, *
                                                  window_size_pix, overlap_pix,
                                                  std_factor=parameter_dict["std_factor"])
     db_info["defo_shape"] = u.shape
-    res_dict[frame]["sum deformations"].append(["image", np.sum(np.sqrt(u ** 2 + v ** 2)), ""])  # propably remove that
+    res_dict[frame]["sum deformations image"].append(["image", np.sum(np.sqrt(u ** 2 + v ** 2)), ""])  # propably remove that
 
     # adding plot of deformation field to the database
     add_plot("deformation", (u, v), show_quiver, frame, db_info, parameter_dict, db)
@@ -580,6 +623,9 @@ def deformation(frame, parameter_dict, res_dict, db, db_info=None, masks=None, *
 def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, db_info=None, masks=None, **kwargs):
     u, v = try_to_load_deformation(db_info["path"], frame, warn=True)
     t_x, t_y = try_to_load_traction(db_info["path"], frame, warn=False)
+    if u.shape != t_x.shape:
+        raise ShapeMismatchError("Traction field and deformation field have different shapes. "
+                                 "Try to repeat the calculation of the traction field.")
     db_info["defo_shape"] = t_x.shape
     ps_new = parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"][frame]) / np.array(t_x.shape))
     # select masks
@@ -595,7 +641,6 @@ def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, d
     contractile_force = None
     contr_energy = None
     for obj_id, mask, mtype, warn in mask_iter:
-
         if not isinstance(mask, np.ndarray):
             print("couldn't identify mask %s in frame %s patch %s" % (str(mtype), str(frame), str(obj_id)))
             continue
@@ -608,7 +653,7 @@ def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, d
             res_dict[frame]["contractility" + default_parameters["mask_properties"][mtype]["label"]].append(
                 [obj_id, contractile_force, warn])
 
-        res_dict[frame]["area_force_measurement"].append([obj_id,mask_area, warn])
+        res_dict[frame]["area_force_measurement"].append([obj_id, mask_area, warn])
 
         # calculate contractile energy if deformations are provided
         if isinstance(u, np.ndarray):
@@ -625,8 +670,7 @@ def traction_force(frame, parameter_dict, res_dict, db, db_info=None, masks=None
     # trying to laod deformation
     u, v = try_to_load_deformation(db_info["path"], frame, warn=False)
     db_info["defo_shape"] = u.shape
-    ps_new = parameter_dict["pixelsize"] * np.mean(  # should be equivalent to "pixelsize_def_image"
-        np.array(db_info["im_shape"][frame]) / np.array(u.shape))
+    ps_new = parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"][frame]) / np.array(u.shape))
 
     # using tfm with or without finite thickness correction
     if parameter_dict["TFM_mode"] == "finite_thickness":
@@ -858,18 +902,18 @@ def apply_to_frames(db, parameter_dict, analysis_function, leave_basics=False, r
     '''
     wrapper to apply analysis function on all frames
     :param db: clickpoints database
-    :param parameter_dict: parameters for piv deforamtion calcualtion: (windowsize, overlapp), sigma and youngs modulus
+    :param parameter_dict: parameters for piv deformation calculation: (window size, overlap), sigma and Young's modulus
     of the gel (or of the cell sheet when applying FEM), hight of the gel
     :param func: function that is analyzed
     :param frames: list f frames (of the cdb database) to be analyze e.g [0,1,2]
-    :param db_info: dicitionary with the keys "path","frames_ref_dict","im_shape","file_order" as constructed from
+    :param db_info: dictionary with the keys "path","frames_ref_dict","im_shape","file_order" as constructed from
     get db_info_for_analysis
     :param res_dict: dictionary of results to be filled up adn appended
     :return:
     '''
 
-    frames = make_iterable(frames)  # if only one frame is provided
-    if not leave_basics == True:
+    frames = make_iterable(frames)
+    if not leave_basics:
         db_info, masks, res_dict = provide_basic_objects(db, frames, parameter_dict, db_info, masks, res_dict)
     print(calculation_messages[analysis_function.__name__] % str(frames))
     for frame in tqdm(frames, total=len(frames)):
@@ -892,11 +936,12 @@ if __name__ == "__main__":
     res_dict = defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
 
-    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
-   #                                            db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict, frames="1",
+    # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
+    #                                            db_info=db_info, masks=None)
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict=res_dict,
+                                               frames="1",
                                                db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict, frames="1",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict, frames="1",
                                                db_info=db_info, masks=masks)
 
     # parameter_dict["filter_type"]=None
