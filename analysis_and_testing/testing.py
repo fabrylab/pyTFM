@@ -3,6 +3,31 @@ import clickpoints
 from pyTFM.database_functions import *
 from pyTFM.TFM_functions_for_clickpoints import *
 
+# some illustration of line tension and stress tensors
+tensor = np.array([[1,1.5],[1.5,2]])
+def lt(tensor,angle):
+    vx = np.cos(angle)
+    vy = np.sin(angle)
+    v = np.array([vx,vy])
+    l = np.matmul(tensor, v)
+    norm = np.linalg.norm(l)
+    normal_component = np.matmul(l, v)
+    shear = norm**2 - normal_component**2
+    return norm, normal_component, shear
+angles = np.linspace(0,1*np.pi,10000)
+res = [(lt(tensor,a)) for a in angles ]
+norms = [r[0] for r in res]
+norm_components = [r[1] for r in res]
+shear_components = [r[2] for r in res]
+plt.figure()
+plt.plot(angles,norms, label="norm")
+plt.plot(angles,norm_components, label="normal component")
+plt.plot(angles,np.abs(norm_components), label="abs normal component")
+plt.plot(angles,shear_components, label="shear component")
+plt.legend()
+
+np.mean(norms)
+np.mean(norm_components)
 
 ## testing filling the whole area with masks
 db = clickpoints.DataFile("/home/andy/Desktop/KOshift/database.cdb","r")
@@ -15,6 +40,10 @@ db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_propertie
                                          db_info=db_info, masks=None)
 db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, frames=all_frames,
                                          db_info=db_info, masks=None)
+
+
+
+
 
 
 
