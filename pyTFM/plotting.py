@@ -312,7 +312,7 @@ def show_quiver(fx, fy, filter=[0, 1], scale_ratio=0.2, headwidth=None, headleng
                 , vmin=None, vmax=None, cbar_axes_fraction=0.2, cbar_tick_label_size=15
                 , cbar_width="2%", cbar_height="50%", cbar_borderpad=0.1,
                 cbar_style="not-clickpoints", plot_style="not-clickpoints", cbar_title_pad=1, plot_cbar=True, alpha=1,
-                ax_origin="upper", **kwargs):
+                ax_origin="upper", filter_method="regular", filter_radius=5, **kwargs):
     # list of all necessary quiver parameters
     quiver_parameters = {"headwidth": headwidth, "headlength": headlength, "headaxislength": headaxislength,
                          "width": width, "scale_units": "xy", "angles": "xy", "scale": None}
@@ -331,8 +331,8 @@ def show_quiver(fx, fy, filter=[0, 1], scale_ratio=0.2, headwidth=None, headleng
         ax.set_position([0, 0, 1, 1])
     ax.set_axis_off()
     # plotting arrows
-    fx, fy, xs, ys = filter_values(fx, fy, abs_filter=filter[0],
-                                   f_dist=filter[1])  # filtering every n-th value and every value smaller then x
+    # filtering every n-th value and every value smaller then x
+    fx, fy, xs, ys = filter_values(fx, fy, abs_filter=filter[0], f_dist=filter[1],filter_method=filter_method, radius=filter_radius)
     if scale_ratio:  # optional custom scaling with the image axis lenght
         fx, fy = scale_for_quiver(fx, fy, dims=dims, scale_ratio=scale_ratio)
         quiver_parameters["scale"] = 1  # disabeling the auto scaling behavior of quiver
@@ -769,7 +769,41 @@ def plot_arrows(nodes, x, y, cbar_str=[], scale_ratio=0.05, grid_lines=False, di
     return fig
 
 
-def filter_values(ar1, ar2, abs_filter=0, f_dist=3):
+
+def find_maxima(ar1,ar2,radius=5,shape="circle"):
+    # generating circle
+
+    ys,xs = np.indices((radius*2 + 1,radius*2+1))
+    xs = (xs - radius).astype(float)
+    ys = (ys - radius).astype(float)
+    if shape=="circle":
+        out = np.sqrt(xs ** 2 + ys ** 2) <= radius
+        xs[~out] = np.nan
+        ys[~out] = np.nan
+    abs = np.sqrt(ar1**2+ar2**2)
+    lmax = np.unravel_index(np.nanargmax(abs),shape=abs.shape)
+    maxis  = [lmax]
+    while True:
+        x_exclude = (lmax[1] + xs).flatten()
+        y_exclude = (lmax[0] + ys).flatten()
+        outside_image = (x_exclude>=abs.shape[1]) | (x_exclude<0) |  (y_exclude>=abs.shape[0]) | (y_exclude<0) | (np.isnan(x_exclude)) | (np.isnan(y_exclude))
+        x_exclude = x_exclude[~outside_image]
+        y_exclude = y_exclude[~outside_image]
+        abs[y_exclude.astype(int),x_exclude.astype(int)] = np.nan
+        try:
+            lmax = np.unravel_index(np.nanargmax(abs), shape=abs.shape)
+        except ValueError:
+            break
+        maxis.append(lmax)
+
+    maxis_y = [i[0] for i in maxis]
+    maxis_x = [i[1] for i in maxis]
+    return maxis_y, maxis_x
+
+
+
+
+def filter_values(ar1, ar2, abs_filter=0, f_dist=3, filter_method="regular", radius=5):
     '''
     function to filter out values from an array for better display
     :param ar1:
@@ -778,20 +812,31 @@ def filter_values(ar1, ar2, abs_filter=0, f_dist=3):
     :param f_dist: distance betweeen filtered values
     :return:
     '''
-    # ar1_show=np.zeros(ar1.shape)+np.nan
-    # ar2_show=np.zeros(ar2.shape)+np.nan
-    pixx = np.arange(np.shape(ar1)[0])
-    pixy = np.arange(np.shape(ar1)[1])
-    xv, yv = np.meshgrid(pixy, pixx)
 
-    def_abs = np.sqrt((ar1 ** 2 + ar2 ** 2))
-    select_x = ((xv - 1) % f_dist) == 0
-    select_y = ((yv - 1) % f_dist) == 0
-    select_size = def_abs > abs_filter
-    select = select_x * select_y * select_size
-    s1 = ar1[select]
-    s2 = ar2[select]
-    return s1, s2, xv[select], yv[select]
+
+    if filter_method == "regular":
+        pixx = np.arange(np.shape(ar1)[0])
+        pixy = np.arange(np.shape(ar1)[1])
+        xv, yv = np.meshgrid(pixy, pixx)
+
+        def_abs = np.sqrt((ar1 ** 2 + ar2 ** 2))
+        select_x = ((xv - 1) % f_dist) == 0
+        select_y = ((yv - 1) % f_dist) == 0
+        select_size = def_abs > abs_filter
+        select = select_x * select_y * select_size
+        s1 = ar1[select]
+        s2 = ar2[select]
+        x_ind = xv[select]
+        y_ind = yv[select]
+    if filter_method == "local_maxima":
+        y_ind,x_ind = find_maxima(ar1, ar2, radius=radius,shape="circle")
+        s1 = ar1[y_ind, x_ind]
+        s2 = ar2[y_ind, x_ind]
+    if filter_method == "local_maxima_square":
+        y_ind,x_ind = find_maxima(ar1, ar2, radius=radius,shape="square")
+        s1 = ar1[y_ind, x_ind]
+        s2 = ar2[y_ind, x_ind]
+    return s1, s2, x_ind, y_ind
 
 
 def check_closet_neigbours(points1, points2, assign, mask1=None, mask2=None):
