@@ -759,7 +759,7 @@ def prepare_forces(tx, ty, ps, mask):
 
 def correct_torque(fx, fy, mask_area):
     com = regionprops(mask_area.astype(int))[0].centroid  # finding center of mass
-    com = (com[1], com[0])  # as x y coorinate
+    com = (com[1], com[0])  # as x y coordinate
 
     c_x, c_y = np.meshgrid(range(fx.shape[1]), range(fx.shape[0]))  # arrays with all x and y coordinates
     r = np.zeros((fx.shape[0], fx.shape[1], 2))  # array with all positional vectors
@@ -798,8 +798,18 @@ def correct_torque(fx, fy, mask_area):
     # bounds = ([-np.pi], [np.pi])
     ## just use normal gradient descent??
     eps = np.finfo(float).eps  # minimum machine tolerance, for most exact calculation
-    p = least_squares(fun=get_torque_angle, x0=pstart, method="lm",
-                      max_nfev=100000000, xtol=eps, ftol=eps, gtol=eps, args=())["x"]  # trust region algorithm,
+    # trust region algorithm,
+    # there seems to be a bug when using very small tolerances close to the machine precision limit (eps)
+    # in rare cases there is an error. see also https://github.com/scipy/scipy/issues/11572
+    try:
+        p = least_squares(fun=get_torque_angle, x0=pstart, method="lm",
+                          max_nfev=100000000, xtol=eps, ftol=eps, gtol=eps, args=())["x"]
+    except KeyError:
+        eps *= 5
+        p = least_squares(fun=get_torque_angle, x0=pstart, method="lm",
+                          max_nfev=100000000, xtol=eps, ftol=eps, gtol=eps, args=())["x"]
+
+
 
     q[:, :, 0] = + np.cos(p) * (f[:, :, 0]) - np.sin(p) * (f[:, :, 1])  # corrected forces
     q[:, :, 1] = + np.sin(p) * (f[:, :, 0]) + np.cos(p) * (f[:, :, 1])
