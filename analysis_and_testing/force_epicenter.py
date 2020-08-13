@@ -19,8 +19,8 @@ def get_xy_for_quiver(u):
 
 pixelsize_org = 6.25 / 40
 window_size = 64
-overlapp = 32
-pixel_factor = window_size - overlapp
+overlap = 32
+pixel_factor = window_size - overlap
 pixelsize_defo =  pixelsize_org * pixel_factor # in µm
 pixelsize_defo =1
 

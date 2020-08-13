@@ -299,7 +299,7 @@ def general_display(plot_types=[], pixelsize=1, display_type="outline", f_type="
     mask_fm_color = "C2"
     mask_fem_color = "#666666"
 
-    ps_new_ex = 0.845 # pixelsize when using windowsize 20, overlapp 19.25
+    ps_new_ex = 0.845 # pixelsize when using windowsize 20, overlap 19.25
     vmax_x_ep = 70 * 0.845
     pd={"figsize" : figsize,
     "arrow_scale"  :arrow_scale,

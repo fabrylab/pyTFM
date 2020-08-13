@@ -340,7 +340,7 @@ def TFM_tractions(u, v, pixelsize1, pixelsize2, h, young, sigma=0.49, filter="ga
 def calculate_deformation(im1, im2, window_size=64, overlap=32, std_factor=20):
     '''
     Calculation of deformation field using particle image velocimetry (PIV). Recommendations: window_size should be about
-    6 time the size of bead. Overlapp should be no less then half of the window_size. Std_factor should be kept as high as
+    6 time the size of bead. overlap should be no less then half of the window_size. Std_factor should be kept as high as
     possibel. Make sure to check for to many exclusions caused by this factor e.g. by looking at the mask_std.
     Side note: returns -v because original v is negative if compared to coordinates of images (y-axis is inverted).
 
@@ -348,7 +348,7 @@ def calculate_deformation(im1, im2, window_size=64, overlap=32, std_factor=20):
     :param file1: after iamge
     :param file2: before image
     :param window_size: integer, size of interrogation windows for PIV
-    :param overlapp: integer, overlapp of interrogation windows for PIV
+    :param overlap: integer, overlap of interrogation windows for PIV
     :param std_factor: filterng extreme outliers beyond mean (deformation) + std_factor*standard deviation (deforamtion)
     :return:u,v deformation in x and y direction in pixel of the before and after image
             x,y psitions of the deformation fiedl in coordinates of the after and before image

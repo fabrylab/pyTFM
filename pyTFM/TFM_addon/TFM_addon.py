@@ -2,18 +2,17 @@ from __future__ import division, print_function
 import pyTFM
 import shutil
 from pyTFM.TFM_functions_for_clickpoints import *  # must be on top because of some matplotlib backend issues
-from pyTFM.parameters_and_strings import tooltips, default_parameters, convert_config_input
+from pyTFM.parameters_and_strings import tooltips, default_parameters, convert_config_input, default_search_keys
 from pyTFM.database_functions import *
 
-# from TFM_functions_for_clickpoints import * local import
 
-# from utilities import  get_group,createFolder
 import importlib
 import os
 import sys
 from functools import partial
 from qtpy import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QSettings
 import qtawesome as qta
 import clickpoints
 import traceback
@@ -92,6 +91,7 @@ def load_config(file_path, parameters):
 
 
 def add_parameter_from_list(labels, dict_keys, default_parameters, layout, grid_line_start, con_func):
+
     params = {}
     param_labels = {}
     for i, (label, dict_key) in enumerate(zip(labels, dict_keys)):
@@ -303,6 +303,7 @@ class FileSelectWindow(QtWidgets.QWidget):
         super(FileSelectWindow, self).__init__()
         self._new_window = None
 
+
         self.setStyleSheet("""
                 QPushButton#collect_images {background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                       stop: 0 #f6f7fa, stop: 1 #dadbde)}
@@ -315,20 +316,24 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.main_window = main_window
         self.main_window.outfile_path = os.path.join(os.getcwd(), "out.txt")
 
-        if re.match("tmp\d*\.cdb", os.path.split(self.main_window.db._database_filename)[
-            1]):  # check if clickpoints file is temporary file
+        # check if clickpoints file is temporary file
+        if re.match("tmp\d*\.cdb", os.path.split(self.main_window.db._database_filename)[1]):
             self.db_name = "database.cdb"
         else:
             self.db_name = self.main_window.db._database_filename  # if not use current filename as default filename
         self.cwd = os.getcwd()
         self.default_folder = self.cwd
-        self.folders = {"folder_after": os.getcwd(),
-                        "folder_before": os.getcwd(),
-                        "folder_cells": os.getcwd(),
-                        "folder_out": os.getcwd()}
-        self.search_keys = {"after": "\d{1,4}after", "before": "\d{1,4}before",
-                            "cells": "\d{1,4}bf_before",
-                            "frames": "^(\d{1,4})"}
+        self.folders = {"folder_after": self.cwd,
+                        "folder_before": self.cwd,
+                        "folder_cells": self.cwd,
+                        "folder_out": self.cwd}
+        self.search_keys = default_search_keys
+        # updating according to qt settings
+        for key in self.search_keys.keys():
+            if not self.main_window.settings.value(key) is None:
+                self.search_keys[key] = main_window.settings.value(key)
+
+
         self.layout = QtWidgets.QGridLayout()
         self.layout.setColumnStretch(0, 8)
         self.layout.setColumnStretch(1, 1)
@@ -468,6 +473,11 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.db_name = self.objects["db_name_text"]["object"].text()
 
     def collect_files(self):
+
+        for key, value in self.search_keys.items():
+            self.main_window.settings.setValue(key,value)
+        self.main_window.settings.sync()
+
         filename = os.path.join(self.folders["folder_out"], self.db_name)
         old_filename = self.main_window.db._database_filename
         if os.path.exists(filename):
@@ -513,7 +523,8 @@ class FileSelectWindow(QtWidgets.QWidget):
 
         # reloading all displayed images
         self.main_window.reload_all()
-        print(self.main_window.db.getOption("frames_ref_dict"))  ## reduce the output here...
+
+        print( self.main_window.db_info["frames_ref_dict"])  ## reduce the output here...
         self.main_window.cp.updateImageCount()  # reload the image bar
         # reloading the Masktypes
         self.main_window.cp.reloadMaskTypes()
@@ -555,22 +566,31 @@ class Addon(clickpoints.Addon):
 
         clickpoints.Addon.__init__(self, *args, **kwargs)
 
-        # super().__init__(self.db)  # makein this class the parent class?? important for qthread
         self.frame_number = except_error(self.db.getImageCount, TypeError, print_error=False, return_v=None)
         # information about the path, image dimensions
         self.db_info, self.all_frames = get_db_info_for_analysis(self.db)
-
         print_db_info(self.db_info)
+
         self.res_dict = defaultdict(list)  # dictionary that catches all results
         self.masks = None
         self.parameter_dict = copy.deepcopy(default_parameters)  # loading default parameters
-        self.read_or_set_options()  # reading the database folder and the previous FEM_mode, or fill in defualt values
+        self.read_or_set_options()  # reading the database folder and the previous FEM_mode, or fill in default values
         self.outfile_path = os.path.join(self.folder, "out.txt")  # path for output text file
         self.config_path = os.path.join(self.folder, "config.yaml")
 
+        # loading some default settings
         if os.path.exists(self.config_path):
             print("found config at", self.config_path)
             self.parameter_dict = load_config(self.config_path, self.parameter_dict)
+        # QT settings overwrite "default_parameters"
+        # reading Qt settings file
+        # on linux this file is saved at /home/user/.config/pyTFM
+        self.settings = QSettings("pyTFM", "pyTFM")
+        for key in self.parameter_dict.keys():
+            if not self.settings.value(key) is None:
+                self.parameter_dict[key] = self.settings.value(key)
+
+        # TODO: consider to save settings in each database separately
 
         """ GUI Widgets"""
         # set the title and layout
@@ -634,14 +654,14 @@ class Addon(clickpoints.Addon):
         self.layout.addWidget(self.analysis_mode_descript, 5, 0)
 
         # parameters
-        self.parameter_labels = ["Youngs modulus [Pa]", "Poisson's ratio", "pixel size [µm]", "PIV overlapp [µm]",
+        self.parameter_labels = ["Youngs modulus [Pa]", "Poisson's ratio", "pixel size [µm]", "PIV overlap [µm]",
                                  "PIV window size [µm]", "gel height [µm]"]
-        self.param_dict_keys = ["young", "sigma", "pixelsize", "overlapp", "window_size", "h"]
+        self.param_dict_keys = ["young", "sigma", "pixelsize", "overlap", "window_size", "h"]
         self.parameter_widgets, self.parameter_lables, last_line = add_parameter_from_list(self.parameter_labels,
                                                                                            self.param_dict_keys,
                                                                                            self.parameter_dict,
-                                                                                           self.layout
-                                                                                           , 6, self.parameters_changed)
+                                                                                           self.layout,
+                                                                                           6, self.parameters_changed)
 
         # adding to layout
         self.setLayout(self.layout)
@@ -726,20 +746,22 @@ class Addon(clickpoints.Addon):
                                                                   masks=self.masks, res_dict=self.res_dict,
                                                                   frames=frames, db_info=self.db_info)
 
-    def drift_correction(self):  # calculation of contractility and contractile energy
-        cdb_frame = self.cp.getCurrentFrame()
-        self.frame = self.db_info["cbd_frames_ref_dict"][cdb_frame]
-        self.mode = self.analysis_mode.currentText()  # only current frame or all frames
+    def set_frames(self):
         if self.mode == "current frame":  # only current frame
             frames = self.frame
         if self.mode == "all frames":  # all frames
             frames = self.all_frames
+        return frames
+
+    def drift_correction(self):  # calculation of contractility and contractile energy
+        cdb_frame = self.cp.getCurrentFrame()
+        self.frame = self.db_info["cbd_frames_ref_dict"][cdb_frame]
+        self.mode = self.analysis_mode.currentText()  # only current frame or all frames
+        frames = self.set_frames()
         self.db_info, self.masks, self.res_dict = apply_to_frames(self.db, self.parameter_dict,
                                                                   analysis_function=simple_shift_correction,
                                                                   masks=self.masks, res_dict=self.res_dict,
                                                                   frames=frames, db_info=self.db_info)
-
-
         print("calculation complete")
 
     def segmentation(self):  # calculation of contractility and contractile energy
@@ -758,35 +780,30 @@ class Addon(clickpoints.Addon):
             self.db._AddOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
             self.db.setOption(key="FEM_mode", value=self.parameter_dict["FEM_mode"])
 
-    # def fill_patches(self):
-
-    #    apply_to_frames(self.db, self.parameter_dict, analysis_function=fill_patches_for_cell_layer,
-    #                   res_dict=self.res_dict, frames=self.all_frames, db_info=self.db_info)
-    #   self.cp.reloadMask()
-    #   self.cp.save()
     def start(self):
+        # store parameters in settings
+        for key in self.param_dict_keys:
+            self.settings.setValue(key, self.parameter_dict[key])
+        self.settings.sync()
+
+        # workaround because plt.figure() sometimes gets overloaded when other addons are imported
         if "figures" in list(plt.figure.__globals__.keys()):
-            # workaround because plt.figure() sometimes gets overloaded when other addons are imported
             importlib.reload(plt)
 
         # generating objects needed for the following calculation, if they are not exsisting already
         print_parameters(self.parameter_dict)
         print("output file: ", self.outfile_path)
-
         self.db_info, self.all_frames = get_db_info_for_analysis(self.db)
         cdb_frame = self.cp.getCurrentFrame()
         self.frame = self.db_info["cbd_frames_ref_dict"][cdb_frame]
         self.mode = self.analysis_mode.currentText()  # only current frame or all frames
-
-        if self.mode == "current frame":  # only current frame
-            frames = self.frame
-        if self.mode == "all frames":  # all frames
-            frames = self.all_frames
-        print("analyzing frames = ", frames)
-
-        self.masks = cells_masks(frames, self.db, self.db_info, self.parameter_dict)
         self.res_dict = defaultdict(lambda: defaultdict(list))
+
+        frames = self.set_frames()
+        print("analyzing frames = ", frames)
+        self.masks = cells_masks(frames, self.db, self.db_info, self.parameter_dict)
         self.outfile_path = write_output_file(self.parameter_dict, "parameters", self.outfile_path, new_file=True)
+
         if self.check_box_def.isChecked():
             self.calculate_deformation(frames)
         if self.check_box_tra.isChecked():

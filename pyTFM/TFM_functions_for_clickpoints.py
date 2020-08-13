@@ -17,6 +17,7 @@ from skimage.morphology import label
 from tqdm import tqdm
 
 
+
 class Mask_Error(Exception):
     pass
 
@@ -599,9 +600,9 @@ def deformation(frame, parameter_dict, res_dict, db, db_info=None, masks=None, *
     im1 = db.getImage(id=db_info["file_order"][frame + "images_after"]).data
     im2 = db.getImage(id=db_info["file_order"][frame + "images_before"]).data
 
-    # overlapp and windowsize in pixels
+    # overlap and windowsize in pixels
     window_size_pix = int(np.ceil(parameter_dict["window_size"] / parameter_dict["pixelsize"]))
-    overlap_pix = int(np.ceil(parameter_dict["overlapp"] / parameter_dict["pixelsize"]))
+    overlap_pix = int(np.ceil(parameter_dict["overlap"] / parameter_dict["pixelsize"]))
     u, v, mask, mask_std = calculate_deformation(im1.astype(np.int32), im2.astype(np.int32),
                                                  window_size_pix, overlap_pix,
                                                  std_factor=parameter_dict["std_factor"])

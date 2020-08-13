@@ -12,7 +12,7 @@ default_parameters = {
     "young": 49000,  # young's modulus
     "pixelsize": 0.201,  # pixel size of the image with beads in  µm/pixel
     "window_size": 20,  # window size for particle image velocimetry in µm
-    "overlapp": 19,  # overlap  size for particle image velocimetry in µm. This should be at least window_size/2.
+    "overlap": 19,  # overlap  size for particle image velocimetry in µm. This should be at least window_size/2.
     "std_factor": 15,  # additional filter for extreme values in deformation field
     "h": 300,  # height of the substrate in µm
     "edge_padding": 0.1,  # fraction of the image close to the borders that is ignored for any analyzed value
@@ -168,7 +168,7 @@ tooltips["young"] = "Set the youngs modulus of the substrate that the cells are 
 tooltips["sigma"] = "Set the possion ratio of the substrate that the cells are growing on"
 tooltips["pixelsize"] = "Set pixel size of your images"
 tooltips[
-    "overlapp"] = "Set the overlapp for calcualting the deformation fiel by PIV. THis should be about 95% of the windowsize if you include" \
+    "overlap"] = "Set the overlap for calcualting the deformation fiel by PIV. THis should be about 95% of the windowsize if you include" \
                   "the stress analysis. "
 tooltips[
     "window_size"] = "Set the windowsize for calcualting the deormation field by PIV. A could guess is 7 times the radius of a bead."
@@ -253,5 +253,8 @@ def convert_config_input(x, type):
 
 default_layer_names = ["images_after", "images_before", "membranes"]
 
+default_search_keys = {"after": "\d{1,4}after", "before": "\d{1,4}before",
+                    "cells": "\d{1,4}bf_before",
+                    "frames": "^(\d{1,4})"}
 
 # could make options to read external config files in the addon and in normal applications.)

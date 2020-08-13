@@ -295,7 +295,7 @@ def general_display(plot_types=[], pixelsize=1, display_type="outline", f_type="
     mask_lw=4
     mask_line_dashes=(2,1)
 
-    ps_new_ex = pixelsize  # pixelsize when using windowsize 20, overlapp 19.25
+    ps_new_ex = pixelsize  # pixelsize when using windowsize 20, overlap 19.25
     vmax_x_ep = 65 * 0.845
     pd = {"figsize": figsize,
           "arrow_scale": arrow_scale,

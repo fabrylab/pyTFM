@@ -87,7 +87,7 @@ def stress_tensor_from_deformation(mask, circ_size=60, type="uniform"):
 
     # dist=(dist*100).astype(np.int32)
     # dist2=(dist2*100).astype(np.int32)
-    # u, v, x, y, mask_def, mask_std = calculate_deformation(dist, dist2, window_size=20, overlapp=10, std_factor=20)
+    # u, v, x, y, mask_def, mask_std = calculate_deformation(dist, dist2, window_size=20, overlap=10, std_factor=20)
     return u, v, mask.astype(bool)
 
 

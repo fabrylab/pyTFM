@@ -95,11 +95,13 @@ def setup_database_internal(db, keys_dict, folders_dict):
     key1 = keys_dict["after"]
     key2 = keys_dict["before"]
     key3 = keys_dict["cells"]
+    key3 = None if key3 in ["None","none"] else key3
     key_frame = keys_dict["frames"]
 
     key1 = make_iterable(key1)
     key2 = make_iterable(key2)
     key3 = make_iterable(key3)
+
 
     file_endings = "(.*\.png|.*\.jpg|.*\.tif|.*\.swg)"  # all allowed file endings
     layer_search = {"images_after": {"folder": folders_dict["folder_after"],
@@ -117,7 +119,7 @@ def setup_database_internal(db, keys_dict, folders_dict):
         folder = layer_search[layer]["folder"]
         skey = layer_search[layer]["file_key"]
         if skey[0] is not None and folder is not None:
-            images[layer] = [os.path.join(folder, x) for x in os.listdir(folder) if any([pat.match(x) for pat in skey]) and re.search(key_frame, x)]
+           images[layer] = [os.path.join(folder, x) for x in os.listdir(folder) if any([pat.search(x) for pat in skey]) and re.search(key_frame, x)]
 
     # number of layers either 3 or 2 if no image of the cells is provided
     expected_layers = len(images.keys())
@@ -127,7 +129,7 @@ def setup_database_internal(db, keys_dict, folders_dict):
         warnings.warn("no images found")
         return
 
-    # finding the frame of all images
+    # finding the frames of all images
     all_frames = []
     image_frames = {}
     for layer, ims in images.items():
@@ -135,7 +137,7 @@ def setup_database_internal(db, keys_dict, folders_dict):
         all_frames.extend(frs)
         image_frames[layer] = {i:f for i, f in zip(ims, frs)}
 
-    # defining which frame belongs to which sortindex
+    # defining which frame belongs to which sort index
     all_s_id, frames_ids = make_rank_list(all_frames)
 
     # merge to single dictionary that associates one file with a sort index
@@ -172,7 +174,7 @@ def setup_database_internal(db, keys_dict, folders_dict):
                 file_order[frame + layer] = image_object.id
                 id_frame_dict[image_object.id] = frame
         except Exception as e:
-            print("Someting whent wrong when setting images in frame %s:"%ids_frames[sort_index])
+            print("Someting went wrong when setting images in frame %s:"%ids_frames[sort_index])
             print(e)
 
     # writing meta information to the database:
