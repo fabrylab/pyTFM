@@ -47,7 +47,7 @@ except FileNotFoundError:
 
 stress_tensor_b = setup_stress_field(mask, distribution="uniform", sigma_n=1, sigma_shear=0,
                                       sigma_gf=6)
-fx_b, fy_b = traction_from_stress(stress_tensor_b, pixelsize, plot=False, grad_type="diff1")
+fx_b, fy_b = force_from_stress_field(stress_tensor_b, pixelsize, plot=False, grad_type="diff1")
 try:
     u_b, v_b = np.load(os.path.join(out_folder, "u_b.npy")), np.load(os.path.join(out_folder, "v_b.npy"))
 except FileNotFoundError:

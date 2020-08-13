@@ -31,19 +31,21 @@ from scipy.ndimage.morphology import distance_transform_edt
 from itertools import product
 
 
-def traction_wrapper(u, v, pixelsize, h, young, mask=None, sigma=0.49, filter="gaussian", fs=None):
+def traction_wrapper(u, v, pixelsize, h, young, mask=None, sigma=0.49, filter="gaussian", fs=None, correct_forces=True):
     tx, ty = TFM_tractions(u, v, pixelsize1=pixelsize, pixelsize2=pixelsize, h=h,
                            young=young, sigma=sigma, filter=filter, fs=fs)
     fx, fy = tx * (pixelsize ** 2), ty * (pixelsize ** 2)
     check_unbalanced_forces(fx, fy)
-    fx_corr, fy_corr = force_and_torque_correction(fx, fy, mask)  # correct forces
-    return fx_corr, fy_corr
+    if correct_forces:
+        fx, fy = force_and_torque_correction(fx, fy, mask)  # correct forces
+
+    return fx, fy
 
 
-def stress_wrapper(mask, fx, fy, young, sigma=0.5):
+def stress_wrapper(mask, fx, fy, young, sigma=0.5,verbose=False):
     nodes, elements, loads, mats = grid_setup(mask, -fx, -fy, young, sigma=0.5, edge_factor=0)  # construct fem grid
     # solve FEM system
-    UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask, verbose=False,
+    UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask, verbose=verbose,
                                            system_type="colony")  # colony means the pure neumann FEM is applied
     return UG_sol, stress_tensor
 
@@ -177,7 +179,7 @@ def standard_measures(mask, pixelsize_tract=1, pixelsize_og=1, mean_normal_list=
     with suppress(TypeError, NameError):
         mean_normal_stress_f = ((stress_tensor_f[:, :, 0, 0] + stress_tensor_f[:, :, 1, 1]) / 2) / (
                                                                     pixelsize_tract)
-        mean_normal_stress_f = np.mean(mean_normal_stress_f[binary_erosion(mask)])
+        mean_normal_stress_f = np.mean(mean_normal_stress_f[binary_erosion(mask)]) # mask alone is one tick to big?
 
     with suppress(TypeError, NameError): mean_shear_f = np.mean(np.abs(shear_f[binary_erosion(mask)]))
     # line tension
@@ -229,6 +231,26 @@ def standard_measures(mask, pixelsize_tract=1, pixelsize_og=1, mean_normal_list=
     return measures
     # return mean_normal_stress,mean_shear,cont_energy,contractile_force
 
+
+def contractility_strain_energy_exp(u, v, fx, fy, masks,pixelsize=1):
+
+    strain_energies = []
+    contractilities = []
+    for i,m in enumerate(masks):
+
+        m = m.astype(bool)
+        ep = strain_energy_points(u, v, fx, fy, pixelsize, pixelsize)  # contractile energy at any point
+        cenergy = np.sum(ep[m])
+        strain_energies.append(cenergy)
+        contractile_force, proj_x, proj_y, center = contractillity(fx, fy, pixelsize, m)
+        contractilities.append(contractile_force)
+        #print(center)
+        #if i < 6:
+        #    fig, ax = show_quiver(fx, fy, filter=[0,12])
+        #    ax.imshow(m, alpha=0.4, cmap="jet")
+        #    ax.text(1, 0, str(contractile_force))
+
+    return np.array(contractilities), np.array(strain_energies)
 
 def simple_height_correction_check(u, v, h_range):  ## implemnent the more advanced one
     '''
@@ -316,13 +338,18 @@ def gaussian_stress_tensor(stress_tensor, sigma):
     return stress_tensor_filtered
 
 
-def traction_from_stress(stress_tensor, pixelsize, plot=True, grad_type="diff1", n=1):
+def force_from_stress_field(stress_tensor, pixelsize, plot=True, grad_type="diff1", n=1):
     '''
     relation is simple "force balance"
     tx=d(sigma_xx)/dx + d(sigma_xy)/dy
     ty=d(sigma_yy)/dy + d(sigma_yx)/dx
-    :param stress_tensor:
-    :return:
+    :param stress_tensor: 2D stress tensor with 4 elements . ndarray of shape (n,m,2,2)
+    :param  pixelsize in m
+    :param grad_type: various methods for calculation of the gradient.Gradient uses np.gradient, wich results in a bit
+     of interpolation. "diff1" uses diffrence betwen neighbouring pixels and "diffn" uses diffrence between pixels that
+     are n steps appart
+     :param n distance of pixels in "diffn"
+    :return:  fx, fy force field in N (not the traction field!!!!)
     '''
     if grad_type == "gradient":
         dsxx_x = np.gradient(stress_tensor[:, :, 0, 0], axis=1)
@@ -393,7 +420,7 @@ def def_test():
         mask = setup_geometry(im_shape=(100, 100), shape_size=50, shape="rectangle")
         stress_tensor_b = setup_stress_field(mask, distribution="uniform", sigma_n=1, sigma_shear=0, sigma_gf=6)
 
-        fx_b, fy_b = traction_from_stress(stress_tensor_b, pixelsize, plot=False, grad_type="diff1")
+        fx_b, fy_b = force_from_stress_field(stress_tensor_b, pixelsize, plot=False, grad_type="diff1")
 
         u_b, v_b = finite_thickness_convolution(fx_b, fy_b, pixelsize, h, young, sigma=0.5,
                                                 kernel_size=None, force_shift=i)  # somwhat of an approximationn
@@ -419,7 +446,8 @@ def expand_mask(mask, i, m_shape, method="binary_dilation"):
     return zoom_out
 
 
-def exp_border(exp_range=[], fx_f=None, fy_f=None, mask=None, young=1, out_folder="", method="binary_dilation"):
+def exp_border(exp_range=[], fx=None, fy=None, mask=None, young=1, out_folder="", method="binary_dilation",verbose=False):
+
     tensor_folder = createFolder(os.path.join(out_folder, "stress_tensors"))
     mask_folder = createFolder(os.path.join(out_folder, "masks"))
     stress_tensors = []
@@ -427,7 +455,19 @@ def exp_border(exp_range=[], fx_f=None, fy_f=None, mask=None, young=1, out_folde
     mask = mask.astype(int)
     for i in tqdm(exp_range):
         mask_exp = expand_mask(mask, i, mask.shape, method=method)
-        UG_sol, stress_tensor_f = stress_wrapper(mask_exp.astype(bool), fx_f, fy_f, young, sigma=0.5)
+        fx_f = fx.copy()
+        fy_f = fy.copy()
+        fx_f[~mask_exp.astype(bool)] = np.nan  # setting all values outside of mask area to zero
+        fy_f[~mask_exp.astype(bool)] = np.nan
+        fx_f2 = fx_f - np.nanmean(fx_f)  # normalizing traction force to sum up to zero (no displacement)
+        fy_f2 = fy_f - np.nanmean(fy_f)
+        fx_f2, fy_f2, p = correct_torque(fx_f2, fy_f2, mask.astype(bool))  # correct forces
+        #if np.any(np.isnan(fx_f2[mask_exp.astype(bool)])):
+        #    print("####")
+        #    print("####", np.any(np.isnan(fy_f2[mask_exp.astype(bool)])))
+
+
+        UG_sol, stress_tensor_f = stress_wrapper(mask_exp.astype(bool), fx_f2, fy_f2, young, sigma=0.5,verbose=verbose)
         np.save(os.path.join(tensor_folder, "stress_tensor_f%s.npy" % str(i)), stress_tensor_f)
         np.save(os.path.join(mask_folder, "%s.npy" % str(i)), mask_exp)
         stress_tensors.append(stress_tensor_f)
