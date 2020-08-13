@@ -87,7 +87,7 @@ Forces acting across Cell Boundaries
 As hinted above, the stress tensor can be used to calculate the force that acts across a boundary in the
 cell colony. This force is called the line tension, and has a straight forward interpretation:
 Imagine you were to actually cut the cell sheet along the boundary between two cells. If the cells
-continue to generate force the edges of this cut would drift apart or start overlapping
+continue to generate force the edges of this cut would drift apart or start overlaping
 as you have just cut the material holding both edges together. In order to hold both edges in place
 as they were before you cut them, you need to apply a force at the edges. This force, normalized
 by the length of the cut, is the line tension.

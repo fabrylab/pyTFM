@@ -183,7 +183,7 @@ This is done for many positions to generate a complete displacement field.
 
 You can control two things: the size of the patch that is cut out of the image of the beads
 after cell removal (with the parameter "PIV window size") and the resolution of the
-resulting displacement field (with the parameter "PIV overlapp"). A window size that is to large will blur
+resulting displacement field (with the parameter "PIV overlap"). A window size that is to large will blur
 the displacement field while a window size that is to small will introduce noise in the displacement field.
 As a rule of thumb the window size should be roughly 7 times the bead diameter, you should however try a few
 values and check which window size yields a smooth yet accurate deformation field.
@@ -191,11 +191,11 @@ values and check which window size yields a smooth yet accurate deformation fiel
 .. Note::
     You can measure the beads diameter directly in clickpoints using another addon: The Measure Tool
 
-The "PIV overlapp" mainly controls the resolution of the resulting displacement field and must be
+The "PIV overlap" mainly controls the resolution of the resulting displacement field and must be
 smaller than the "PIV window size" but at least half of the "PIV window size". You need
 a high resolution for analyzing stress. In this step the area of cells should at least contain 1000
 pixels. However, if you are not calculating stresses, you can save a lot of calculation time by choosing a
-"PIV overlapp" closer to half of the "PIV window size". Especially, when you are trying out different window sizes,
+"PIV overlap" closer to half of the "PIV window size". Especially, when you are trying out different window sizes,
 you can set the overlap to the smallest allowed value, which is half of the window size.
 
 For this tutorial you can keep all parameters at their default value. If you are in a hurry, you could set the

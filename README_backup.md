@@ -154,7 +154,7 @@ has to masks for two cell types.
 
 
 In the "colony" mode you can analyze an isolated cell colony. The finite elements analysis will not fix any node (provided you don't mark an area at the image edge). Instead the equilibrium of the system is guaranteed by correcting nodal loads for unbalanced forces and torque. You are supposed to mark the colony edges and internal cell cell borders within the colony. 
-Additionally you can circle an area around the colony to calculate contractillity and contractile energy. "FEM analysis" in this mode will produce stress measures along the cell borders and on the whole colony area. It will also add an image of the cell border stresses to the database. Note that the FEM analysis is only accurate if you have a high resolution in deformation and traction field. This can be achieved by choosing the "piv overlapp" close to the "piv window size". Eventually you should set this difference as low as 5 pixels or less (1 µm at 0.2 µm pixelsize) . Unfortunately this will increase your calculation time. 
+Additionally you can circle an area around the colony to calculate contractillity and contractile energy. "FEM analysis" in this mode will produce stress measures along the cell borders and on the whole colony area. It will also add an image of the cell border stresses to the database. Note that the FEM analysis is only accurate if you have a high resolution in deformation and traction field. This can be achieved by choosing the "piv overlap" close to the "piv window size". Eventually you should set this difference as low as 5 pixels or less (1 µm at 0.2 µm pixelsize) . Unfortunately this will increase your calculation time. 
 
 
 ![Analysis plot](images_instructions/mode2.png?raw=true "Optional Title")

@@ -104,7 +104,7 @@ Overview of Analysis Parameters
 | window_size         | 20                 | int,float          | Size of the windows for PIV                              |
 |                     |                    |                    | (Particle Image Velocimetry) in µm.                      |
 +---------------------+--------------------+--------------------+----------------------------------------------------------+
-| overlapp            | 19                 | int,float          | Size of the overlap for PIV in µm.                       |
+| overlap            | 19                 | int,float          | Size of the overlap for PIV in µm.                       |
 +---------------------+--------------------+--------------------+----------------------------------------------------------+
 | FEM_mode            | "colony"           | string             | Analyzing colonies or cell layer. This changes the       |
 |                     |                    |                    | behavior, concerning which masks are used,               |
