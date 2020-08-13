@@ -64,8 +64,7 @@ def ffttc_traction(u, v, pixelsize1, pixelsize2, young, sigma=0.49, filter="gaus
     # 2.1) calculating angle between k and kx with atan 2 function (what is this exactely??)  just if statemments to get
     # angel from x1 to x2 in fixed direction... (better explanation)
     alpha = np.arctan2(ky, kx)
-    alpha[
-        0, 0] = np.pi / 2  ## why do i need this?-> arctan2(n,0) n-->0 is pi/2 for n positive and -pi/2 for n negative arctan(0,0) has been defined on 0
+    alpha[0, 0] = np.pi / 2
     # np.save("/home/user/Desktop/alpha_test.npy",alpha)
     # 3) calkulation of K--> Tensor to calculate displacements from Tractions. We calculate inverse of K
     # (check if correct inversion by your self)
@@ -245,19 +244,22 @@ def ffttc_traction_finite_thickness(u, v, pixelsize1, pixelsize2, h, young, sigm
     # form 1:max_ind/2 then -(max_ind/2:1)
     kx1 = np.array([list(range(0, int(max_ind / 2), 1)), ] * int(max_ind), dtype=np.float64)
     kx2 = np.array([list(range(-int(max_ind / 2), 0, 1)), ] * int(max_ind), dtype=np.float64)
+    # spatial frequencies: 1/wavelength,in 1/µm in fractions of total length
 
-    kx = np.append(kx1, kx2, axis=1) / (
-            pixelsize2 * max_ind) * 2 * np.pi  # spatial frequencies: 1/wavelength,in 1/µm in fractions of total length
-
+    kx = np.append(kx1, kx2, axis=1) * 2 * np.pi / ( pixelsize2 * max_ind)
     ky = np.transpose(kx)
     k = np.sqrt(kx ** 2 + ky ** 2)  # matrix with "relative" distances??#
     # np.save("/home/user/Desktop/k_test.npy",k)
 
-    c = np.cosh(k * h)
-    s = np.sinh(k * h)
-    gamma = ((3 - 4 * sigma) * (c ** 2) + (1 - 2 * sigma) ** 2 + (k * h) ** 2) / (
-            (3 - 4 * sigma) * s * c + k * h)  ## inf values here because k goes to zero
+    r = k * h
+    c = np.cosh(r)
+    s = np.sinh(r)
+    s_c = np.tanh(r)
 
+    #gamma = ((3 - 4 * sigma) * (c ** 2) + (1 - 2 * sigma) ** 2 + (k * h) ** 2) / (
+   #         (3 - 4 * sigma) * s * c + k * h)  ## inf values here because k goes to zero
+    gamma = ((3 - 4 * sigma) + (((1 - 2 * sigma) ** 2) / (c ** 2)) + ((r ** 2) / (c ** 2))) / (
+            (3 - 4 * sigma) * s_c + r / (c ** 2))
     # 4) calculate fourier transform of displacements
 
     u_ft = np.fft.fft2(u_expand)
@@ -316,17 +318,17 @@ def TFM_tractions(u, v, pixelsize1, pixelsize2, h, young, sigma=0.49, filter="ga
     function if this happens
     :return:
     '''
-    fs = fs / pixelsize2 if isinstance(fs,
-                                       (int, float)) else None  # translate the filter size to pixels of traction field
+    # translate the filter size to pixels of traction field
+    fs = fs / pixelsize2 if isinstance(fs, (int, float)) else None
     if isinstance(h, (int, float)):
         with suppress_warnings(RuntimeWarning):
             tx, ty = ffttc_traction_finite_thickness(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, h=h,
                                                      young=young,
                                                      sigma=sigma, filter=filter, fs=fs)  # unit is N/m**2
-        # fails for large substrate heights --> falling back to infinite height assumption
-        if np.isnan(tx).all() and np.isnan(ty).all():
-            tx, ty = ffttc_traction(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, young=young, sigma=sigma,
-                                    filter=filter, fs=fs)
+            if np.any(np.isnan(tx)) or np.any(np.isnan(ty)):
+                tx, ty = ffttc_traction(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, young=young, sigma=sigma,
+                                        filter=filter, fs=fs)
+
     elif h == "infinite":
         tx, ty = ffttc_traction(u, v, pixelsize1=pixelsize1, pixelsize2=pixelsize2, young=young, sigma=sigma,
                                 filter=filter, fs=fs)
@@ -412,6 +414,8 @@ def contractillity(tx, ty, pixelsize, mask):
              proj_y, projection of traction forces towards the foce epicenter, y component
              center, coordinates of the force epicenter
     '''
+
+    #### TODO check if this is correct pixel size should have no influence on the location of the center
     mask = mask.astype(bool)
     tx_filter = np.zeros(np.shape(tx))
     tx_filter[mask] = tx[mask]
@@ -433,7 +437,7 @@ def contractillity(tx, ty, pixelsize, mask):
     by = np.sum(y * (tract_abs ** 2) + fy * (tx_filter * fx + ty_filter * fy))  #
 
     axx = np.sum(tract_abs ** 2 + fx ** 2)
-    axy = np.sum(fx * fy)  # redundant
+    axy = np.sum(fx * fy)
     ayy = np.sum(tract_abs ** 2 + fy ** 2)
     # ayx=np.sum(tx*ty)
 
