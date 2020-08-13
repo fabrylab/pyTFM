@@ -845,7 +845,7 @@ def FEM_full_analysis(frame, parameter_dict, res_dict, db, db_info=None, masks=N
         UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area)
         np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor)
 
-        # analyzing stresses and stress distribution ####### TODO: implement coefficient of variation here
+        # analyzing stresses and stress distribution
         mean_normal_stress = FEM_analysis_average_stresses(frame, res_dict, parameter_dict, db, db_info, stress_tensor,
                                                            ps_new, masks, obj_id)
         m_stresses.append(mean_normal_stress)
@@ -931,18 +931,18 @@ def apply_to_frames(db, parameter_dict, analysis_function, leave_basics=False, r
 if __name__ == "__main__":
     ## setting up necessary paramteres
     # db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
-    db = clickpoints.DataFile("/home/user/Desktop/plate2/beads_yuko_forced/png/database.cdb", "r")
+    db = clickpoints.DataFile("/home/andy/Desktop/KOshift/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict = defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
 
     # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
     #                                            db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillity_contractile_energy, res_dict=res_dict,
-                                               frames="1",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict,
+                                               frames="03",
                                                db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict, frames="1",
-                                               db_info=db_info, masks=masks)
+    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict, frames="1",
+    #                                           db_info=db_info, masks=masks)
 
     # parameter_dict["filter_type"]=None
 # default_fig_parameters["file_names"]["traction"] = "t_none.png"

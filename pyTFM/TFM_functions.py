@@ -64,10 +64,10 @@ def ffttc_traction(u, v, pixelsize1, pixelsize2, young, sigma=0.49, filter="gaus
     # 2.1) calculating angle between k and kx with atan 2 function (what is this exactely??)  just if statemments to get
     # angel from x1 to x2 in fixed direction... (better explanation)
     alpha = np.arctan2(ky, kx)
-    alpha[
-        0, 0] = np.pi / 2  ## why do i need this?-> arctan2(n,0) n-->0 is pi/2 for n positive and -pi/2 for n negative arctan(0,0) has been defined on 0
+    ## why do i need this?-> arctan2(n,0) n-->0 is pi/2 for n positive and -pi/2 for n negative arctan(0,0) has been defined on 0
+    alpha[0, 0] = np.pi / 2
     # np.save("/home/user/Desktop/alpha_test.npy",alpha)
-    # 3) calkulation of K--> Tensor to calculate displacements from Tractions. We calculate inverse of K
+    # 3) calculation of K --> Tensor to calculate displacements from Tractions. We calculate inverse of K
     # (check if correct inversion by your self)
     # K⁻¹=[[kix kid],
     #     [kid,kiy]]  ,,, so is "diagonal, kid appears two times
