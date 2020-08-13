@@ -9,7 +9,7 @@ sys.path.insert(0,'/home/user/Software/pyTFM/analysis_and_testing/')
 from simulating_deformation import *
 from playing_with_strains import *
 from plotting_evaluation import *
-from general_evaluation import *
+from general_evaluation3 import *
 from pyTFM.TFM_functions import strain_energy_points
 from pyTFM.utilities_TFM import createFolder
 import time
