@@ -34,15 +34,15 @@ default_parameters = {
     # mask for the FEM area fits very closely to the mask for membranes
     "mask_properties": {
         "cell type1": {"use": ["defo", "forces", "area_layer", "FEM_layer", "stress_layer"], "FEM_mode": ["cell layer"],
-                       "color": "#1322ff", "index": 1, "label": "cell type 1", "name": "cell type1"},
+                       "color": "#1322ff", "index": 1, "label": "cell type 1", "name": " of cell type1"},
         "cell type2": {"use": ["defo", "forces", "area_layer", "FEM_layer", "stress_layer"], "FEM_mode": ["cell layer"],
-                       "color": "#ebff05", "index": 2, "label": "cell type 2", "name": "cell type2"},
+                       "color": "#ebff05", "index": 2, "label": " of cell type 2", "name": "cell type2"},
         "membrane": {"use": ["area_colony", "borders", "FEM_layer", "stress_colony"],
-                     "FEM_mode": ["cell layer", "colony"], "color": "#ff7402", "index": 3, "label": "colony",
+                     "FEM_mode": ["cell layer", "colony"], "color": "#ff7402", "index": 3, "label": " of cell area",
                      "name": "membrane"},
         "force measures": {"use": ["defo", "forces"], "FEM_mode": ["colony"], "color": "#ff0b23", "index": 1,
-                           "label": "colony", "name": "force measures"},
-        "FEM_area": {"use": ["FEM_colony"], "FEM_mode": ["colony"], "color": "#30ff0c", "index": 2, "label": "colony",
+                           "label": "", "name": "force measures"},
+        "FEM_area": {"use": ["FEM_colony"], "FEM_mode": ["colony"], "color": "#30ff0c", "index": 2, "label": " of FEM area",
                      "name": "FEM_area"}}
 }
 
@@ -120,10 +120,13 @@ def set_fig_parameters(shape, fig_shape, fig_parameters, figtype):
     # extracting value for this specific fig type
     fp = {}
     for key, value in fig_parameters.items():
-        if isinstance(value, defaultdict):  # read default value
-            fp[key] = value[figtype]
-        if isinstance(value,
-                      dict):  # in case someone passed it as a dict; will cause error if figtype is missing as a key
+        if isinstance(value, (defaultdict, dict)):  # read default value
+            try:
+                fp[key] = value[figtype]
+            except:
+                pass
+        # in case someone passed it as a dict; will cause error if figtype is missing as a key
+        if isinstance(value, dict):
             if key in value.keys():
                 fp[key] = value[figtype]
         if not isinstance(value, (dict, defaultdict)):
@@ -247,5 +250,8 @@ def convert_config_input(x, type):
                 x = tuple([float(y) for y in x.split(",")])
     return x
 
-# TODO but this in a proper config file (.init/.yaml..
+
+default_layer_names = ["images_after", "images_before", "membranes"]
+
+
 # could make options to read external config files in the addon and in normal applications.)

@@ -66,7 +66,7 @@ def ffttc_traction(u, v, pixelsize1, pixelsize2, young, sigma=0.49, filter="gaus
     alpha = np.arctan2(ky, kx)
     alpha[0, 0] = np.pi / 2
     # np.save("/home/user/Desktop/alpha_test.npy",alpha)
-    # 3) calkulation of K--> Tensor to calculate displacements from Tractions. We calculate inverse of K
+    # 3) calculation of K --> Tensor to calculate displacements from Tractions. We calculate inverse of K
     # (check if correct inversion by your self)
     # K⁻¹=[[kix kid],
     #     [kid,kiy]]  ,,, so is "diagonal, kid appears two times
