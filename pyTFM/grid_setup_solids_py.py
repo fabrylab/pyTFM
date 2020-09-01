@@ -144,7 +144,7 @@ def arrange_lines_from_endpoints(cells_lines, lines_endpoints_com):
         while not np.isnan(eps).all():
             point = copy.deepcopy(eps[p_ind1, p_ind2])  # extracting an endpoint
             eps[p_ind1, p_ind2] = np.nan  # remove the point from array
-            # find second occurrence, by taking the norm of the diffrece between the current point and all other points
+            # find second occurrence, by taking the norm of the diffrence between the current point and all other points
             # this should be zero
             np_ind1, np_ind2 = np.array(np.where(np.linalg.norm(eps - point, axis=2) == 0)).T[0]
             new_line_ids.append(line_ids[np_ind1])  # note corresponding line_ids
@@ -184,7 +184,7 @@ def center_of_mass_cells(cells_points, points):
     return cells_com
 
 
-def remove_circular_line(lines_endpoints_com, lines_points, lines_endpoints):
+def remove_circular_line(allLines_points, lines_endpoints_com, lines_points, lines_endpoints):
     '''
     finds lines that are circular by checking if the first and second endpoint are identical. The lines are
     delted from all input dictionaries
@@ -202,6 +202,7 @@ def remove_circular_line(lines_endpoints_com, lines_points, lines_endpoints):
         del lines_endpoints_com[l_id]
         del lines_points[l_id]
         del lines_endpoints[l_id]
+        del allLines_points[l_id]
 
 
 def interpolate_cell_area(cells_area, shape):
@@ -226,7 +227,7 @@ class Cells_and_Lines:
         # masks, graph and points including dead-end lines // this distinction is mostly due to historic reasons
         self.mask_boundaries_wp = mask_boundaries
         self.inter_shape = shape
-        # graph as a dictionray with key=ponit id, values: ids of neighbouring points
+        # graph as a dictionary with key = point id, values: ids of neighbouring points
         # any point id is the index in the points array (contains coordinate of these points
         self.graph_wp = graph
         self.points_wp = points
@@ -241,8 +242,8 @@ class Cells_and_Lines:
         # points as dictionary with key=points id, values: points coordinates
         self.points_dict = {i: self.points[i] for i in range(len(self.points))}
 
-        # lines as a dictionary with key=line id, values: ids of containg points (in correct order)
-        self.lines_points = identify_line_segments(self.graph)
+        # lines as a dictionary with key=line id, values: ids of containing points (in correct order)
+        self.lines_points = identify_line_segments(self.graph, self.points_interpol)
 
         # cells as a dictionary with key=cell id, values: ids of containing points (not ordered)
         self.cells_points, self.cells_area = identify_cells(self.mask_boundaries,
@@ -263,24 +264,26 @@ class Cells_and_Lines:
         self.lines_endpoints_com, self.lines_endpoints = find_exact_line_endpoints(self.lines_points, self.points,
                                                                                    self.graph)
 
-        # removing all lines that are predicted to be circular. Mostly a problem for very short lines
-        remove_circular_line(self.lines_endpoints_com, self.lines_points, self.lines_endpoints)
+        #self.simple_line_plotting(self.allLines_points, subset=np.inf)
+        #for p in self.lines_endpoints_com.values():
+        #    plt.plot(p[0][1],p[0][0],"o")
+        #    plt.plot(p[1][1], p[1][0], "o")
 
-        # dictionary with both dead end lines and circular lines
+        # removing all lines that are predicted to be circular. Mostly a problem for very short lines
+        remove_circular_line(self.allLines_points, self.lines_endpoints_com, self.lines_points, self.lines_endpoints)
 
         # center of mass of cells, calculated only from the hull points
         self.cells_com = center_of_mass_cells(self.cells_points, self.points)
         # dictionary to associate cells with correct lines, key is cell id, value is line_id
-        self.cells_lines = defaultdict(list)  ## improve by using endpoints for cell_line_association
+        self.cells_lines = defaultdict(list)
         # dictionary to associate cells with correct lines, key is line id, value is cell
 
         self.lines_cells = defaultdict(list)
         for l_id, l in self.lines_points.items():
             for c_id, c in self.cells_points.items():
-                if l[0] in c:
+                if l[int(len(l)/2)] in c:
                     self.cells_lines[c_id].append(l_id)
                     self.lines_cells[l_id].append(c_id)
-
         # using the new endpoints to arrange lines in the correct way
         self.cells_lines = arrange_lines_from_endpoints(self.cells_lines, self.lines_endpoints_com)
 
@@ -405,9 +408,9 @@ class Cells_and_Lines:
             ps = np.array(ps)
             color = colors[np.array([l in line_ids for line_ids in line_classifier])][0]
             p_indices = np.array(list(range(len(ps))))  # all indicces
-            # randomly choising a few indices, without first and laast index
+            # randomly choosing a few indices, without first and laast index
             ps_select = np.random.choice(p_indices[1:-1], size=int((len(ps) - 2) * sample_factor), replace=False)
-            ps_select = np.append(ps_select, p_indices[np.array([1, -1])])  # adding back first and last index
+            ps_select = np.append(ps_select, p_indices[np.array([0, -1])])  # adding back first and last index
 
             plt.plot(self.points[ps][:, 1], self.points[ps][:, 0], "o", color=color)
             for p in ps[ps_select]:  # labeling selected points
@@ -527,7 +530,7 @@ def find_borders(mask, shape, raise_error=True, type="colony", min_length=0):
     mask_boundaries = skeletonize(mask.astype(int))
     # converting mask to graph object
     graph, points = mask_to_graph(mask_boundaries)
-    # finding dead ends: cell borders wich dont connect to other cell borders at one end:
+    # finding dead ends: cell borders which don't connect to other cell borders at one end:
     # this is use full to get a clean structure of cell borders, which is later used to identifying the number and area of cells
     # applying remove endpoints multiple times to deal with forking dead ends
 
@@ -538,7 +541,7 @@ def find_borders(mask, shape, raise_error=True, type="colony", min_length=0):
         if type == "cell layer":
             c_l = Cells_and_Lines2(mask_boundaries, shape, graph, points)
             c_l.filter_small_de_line(min_length)
-    except (RecursionError, FindingBorderError, IndexError) as e:
+    except (RecursionError, FindingBorderError, IndexError, KeyError) as e:
         print("original error: ", e)
         if raise_error:
             raise FindingBorderError
@@ -1136,3 +1139,6 @@ if __name__ == "__main__":
     # make matrix with ids
     nodes, elements, loads, mats = grid_setup(mask_area, t_x, t_y, 1, 0.3)
     # plot_grid(nodes,elements,inverted_axis=True)  # only use with <1000 nodes
+
+#TODO: implement seperate mask to average stresses and stuff optionally even multiple stresses
+#TODO: Move away from recursive functions to identfy lines

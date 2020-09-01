@@ -151,7 +151,9 @@ def find_lines_simple(graph):
 
 
 def find_path(graph, start, end, path=[]):
+
     '''
+    recursive function
     finds a path (not necessarily the shortest one) through a graph from start to an end node (not necessarily the closest one).
 
     :param graph: dict, graph
@@ -174,8 +176,10 @@ def find_path(graph, start, end, path=[]):
 
 
 def find_path_to_endpoint(graph, start, path=[], first=False):
+
     '''
-    finds a path to a (not specific) point with onely one neighbour
+    recursive function
+    finds a path to a (not specific) point with only one neighbour
 
     :param graph: dict, graph
     :param start: int, start point, must be a key in the graph
@@ -196,14 +200,16 @@ def find_path_to_endpoint(graph, start, path=[], first=False):
     return path  # only partial path
 
 
-def find_line_segement(graph, start, path=[], left_right=0):
+def find_line_segement_recursive(graph, start, path=[], left_right=0):
     '''
-    recursive function, finds path from a point going from the first or second neigbour until
+    ---> would sometimes cause stack overflow/recursion error
+    recursive function
+    finds path from a point going from the first or second neigbour until
     it reaches an intersection (point with three neighbours)
     :param graph: graph as a dictionary
     :param start: start point
     :param path: path as list of nodes
-    :param left_right: define wich neighbour from start to explore (0 or 1
+    :param left_right: define which neighbour from start to explore (0 or 1
     :return:
     '''
     if len(graph[start]) > 2:  # stop if intersection (point with 3 neighbours is reached
@@ -217,10 +223,51 @@ def find_line_segement(graph, start, path=[], left_right=0):
     else:
         new_p = new_ps[new_ps != path[-2]][0]  # next point that wasn't the previous point
     # recursive function
-    newpath = find_line_segement(graph, new_p, path)  # next step
+    newpath = find_line_segement_recursive(graph, new_p, path)  # next step
 
     if newpath:
         return newpath  # return if recursion is completed
+
+
+def find_line_segement(graph, start, path=None, left_right=0):
+    '''
+    ---> would sometimes cause stack overflow/recursion error
+    recursive function
+    finds path from a point going from the first or second neigbour until
+    it reaches an intersection (point with three neighbours)
+    :param graph: graph as a dictionary
+    :param start: start point
+    :param path: path as list of nodes
+    :param left_right: define which neighbour from start to explore (0 or 1
+    :return:
+    '''
+
+    # first point
+    path = []
+    path.append(start)
+    new_ps = graph[start]
+    new_p = new_ps[left_right]  # just choose one point to the left or right
+    # break of if we already hit another intersection
+    if len(graph[new_p]) > 2:
+        return path
+    else:
+        path.append(new_p)
+
+    while True:  # stop if intersection (point with 3 neighbours) is reached
+        new_ps = graph[new_p]
+        new_p = [p for p in new_ps if p not in path]
+        new_p = new_p[0]
+        # check if the point has more (or less) then 2 neighbours.
+        # should be more then 2 to indicate intersection
+        if len(graph[new_p]) != 2:
+            break
+        else:
+            path.append(new_p)
+    return path
+
+
+
+
 
 
 def mask_to_graph(mask, d=np.sqrt(2)):
@@ -241,9 +288,9 @@ def mask_to_graph(mask, d=np.sqrt(2)):
     return graph, points
 
 
-def identify_line_segments(graph):  ## could be  abit improved , sometimes a few points at the edges are left out...
+def identify_line_segments(graph, points):  #
     '''
-        function to identify all line segents(representing individual cell boundaries. Segments are returnt as a dictionary
+        function to identify all line segments (representing individual cell boundaries. Segments are returned as a dictionary
         with an id as key and a list of points (referring to the points array) that are included in the line. The
         points are in correct order already
     :param graph:
@@ -253,20 +300,22 @@ def identify_line_segments(graph):  ## could be  abit improved , sometimes a few
 
     lines_dict = {}
     n = 0  # counter in while loop
-    all_points = list(graph.keys())  # all points that are (remaining in the graph)
-    intersect_ps = [key for key, values in graph.items() if len(values) > 2]  # fining intersection points
+    all_points = list(graph.keys())  # all points in the graph
+    intersect_ps = [key for key, values in graph.items() if len(values) > 2]  # finding intersection points
     if len(intersect_ps) == 0:
-        raise FindingBorderError("Can't I dentify cell borders.")
+        raise FindingBorderError("Can't identify internal cell borders.")
     remaining = set(all_points) - set(intersect_ps)  # remaining point ids
     while len(remaining) > 0:  # stop when all points are assigned to intersect or line segment
         start = next(iter(remaining))  # first point of remaining points
+        # finding a line segment
         line_seg = list(reversed(find_line_segement(graph, start=start, left_right=0)))[:-1] + find_line_segement(graph,
                                                                                                                   start=start,
-                                                                                                                  left_right=1)  # find line segment
-        remaining -= set(line_seg)  # updating remaining  list
-        ## maybe reomve this codition??
-        if len(
-                line_seg) > 1:  # avoid single point lines, which are not usefull (cant really get normal vectors from them....)
+                                                                                                                  left_right=1)
+
+        remaining -= set(line_seg)  # updating remaining list
+
+        # avoid single point lines, which are not usefull (cant really get normal vectors from them)
+        if len(line_seg) > 1:
             lines_dict[n] = line_seg
             n = n + 1
 
@@ -356,7 +405,7 @@ def find_neighbor_lines(graph, start_ps, other_endpoint, own_points, end_points,
     next_ps = [p for ps in next_ps for p in ps]  # flatten
     next_ps = list(np.unique(next_ps))  # removing duplication
 
-    # avoid conecting the two endpoints on own line directly
+    # avoid connecting the two endpoints on own line directly
     # only true in first "iteration layer"
     if other_endpoint in next_ps and len(visited) == 1:
         next_ps.remove(other_endpoint)
