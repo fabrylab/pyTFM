@@ -18,11 +18,11 @@ def guess_TFM_mode(db_info, parameter_dict):
     cl_cond2 = len(db_info["mask_types"]) == 1 and (
                 "cell type1" in db_info["mask_types"] or "cell type2" in db_info["mask_types"])
 
-    co_cond1 = len(db_info["mask_types"]) == 2 and "membrane" in db_info["mask_types"] and "contractillity_colony" in \
+    co_cond1 = len(db_info["mask_types"]) == 2 and "Cell Boundary" in db_info["mask_types"] and "Tractions" in \
                db_info[
                    "mask_types"]
     co_cond2 = len(db_info["mask_types"]) == 1 and (
-            "membrane" in db_info["mask_types"] or "contractillity_colony" in db_info["mask_types"])
+            "Cell Boundary" in db_info["mask_types"] or "Tractions" in db_info["mask_types"])
 
     cond_empty = len(db_info["mask_types"]) == 0
 
@@ -164,8 +164,8 @@ def setup_database_internal(db, keys_dict, folders_dict):
     id_frame_dict = {}
 
     for sort_index in list(sorted(image_sort_id.keys())):
-        try:
-            for layer in layer_list:
+        for layer in layer_list:
+            try:
                 frame = ids_frames[sort_index]
                 im = image_sort_id[sort_index][layer]
                 print("file:", im, "frame:", frame, "layer:", layer)
@@ -173,9 +173,9 @@ def setup_database_internal(db, keys_dict, folders_dict):
                                            layer=layer)
                 file_order[frame + layer] = image_object.id
                 id_frame_dict[image_object.id] = frame
-        except Exception as e:
-            print("Someting went wrong when setting images in frame %s:"%ids_frames[sort_index])
-            print(e)
+            except Exception as e:
+                print("Someting went wrong when setting images in frame %s:"%ids_frames[sort_index])
+                print(e)
 
     # writing meta information to the database:
     # dictionaries mapping the layer and the frame to the image id (file_order),
@@ -204,7 +204,7 @@ def check_existing_masks(db, parameter_dict):
 def setup_masks(db, db_info, parameter_dict, delete_all=False, delete_specific=[]):
     if delete_all:  # delete every existing mask
         db.deleteMaskTypes()
-    for m_type in delete_specific:  # delete a specific set of mask, usually provided by "check_exisiting_masks"
+    for m_type in delete_specific:  # delete a specific set of mask, usually provided by "check_exsisting_masks"
         db.deleteMaskTypes(m_type)
     # setting new masks
     FEM_mode = parameter_dict["FEM_mode"]

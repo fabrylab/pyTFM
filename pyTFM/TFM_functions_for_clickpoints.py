@@ -96,8 +96,8 @@ class cells_masks():
             ret.append((cell_id, com))
         return ret
 
-    def reconstruct_mask(self, frame, cell_id, mtype, raise_error=True, fill_holes=False, cut_close_to_edge=True,
-                         custom_cut_facor=None):  # takes about 0.2 seconds for one type of mask
+    def reconstruct_mask(self, frame, cell_id, mtype, raise_error=True, fill_holes=False, cut_close_to_edge=True):
+        # takes about 0.2 seconds for one type of mask
         # note: small objects have already been removed
         mask = None
         ind_shape = self.masks_dict[frame][cell_id][mtype]  # do i need to use the property here??
@@ -113,7 +113,8 @@ class cells_masks():
                     if cut_close_to_edge:
                         mask, warn_edge = cut_mask_from_edge_wrapper(self.parameter_dict["edge_padding"], mask,
                                                                      self.parameter_dict, cut=True)
-                    return mask.astype(bool)
+                    if np.sum(mask) > 0:
+                        return mask.astype(bool)
         else:
             if raise_error:
                 raise Mask_Error("no mask found in frame %s for type %s" % (str(frame), mtype))
@@ -226,10 +227,6 @@ def warn_small_FEM_area(mask_area, threshold):
     return warn
 
 
-def check_empty_mask(mask, mtype="---", frame="---", cell_id="---", add_str_error=""):
-    if not isinstance(mask, np.ndarray):
-        raise Mask_Error("mask empty for mask type %s in frame %s for patch %s" % (
-            str(mtype), str(frame), str(cell_id)) + " " + add_str_error)
 
 
 def check_small_or_empty_mask(mask, frame, mtype, warn_thresh=None, raise_error=True, add_str_error="",
@@ -417,6 +414,20 @@ def add_plot(plot_type, values, plot_function, frame, db_info, parameter_dict, d
         # adding the plot to the database
         write_image(db, layer=layer, sort_index=db_info["frames_ref_dict"][frame], filename=frame + file_name)
 
+def check_empty_mask(mask, mtype="---", frame="---", obj_id="---", add_str_error="", raise_error=False):
+    if not isinstance(mask, np.ndarray):
+        wrong=True
+    elif np.sum(mask) == 0:
+        wrong = True
+    else:
+        wrong=False
+    if wrong:
+        string = "couldn't identify mask %s in frame %s patch %s" % (str(mtype), str(frame), str(obj_id))
+        if raise_error:
+            raise Mask_Error(string +  " " + add_str_error)
+        else:
+            print(string)
+    return wrong
 
 def calc_on_area(frame, res_dict, parameter_dict, label, masks, mask_types=None, obj_ids=[], x=None, y=None,
                  sumtype="abs", add_cut_factor=None, db_info=None, label2=None):
@@ -424,34 +435,34 @@ def calc_on_area(frame, res_dict, parameter_dict, label, masks, mask_types=None,
     mask_iter = masks.reconstruct_masks_frame(frame, mask_types, obj_ids=obj_ids, raise_error=False,
                                               fill_holes=fill_holes)
     for obj_id, mask, mtype, warn in mask_iter:
-        if not isinstance(mask, np.ndarray):
-            print("couldn't identify mask %s in frame %s patch %s" % (str(mtype), str(frame), str(obj_id)))
+        if check_empty_mask(mask, mtype, frame, obj_id):
             continue
         if isinstance(add_cut_factor, float):  # additional cutting when in layer-mode
             mask, w = cut_mask_from_edge(mask, add_cut_factor, parameter_dict["TFM_mode"] == "colony")
-        check_empty_mask(mask, mtype, frame, obj_id)
+        if check_empty_mask(mask, mtype, frame, obj_id):
+            continue
         if label2 == None:
             _label2 = default_parameters["mask_properties"][mtype]["label"]
         else:
             _label2 = label2
         if sumtype == "abs":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
-            res_dict[frame]["%s%s" % (label, _label2)].append(
+            res_dict[frame]["%s %s" % (label, _label2)].append(
                 [obj_id, np.sum(np.sqrt(x[mask_int] ** 2 + y[mask_int] ** 2)), warn])
         if sumtype == "mean":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
-            res_dict[frame]["%s%s" % (label, _label2)].append([obj_id, np.mean(x[mask_int]), warn])
+            res_dict[frame]["%s %s" % (label, _label2)].append([obj_id, np.mean(x[mask_int]), warn])
         if sumtype == "mean_abs":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
-            res_dict[frame]["%s%s" % (label, _label2)].append([obj_id, np.mean(np.abs(x[mask_int])), warn])
+            res_dict[frame]["%s %s" % (label, _label2)].append([obj_id, np.mean(np.abs(x[mask_int])), warn])
         if sumtype == "area":  # area of original mask, without interpolation
             area = np.sum(mask) * ((parameter_dict["pixelsize"] * 10 ** -6) ** 2)
-            res_dict[frame]["%s%s" % (label, _label2)].append([obj_id, area, warn])
+            res_dict[frame]["%s %s" % (label, _label2)].append([obj_id, area, warn])
         if sumtype == "cv":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
             ps_new = parameter_dict["pixelsize"] * np.mean(np.array(db_info["im_shape"][frame]) / np.array(x.shape))
             border_pad = int(np.round(parameter_dict["cv_pad"] / ps_new))
-            res_dict[frame]["%s%s" % (label, _label2)].append(
+            res_dict[frame]["%s %s" % (label, _label2)].append(
                 [obj_id, coefficient_of_variation(mask_int, x, border_pad), warn])
 
 
@@ -474,14 +485,12 @@ def general_properties(frame, parameter_dict, res_dict, db, db_info=None, masks=
     # place holder for shape if not defined in defo-shape, needed for counting cells
     int_shape = db_info["defo_shape"] if "defo_shape" in db_info.keys() else (int(db_info["im_shape"][frame][0] * 0.2),
                                                                               int(db_info["im_shape"][frame][1] * 0.2))
-
     # calculate the area of each mask
     calc_on_area(frame, res_dict, parameter_dict, "area", masks, mask_types=mtypes, sumtype="area")
     # calculating the cell count for each colony
-    mask_iter = masks.reconstruct_masks_frame(frame, "membrane", raise_error=True, fill_holes=False)
+    mask_iter = masks.reconstruct_masks_frame(frame, "Cell Boundary", raise_error=True, fill_holes=False)
     for obj_id, mask_membrane, mtype, warn in mask_iter:
-        if not isinstance(mask_membrane, np.ndarray):  # this could be improved maybe....
-            print("couldn't identify cell borders in frame %s patch %s" % (str(frame), str(obj_id)))
+        if check_empty_mask(mask_membrane, mtype, frame, obj_id):
             continue
         borders = find_borders(mask_membrane, int_shape, raise_error=False, type=parameter_dict["FEM_mode"],
                                min_length=parameter_dict["min_line_length"])
@@ -490,7 +499,6 @@ def general_properties(frame, parameter_dict, res_dict, db, db_info=None, masks=
             continue
         n_cells = borders.n_cells
         res_dict[frame]["cell number"].append([obj_id, n_cells, warn])
-
     # center of mass (centroid) of each object// a simple check if objects have been identified correctly
     for obj_id, com in masks.get_com_frame(frame):
         res_dict[frame]["center of object"].append([obj_id, str(np.round(com, 2)), ""])
@@ -542,6 +550,9 @@ def simple_segmentation(frame, parameter_dict, res_dict, db, db_info=None, masks
     # only for cell layer mode
     if seg_type == "cell_area":
         mtypes = get_masks_by_key(default_parameters, "use", "stress_layer")
+        index_mem = parameter_dict["mask_properties"]["Cell Boundary"]["index"]
+        index_ct1 = parameter_dict["mask_properties"][mtypes[0]]["index"]
+        index_ct2 = parameter_dict["mask_properties"][mtypes[1]]["index"]
         if all([m in db_info["mask_types"] for m in mtypes]):
             im = db.getImage(id=db_info["file_order"][frame + "membranes"]).data
             if not isinstance(im_filter, np.ndarray):
@@ -549,14 +560,15 @@ def simple_segmentation(frame, parameter_dict, res_dict, db, db_info=None, masks
             mask = im_filter > seg_threshold
             og_mask = try_mask_load(db, db_info["frames_ref_dict"][frame], raise_error=False, mtype="all",
                                     ret_type="zeros")
-            memb_mask = og_mask == parameter_dict["mask_properties"]["membrane"]["index"]
-            og_mask[mask] = 1
-            og_mask[~mask] = 2
-            og_mask[memb_mask] = parameter_dict["mask_properties"]["membrane"]["index"]
+            memb_mask = og_mask == index_mem
+            og_mask[mask] = index_ct1
+            og_mask[~mask] = index_ct2
+            og_mask[memb_mask] = index_mem
             db.setMask(frame=db_info["frames_ref_dict"][frame], data=og_mask.astype("uint8"))
     # only for colony mode
     if seg_type == "membrane":
         mtypes = get_masks_by_key(default_parameters, "use", "borders")
+        index_mem = parameter_dict["mask_properties"]["Cell Boundary"]["index"]
         if all([m in db_info["mask_types"] for m in mtypes]):
             im = db.getImage(id=db_info["file_order"][frame + "membranes"]).data.astype(float)
             if not isinstance(im_filter, np.ndarray):
@@ -565,14 +577,14 @@ def simple_segmentation(frame, parameter_dict, res_dict, db, db_info=None, masks
             mask = remove_small_objects(mask, min_size=1000)  # same as when actually preparing borders
             og_mask = try_mask_load(db, db_info["frames_ref_dict"][frame], raise_error=False, mtype="all",
                                     ret_type="zeros")
-            og_mask[og_mask == parameter_dict["mask_properties"]["membrane"]["index"]] = 0  # deleting old membrane mask
-            og_mask[mask] = parameter_dict["mask_properties"]["membrane"]["index"]
+            og_mask[og_mask == index_mem] = 0  # deleting old membrane mask
+            og_mask[mask] = index_mem
             db.setMask(frame=db_info["frames_ref_dict"][frame], data=og_mask.astype("uint8"))
     return im_filter
 
 
 def cover_entire_image_with_mask(frame, parameter_dict, res_dict, db, db_info=None, masks=None,
-                                 mask_type="force_measures", mode="fill out image", **kwargs):
+                                 mask_type="Tractions", mode="fill out image", **kwargs):
     mtype = db.getMaskTypes(name=mask_type)[:]
     if len(mtype) == 0:
         print("mask " + mask_type + " not found")
@@ -638,12 +650,11 @@ def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, d
         add_plot("energy_points", [energy_points], show_map_clickpoints, frame, db_info, parameter_dict, db)
 
     # iterating though mask that are selected for summation
-    mask_iter = masks.reconstruct_masks_frame(frame, mtypes, raise_error=True, fill_holes=True)
+    mask_iter = masks.reconstruct_masks_frame(frame, mtypes, raise_error=False, fill_holes=True)
     contractile_force = None
     contr_energy = None
     for obj_id, mask, mtype, warn in mask_iter:
-        if not isinstance(mask, np.ndarray):
-            print("couldn't identify mask %s in frame %s patch %s" % (str(mtype), str(frame), str(obj_id)))
+        if check_empty_mask(mask, mtype, frame, obj_id):
             continue
         # interpolation to size of traction force array
         mask_area = np.sum(mask) * (parameter_dict["pixelsize"] ** 2)
@@ -688,7 +699,7 @@ def traction_force(frame, parameter_dict, res_dict, db, db_info=None, masks=None
                                 sigma=parameter_dict["sigma"],
                                 filter=parameter_dict["filter_type"], fs=parameter_dict["filter_size"])
 
-    # add a plot of the trackitoon filed to the database
+    # add a plot of the traction filed to the database
     add_plot("traction", (tx, ty), show_quiver, frame, db_info, parameter_dict, db)
 
     # saving raw files
@@ -830,16 +841,18 @@ def FEM_full_analysis(frame, parameter_dict, res_dict, db, db_info=None, masks=N
     plot_values = []
     m_stresses = []
     FEM_type = "FEM_layer" if parameter_dict["FEM_mode"] == "cell layer" else "FEM_colony"
-    FEM_area_masks = get_masks_by_key(parameter_dict, "use", FEM_type)  # masks that make up the FEM_area
+    # masks that make up the FEM_are
+    FEM_area_masks = get_masks_by_key(parameter_dict, "use", FEM_type)
     # add relevant masks, usefull in cell layer mode
-    mask_iter_grid = masks.reconstruct_masks_frame_add(frame, FEM_area_masks, raise_error=False, fill_holes=True)
+    if FEM_type == "cell layer":
+        mask_iter_grid = masks.reconstruct_masks_frame_add(frame, FEM_area_masks, raise_error=False, fill_holes=True)
+    else:
+        mask_iter_grid = masks.reconstruct_masks_frame(frame, FEM_area_masks, raise_error=False, fill_holes=True)
     # masks for line tension along cell-cell borders
-    mask_iter_borders = masks.reconstruct_masks_frame(frame, "membrane", raise_error=True, fill_holes=False)
+    mask_iter_borders = masks.reconstruct_masks_frame(frame, "Cell Boundary", raise_error=False, fill_holes=False)
     for obj_id, mask_grid, mtype, warn in mask_iter_grid:
-        if not isinstance(mask_grid, np.ndarray):
-            print("couldn't identify FEM_area in frame %s patch %s" % (str(frame), str(obj_id)))
-            continue  # skip if FEM_area for this patch is empty
-
+        if check_empty_mask(mask_grid, mtype, frame, obj_id):
+            continue
         nodes, elements, loads, mats, mask_area, warn, ps_new = FEM_grid_setup(frame, parameter_dict, mask_grid,
                                                                                db_info=db_info, **kwargs)
         # FEM solution
@@ -853,22 +866,26 @@ def FEM_full_analysis(frame, parameter_dict, res_dict, db, db_info=None, masks=N
 
         # finding cell borders
         mask_borders, warn_borders = next(((v[1], v[3]) for v in mask_iter_borders if v[0] == obj_id), (None, ""))
-        if parameter_dict["FEM_mode"] == "layer":  # additional cutting when in layer mode
+
+        if check_empty_mask(mask_borders, "Cell Boundary", frame, obj_id):
+            continue
+        # additional cutting when in layer mode
+        if parameter_dict["FEM_mode"] == "layer":
             mask_borders, w = cut_mask_from_edge(mask_borders,
-                                                 parameter_dict["edge_padding"] + parameter_dict["padding_cell_layer"],
+                                                 parameter_dict["edge_padding"] + parameter_dict[
+                                                     "padding_cell_layer"],
                                                  parameter_dict["TFM_mode"] == "colony")
-        if isinstance(mask_borders, np.ndarray):
-            warn += " " + warn_borders
-            borders = find_borders(mask_borders, mask_area.shape, raise_error=False, type=parameter_dict["FEM_mode"],
-                                   min_length=parameter_dict["min_line_length"])
-            if not isinstance(borders, Cells_and_Lines):  # maybe print something here
-                print("couldn't identify cell borders in frame %s patch %s" % (str(frame), str(obj_id)))
-                continue
-            # analyzing line tension
-            k, f, pv = FEM_analysis_borders(frame, res_dict, db, db_info, parameter_dict, stress_tensor, ps_new,
-                                            borders, obj_id, warn,
-                                            **kwargs)
-            plot_values.append(pv)
+        warn += " " + warn_borders
+        borders = find_borders(mask_borders, mask_area.shape, raise_error=False, type=parameter_dict["FEM_mode"],
+                               min_length=parameter_dict["min_line_length"])
+        if not isinstance(borders, Cells_and_Lines):
+            print("couldn't identify cell borders in frame %s patch %s" % (str(frame), str(obj_id)))
+            continue
+        # analyzing line tension
+        k, f, pv = FEM_analysis_borders(frame, res_dict, db, db_info, parameter_dict, stress_tensor, ps_new,
+                                        borders, obj_id, warn,
+                                        **kwargs)
+        plot_values.append(pv)
     # plotting the stress at cell borders
     if len(plot_values) > 0:
         add_plot("FEM_borders", [plot_values], plot_continuous_boundary_stresses, frame, db_info, parameter_dict, db)
@@ -930,9 +947,10 @@ def apply_to_frames(db, parameter_dict, analysis_function, leave_basics=False, r
 
 ### code to work on clickpoint outside of the addon
 if __name__ == "__main__":
+
     ## setting up necessary paramteres
     # db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
-    db = clickpoints.DataFile("/home/andy/Desktop/KOshift/database.cdb", "r")
+    db = clickpoints.DataFile("/home/andy/test_data_pyTFM/KOshift/database_borders_test.cdb", "r")
     parameter_dict = default_parameters
     res_dict = defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
@@ -940,7 +958,7 @@ if __name__ == "__main__":
     # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
     #                                            db_info=db_info, masks=None)
     db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict,
-                                               frames="03",
+                                               frames="07",
                                                db_info=db_info, masks=None)
     #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict, frames="1",
     #                                           db_info=db_info, masks=masks)
@@ -951,7 +969,7 @@ if __name__ == "__main__":
 #                                       db_info=db_info, masks=None)
 
 '''
-    ###### problem: produces empty entries when try to acces non-exisitng str
+    ###### problem: produces empty entries when try to access non-exisitng str
     masks = cells_masks(all_frames, db, db_info, parameter_dict)
     db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict, frames="01",
                                                db_info=db_info, masks=masks)

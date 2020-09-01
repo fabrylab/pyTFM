@@ -157,7 +157,7 @@ class SegSlider(QtWidgets.QWidget):
         if names[0] == "membrane":
             names.insert(-1, names.pop(0))
         self.mask_type.addItems(names)
-        self.mask_type.setToolTip(tooltips["select mask to cover entire image"])
+        self.mask_type.setToolTip(tooltips["select mask segmentation"])
         # drop down menu to switch between encircling the entire image or filling the entire image
         # the latter would delete every other mask
         self.fill_mode = QtWidgets.QComboBox()
@@ -184,6 +184,7 @@ class SegSlider(QtWidgets.QWidget):
         self.slider_area = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.slider_area.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.slider_area.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        self.slider_area.setToolTip(tooltips["segmentation_area"])
         self.im_filter_area = gaussian_filter(self.main_window.db.getImage(
             id=self.main_window.db_info["file_order"][main_window.frame + "membranes"]).data, sigma=10)
         max_area = np.max(self.im_filter_area)
@@ -225,6 +226,7 @@ class SegSlider(QtWidgets.QWidget):
         self.slider_mem.setTickInterval(2)  # only takes int??
         self.slider_mem.valueChanged.connect(
             partial(self.segmentation_single, frames=self.main_window.frame, seg_type="membrane"))
+        self.slider_mem.setToolTip(tooltips["segmentation_membrane"])
         slider_mem_vbox = QtWidgets.QVBoxLayout()
         slider_mem_hbox = QtWidgets.QHBoxLayout()
         slider_mem_hbox.setContentsMargins(0, 0, 0, 0)
@@ -387,11 +389,10 @@ class FileSelectWindow(QtWidgets.QWidget):
 
             "text_file_selection": {"object": None,
                                     "properties": [0, 0, None, 0, QtCore.Qt.AlignLeft, None, self.update_dirs,
-                                                   QtWidgets.QLabel, "select images files"]},
+                                                   QtWidgets.QLabel, "select image files"]},
             "text_output_options": {"object": None,
                                     "properties": [5, 0, None, 0, QtCore.Qt.AlignLeft, None, self.update_dirs,
                                                    QtWidgets.QLabel, "select output folder and database name"]}
-
         }
 
         self.texts = {
@@ -422,6 +423,7 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.collect_button = QtWidgets.QPushButton("collect images")
         self.collect_button.clicked.connect(self.collect_files)
         self.collect_button.setObjectName("collect_images")
+        self.collect_button.setToolTip(tooltips["collect_button"])
         self.super_layout.addWidget(self.collect_button, 2, 0, alignment=QtCore.Qt.AlignLeft)
         self.super_layout.setRowStretch(12, 1)
 
@@ -560,10 +562,6 @@ class Addon(clickpoints.Addon):
 
     def __init__(self, *args, **kwargs):
 
-        # lowering the recursion limit to avoid stack overflow when borders are marked weirdly
-        #if sys.getrecursionlimit()>2000:
-        #    sys.setrecursionlimit(2000)
-
         clickpoints.Addon.__init__(self, *args, **kwargs)
 
         self.frame_number = except_error(self.db.getImageCount, TypeError, print_error=False, return_v=None)
@@ -672,8 +670,10 @@ class Addon(clickpoints.Addon):
         self.colony_type.addItems(["colony", "cell layer"])
         self.colony_type.setToolTip(tooltips["switch mode"])
         self.colony_type.setCurrentIndex(self.parameter_dict["FEM_mode_id"])
-        self.colony_type.currentTextChanged.connect(self.parameters_changed)  # update parameters
-        self.colony_type.currentTextChanged.connect(self.switch_colony_type_mode)  # swith the colony mode
+        # update parameters
+        self.colony_type.currentTextChanged.connect(self.parameters_changed)
+        # switch between cell layer and colony mode
+        self.colony_type.currentTextChanged.connect(self.switch_colony_type_mode)
         self.parameter_widgets["FEM_mode"] = self.colony_type  # adding to parameters dict
         self.parameter_lables["FEM_mode"] = ""  # label
         self.sub_layout3 = QtWidgets.QHBoxLayout()
@@ -853,8 +853,8 @@ class Worker(QtCore.QThread):
 def setup_mask_wrapper(window, db, db_info, parameter_dict, delete_all=False, warn_popup=True):
     other_masks = check_existing_masks(db, parameter_dict)
     del_str = "all previous masks" if delete_all else "the masks " + str(other_masks)[1:-1]
-    if warn_popup:
-        if (len(other_masks) > 0 or delete_all):
+    if (len(other_masks) > 0 or delete_all):
+        if warn_popup:
             choice = QtWidgets.QMessageBox.question(window, 'continue',
                                                     "This will delete %s. Do you want to continue?" % del_str,
                                                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
