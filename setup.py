@@ -30,6 +30,7 @@ except Exception as e:
 	print("Error:", e)
 	print("trying to install open piv from pip" + '\033[0m')
 
+
 setup(
     name='pyTFM',
     packages=['pyTFM'],

@@ -34,19 +34,22 @@ default_parameters = {
     # mask for the FEM area fits very closely to the mask for membranes
     "mask_properties": {
         "cell type1": {"use": ["defo", "forces", "area_layer", "FEM_layer", "stress_layer"], "FEM_mode": ["cell layer"],
-                       "color": "#1322ff", "index": 1, "label": "cell type 1", "name": " of cell type1"},
+                       "color": "#1322ff", "index": 1, "label": "cell type 1", "name": "cell type1"},
         "cell type2": {"use": ["defo", "forces", "area_layer", "FEM_layer", "stress_layer"], "FEM_mode": ["cell layer"],
-                       "color": "#ebff05", "index": 2, "label": " of cell type 2", "name": "cell type2"},
-        "membrane": {"use": ["area_colony", "borders", "FEM_layer", "stress_colony"],
-                     "FEM_mode": ["cell layer", "colony"], "color": "#ff7402", "index": 3, "label": " of cell area",
-                     "name": "membrane"},
-        "force measures": {"use": ["defo", "forces"], "FEM_mode": ["colony"], "color": "#ff0b23", "index": 1,
-                           "label": "", "name": "force measures"},
-        "FEM_area": {"use": ["FEM_colony"], "FEM_mode": ["colony"], "color": "#30ff0c", "index": 2, "label": " of FEM area",
-                     "name": "FEM_area"}}
+                       "color": "#ebff05", "index": 3, "label": "cell type 2", "name": "cell type2"},
+        "Cell Boundary": {"use": ["area_colony", "borders", "FEM_layer", "stress_colony", "forces"],
+                     "FEM_mode": ["cell layer", "colony"], "color": "#30ff0c", "index": 2, "label": "",
+                     "name": "Cell Boundary"},
+        "Tractions": {"use": ["defo", "forces", "FEM_colony"], "FEM_mode": ["colony"], "color": "#ff0b23",
+                           "index": 1,
+                           "label": "", "name": "Tractions"}}
 }
+# "FEM_area": {"use": ["FEM_colony"], "FEM_mode": ["colony"], "color": "#30ff0c", "index": 2, "label": " of FEM area",
+#                     "name": "FEM_area"}}
 
-# use: calculations this mask is used in
+#force measures
+
+    # use: calculations this mask is used in
 # FEM_mode: mode the mask is used in
 # color: color of the mask in clickpoints
 # index: index of the mask in clickpoints; FEM_mode and index mst be a unique pair.
@@ -139,9 +142,13 @@ def set_fig_parameters(shape, fig_shape, fig_parameters, figtype):
     return fp
 
 
-def get_masks_by_key(default_parameters, key, prop):
-    '''extracting lists of mask withat certain properties'''
-    return [m for m, mdict in default_parameters["mask_properties"].items() if prop in mdict[key]]
+def get_masks_by_key(default_parameters, key, prop, return_key=True):
+    '''extracting lists of mask with certain properties'''
+    if return_key:
+        return [m for m, mdict in default_parameters["mask_properties"].items() if prop in mdict[key]]
+    else:
+        keys = [m for m, mdict in default_parameters["mask_properties"].items() if prop in mdict[key]]
+        return [default_parameters["mask_properties"][key]["name"] for key in keys]
 
 
 def get_properties_masks(default_parameters, masks, props):
@@ -153,54 +160,104 @@ def get_properties_masks(default_parameters, masks, props):
 
 
 tooltips = defaultdict(lambda: "")
-tooltips["check_box_def"] = "Add the calculation of a deformation field"
-tooltips["check_box_tra"] = "Add the calculation of a traction force deformation field"
-tooltips[
-    "check_box_FEM"] = "Add stress analysis on the colony area. You need  to mark them membranes inside the cell colony."
-tooltips[
-    "check_box_contract"] = "Add the analysis of contractillity and contractile energy. You need to mark the area to be used for thsi calcualtion seperately"
-tooltips["colony_type"] = ""
 tooltips["button_start"] = "Start the calculation"
-tooltips[
-    "apply to"] = "Run the selected analysis on the current frame or on all frames in the database. THe later option will save the reuslts to a textfile"
-tooltips["use_h_correction"] = "Enable the use of height corrected tracktion force microscopy"
-tooltips["young"] = "Set the youngs modulus of the substrate that the cells are growing on"
-tooltips["sigma"] = "Set the possion ratio of the substrate that the cells are growing on"
+tooltips["image selection"] = "Select images,the output folder and name of the database"
+tooltips["correct drift"] = "Correct a drift between images before and after relaxation"
+tooltips["check_box_def"] = "Calculation of the deformation field"
+tooltips["check_box_tra"] = "Calculation of the traction force field"
+tooltips["check_box_FEM"] = "Calculation of cellular stresses and cell-cell force transfer. " \
+                            "The mask 'Cell Boundary' is required."
+tooltips["check_box_contract"] = "Calculation of strain energy and contractility. The mask 'Tractions' is required."
+tooltips["apply to"] = "Apply the selected analysis to the current field of view or all field of views in the database"
+tooltips["switch mode"] = "Switch between 'cell layer' mode (you can select two areas to calculate " \
+                          "stresses and forces) and 'colony mode' " \
+                          "(more accurate calculation of stresses especially for small cell patches)"
+tooltips["segmentation"] = "A number of tools to help you mark the cell boundary or different cell types"
+tooltips["young"] = "Set the Young's modulus of the substrate"
+tooltips["sigma"] = "Set the Poisson's ratio of the substrate"
 tooltips["pixelsize"] = "Set pixel size of your images"
-tooltips[
-    "overlap"] = "Set the overlap for calcualting the deformation fiel by PIV. THis should be about 95% of the windowsize if you include" \
-                  "the stress analysis. "
-tooltips[
-    "window_size"] = "Set the windowsize for calcualting the deormation field by PIV. A could guess is 7 times the radius of a bead."
-tooltips["h"] = "set the height of the substrate your cells are growing on"
-tooltips["folder_out_txt"] = "select the folder where all output images and files and the database file are saved to"
-tooltips["folder1_txt"] = "select the folder with your images after the cells are removed"
-tooltips["folder2_txt"] = "select the folder with your images before the cells are removed"
-tooltips["folder3_txt"] = "select the folder with your images of your cells"
-tooltips[
-    "db_name_text"] = "set the name your database. The database will be saved under this name once you clicked 'collect images' button."
-tooltips["folder_out_button"] = "click to browse folders"
-tooltips["folder1_button"] = "click to browse folders"
-tooltips["folder2_button"] = "click to browse folders"
-tooltips["folder3_button"] = "click to browse folders"
-tooltips[
-    "after"] = "set an additional identifier for the image files. You need to provide a regular expression. The file extension is added automatically."
-tooltips["before"] = "set an additional identifier for the image files. You need to provide a regular expression."
-tooltips["cells"] = "set an additional identifier for the image files. You need to provide a regular expression."
-tooltips["frames"] = "set where the number of the frame is provided. You need a regular expression"
-tooltips["colony"] = "choose the type of analysis"
-tooltips["correct drift"] = "correct the drift between image pairs"
-tooltips["select images"] = " select images, output folder and name of the database"
-tooltips[
-    "fill cell area"] = "Fill areas that are fully encircled by a mask. Use with care, this will not work perfectly " \
-                        "and might overwrite parts of the mask that you have drawn. Function is applied to all frames."
+tooltips["window_size"] = "Set size of correlation windows for the calculation of the deformation field with PIV. " \
+                          "A good first guess is 7 times the radius of a bead. Increase or decrease " \
+                          "the window size until you obtain a good result. You can use the ClickPoints add-on " \
+                          "'Measure Tool' to directly track the the displacement of individual beads."
+tooltips["overlap"] = "Set the overlap between correlation windows for the calculation of the deformation " \
+                      "field with PIV. This parameters controls the resolution of the deformation field and should " \
+                      "be over 95% of the window size when calculating cellular stresses. However, if you are " \
+                      "just testing out parameters you can save a lot of calculation time by " \
+                    "reducing the overlap."
+tooltips["h"] = "Set the height of the substrate. You can type in 'infinite', if the substrate is very thick. " \
+                "The assumption of infinite substrate height should should generally be valid above 300 µm. " \
+                "As a simple test, you can varey the height and see if the strain energy is influenced. " \
+                "If this is not the case the substrate height can be assumed as infinite."
+
+tooltips["collect_button"] = "Generate a database with the selected images."
+tooltips["folder_out"] = "Select the folder where the database file, output images and files will be stored."
+tooltips["folder_after"] = "Select a folder with images after substrate relaxation."
+tooltips["folder_before"] = "Select a folder with images before substrate relaxation."
+tooltips["folder_cells"] = "Optional: Select a folder with images of the cells or type 'none' to skip this step."
+tooltips["db_name_text"] = "Set the name of your database. It will be saved once you clicked the " \
+                           "'collect images' button."
+tooltips["folder_out_button"] = "Click to browse folders."
+tooltips["folder_after_button"] = "Click to browse folders."
+tooltips["folder_before_button"] = "Click to browse folders."
+tooltips["folder_cells_button"] = "Click to browse folders"
+tooltips["after"] = "Provide a regular expression to select images after substrate relaxation. " \
+                    "If you leave this blank all images in the selected folder are selected."
+tooltips["before"] = "Provide a regular expression to select images before substrate relaxation. " \
+                     "If you leave this blank all images in the selected folder are selected."
+tooltips["cells"] = "Optional: Provide a regular expression to select images of the cells. If you leave this blank " \
+                    "all images in the selected folder are selected. Type 'none' to skip this."
+tooltips["frames"] = "Provide a regular expression to identify the field of view/frame of each image. " \
+                     "The identifier can be numbers, characters or any other sign, but must be present " \
+                     "in all three (or two) images. You need to enclose the identifier with brackets '()'."
+
+tooltips["segmentation_area"] = "Mark the entire image as cell type1 or cell type2. Use the slider to select " \
+                                "an appropriate threshold and press the button to apply the threshold to all " \
+                                "frames. The area marked as 'Cell Boundary' will be conserved. " \
+                                "This only works in 'cell layer' mode."
+tooltips["segmentation_membrane"] = "Mark the Cell Boundaries. Use the slider to select an appropriate threshold " \
+                                "and press the button to apply the threshold to all frames."
+tooltips["mark entire image"] = "Cover the entire image with a mask. Note that a stretch at the " \
+                                "image border will always be omitted for the analysis."
+tooltips["select mask segmentation"] = "Select the mask type with which to cover the entire image."
+tooltips["fill_mode"] = "You can either fill out the image or draw an outline around it."
+
+# automatically introducing some line breaks:
+line_break = 65
+for key, text in tooltips.items():
+    try:
+        breaks = int(len(text) / line_break)
+        for lb in range(breaks):
+            beak_point = (lb + 1) * line_break
+            working = True
+            i = 0
+            while working:
+                il = beak_point - i
+                ir = beak_point + i
+                if ir >= len(text) or il < 0:
+                    break
+                # replacing blank space
+                if text[il] == " ":
+                    text = text[:il] + "\n" + text[il+1:]
+                    break
+                if text[ir] == " ":
+                    text = text[:ir] + "\n" + text[ir + 1:]
+                    break
+                i += 1
+        tooltips[key] = text
+    except Exception as e:
+        raise e
+
+
+
+
 
 # some message to be printed
 calculation_messages = defaultdict(lambda: "%s")
 calculation_messages["deformation"] = "calculating deformation on frames %s"
 calculation_messages["traction_force"] = "calculating traction_forces on frames %s"
 calculation_messages["FEM_full_analysis"] = "FEM_analysis on frames %s"
-calculation_messages["get_contractillity_contractile_energy"] = "contractillity/strain energy on frames %s"
+calculation_messages["get_contractillity_contractile_energy"] = "contractility/strain energy on frames %s"
 calculation_messages["general_properties"] = "getting colony properties on frames %s"
 calculation_messages["simple_shift_correction"] = "correct frame shift on frames %s"
 
