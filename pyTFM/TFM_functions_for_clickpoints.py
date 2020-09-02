@@ -647,7 +647,7 @@ def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, d
         energy_points = strain_energy_points(u, v, t_x, t_y, parameter_dict["pixelsize"],
                                              ps_new)  # contractile energy at any point
         # plotting contractile energy (only happens if enable in default_fig_parameters)
-        add_plot("energy_points", [energy_points], show_map_clickpoints, frame, db_info, parameter_dict, db)
+        add_plot("energy_points", [energy_points/((ps_new*10**-6)**2)], show_map_clickpoints, frame, db_info, parameter_dict, db)
 
     # iterating though mask that are selected for summation
     mask_iter = masks.reconstruct_masks_frame(frame, mtypes, raise_error=False, fill_holes=True)
@@ -989,3 +989,4 @@ if __name__ == "__main__":
     write_output_file(res_dict, "results", "/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/WTshift/out_test.txt",new_file=True)
         # calculating the deformation field and adding to data base
 '''
+#TDOD: deal with oroblems when database is moved around/ folders are renamed --> make option with this directory

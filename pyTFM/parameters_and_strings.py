@@ -94,7 +94,7 @@ default_fig_parameters = {
     "plot_cbar": True,
     "cbar_str": {"deformation": "deformation\n[pixel]", "traction": "traction\n[Pa]",
                  "FEM_borders": "line tension\n[N/m]",
-                 "stress_map": "avg. normal stress\nin N/m", "energy_points": "contractile energy\nJ/pixel\n"
+                 "stress_map": "avg. normal stress\nin N/m", "energy_points": "strain energy\nJ/pixel\n"
                  },
     "resolution": 200,  # dpi when saving plots
     "file_names": {"deformation": "deformation.png", "traction": "traction.png"  # filenames under wich plots are saved
