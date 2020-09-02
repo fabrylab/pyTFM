@@ -38,5 +38,3 @@ analysis_and_testing/__pycache__/
 .idea/
 
 pyTFM/test.py
-
-docs/_build/

@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Typical Measures for Force Generation and Stresses in Cells &mdash; pyTFM 1.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Using Config Files, Hidden Parameters and Plotting Behavior" href="configuration.html" />
+    <link rel="prev" title="Using pyTFM in Python" href="pythonTutorial.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyTFM
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction to Traction Force Microscopy and Monolayer Stress Microscopy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Typical Measures for Force Generation and Stresses in Cells</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#deformations-in-the-substrate">Deformations in the Substrate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#strain-energy">Strain Energy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contractillity">Contractillity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#average-normal-and-shear-stress">Average Normal and Shear Stress</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#distribution-of-stresses">Distribution of Stresses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#forces-acting-across-cell-boundaries">Forces acting across Cell Boundaries</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Using Config Files, Hidden Parameters and Plotting Behavior</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyTFM</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Typical Measures for Force Generation and Stresses in Cells</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/measures.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="typical-measures-for-force-generation-and-stresses-in-cells">
+<h1>Typical Measures for Force Generation and Stresses in Cells<a class="headerlink" href="#typical-measures-for-force-generation-and-stresses-in-cells" title="Permalink to this headline">¶</a></h1>
+<p>There is a number of different ways to measure force generation and stresses. Here you can find
+an overview of all quantities that can be calculated with this program.</p>
+<div class="section" id="deformations-in-the-substrate">
+<h2>Deformations in the Substrate<a class="headerlink" href="#deformations-in-the-substrate" title="Permalink to this headline">¶</a></h2>
+<p>The simplest way is to sum up all deformations on the substrate surface that the cells are attached to.
+The deformations depend on the mechanical properties of the substrate, which means that this is not
+possible to compare results, when different substrates have been used.</p>
+</div>
+<div class="section" id="strain-energy">
+<h2>Strain Energy<a class="headerlink" href="#strain-energy" title="Permalink to this headline">¶</a></h2>
+<p>The strain energy is the total work that cells have to commit to deform their substrate. It is
+defined as <span class="math notranslate nohighlight">\(\frac{1}{2} \int \vec{d} \times \vec{f}\)</span>, where <span class="math notranslate nohighlight">\(\vec{d}\)</span> and <span class="math notranslate nohighlight">\(\vec{f}\)</span>
+are the deformation and the traction force vectors. That means that a high strain energy only needs a
+local alignment of both vectors.</p>
+</div>
+<div class="section" id="contractillity">
+<h2>Contractillity<a class="headerlink" href="#contractillity" title="Permalink to this headline">¶</a></h2>
+<p>The contractillity is defined as the sum of the projection of all traction forces towards one point,
+called the force epicenter. As such, the contractillity is high if all force are already orientated towards
+one central point. Locally opposing forces and forces not pointing towards the force epicenter do
+not contribute to the contractillity. A cell or cell colony which is able to coordinate
+its force generation in such a way that the forces seem to originate from a single point can achieve
+a high contractillity, while expending a comparably small amount of strain energy.</p>
+<p>This is further illustrated in <a class="reference internal" href="#id1"><span class="std std-numref">Fig. 13</span></a>. Case A represents a cell colony with two cells
+with high coordination of force generation and Case B represents a cell with coordination. In case B
+each cell generates contractile forces on its own. Accordingly case B has a lower contractillity if we
+assume equal strain energy in Case A and B.</p>
+<div class="figure align-default" id="id1">
+<a class="reference internal image-reference" href="_images/contractillity.png"><img alt="Illustration for contractillity" src="_images/contractillity.png" style="width: 400px;" /></a>
+</div>
+<p>To sum up: the strain energy is a measure for the total force generation, while the contractillity is a
+measure for the coordinated force generation.</p>
+</div>
+<div class="section" id="average-normal-and-shear-stress">
+<h2>Average Normal and Shear Stress<a class="headerlink" href="#average-normal-and-shear-stress" title="Permalink to this headline">¶</a></h2>
+<p>Stress describes the forces that are transferred inside of a cell or cell sheet. For any given point
+in the cell sheet the stress is defined by a tensor with 4 components. Each component represents forces
+that would act on the edges of a square that was cut out of the cell sheet as shown in <a class="reference internal" href="#stress-tensor"><span class="std std-numref">Fig. 14</span></a>.</p>
+<div class="figure align-default" id="stress-tensor">
+<a class="reference internal image-reference" href="_images/stress_tensor.png"><img alt="stress tensor illustration" src="_images/stress_tensor.png" style="width: 400px;" /></a>
+<p class="caption"><span class="caption-number">Fig. 14 </span><span class="caption-text"><span class="math notranslate nohighlight">\(\sigma_{xx}\)</span> and <span class="math notranslate nohighlight">\(\sigma_{yy}\)</span>: Normal Stresses  in x and y direction.
+<span class="math notranslate nohighlight">\(\sigma_{xy}\)</span> and <span class="math notranslate nohighlight">\(\sigma_{yx}\)</span>: Shear stresses.</span><a class="headerlink" href="#stress-tensor" title="Permalink to this image">¶</a></p>
+</div>
+<p>We can distinguish between two types of stress: The shear stress, which implies forces that act parallel
+to the edges of this square, and normal stress, which implies forces that act perpendicular to the edges of this square.
+Due to geometric reasons both shear components of the stress tensor must be identical. This
+is not the case for the normal components. Since it is not of interesst whether normal stress
+comes predominately from the x or y directions for our analysis, it is more useful to calculate the mean of
+both components. This leaves two stresses: the shear stress and the mean normal stress. These stresses
+can be averaged over the whole cell colony area.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The mean normal stress can be either negative, indicating a compressive stress, or positive,
+indicating a tensile stress. A typical cell experiences tensile stress, as it pulls
+on the underlying substrate from its edges .The shear stress can also have a positive or a
+negative sign. However, there is no useful interpretation in this case.</p>
+</div>
+</div>
+<div class="section" id="distribution-of-stresses">
+<h2>Distribution of Stresses<a class="headerlink" href="#distribution-of-stresses" title="Permalink to this headline">¶</a></h2>
+<p>The distribution of stresses can be described by the Coefficient of Variation (CV), that is
+the standard deviation normalized with the mean, of mean normal or shear stress.</p>
+</div>
+<div class="section" id="forces-acting-across-cell-boundaries">
+<h2>Forces acting across Cell Boundaries<a class="headerlink" href="#forces-acting-across-cell-boundaries" title="Permalink to this headline">¶</a></h2>
+<p>As hinted above, the stress tensor can be used to calculate the force that acts across a boundary in the
+cell colony. This force is called the line tension, and has a straight forward interpretation:
+Imagine you were to actually cut the cell sheet along the boundary between two cells. If the cells
+continue to generate force the edges of this cut would drift apart or start overlapping
+as you have just cut the material holding both edges together. In order to hold both edges in place
+as they were before you cut them, you need to apply a force at the edges. This force, normalized
+by the length of the cut, is the line tension.</p>
+<p>The line tension is a vector with x and y components. Similar to stresses it can be split in a
+shear component (the force acting parallel to the cut) and a normal component (the force acting
+perpendicular to the cut). Both contribute to the magnitude (length of the line tension vector)
+of the line tension.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Similar to normal stresses, the normal component of the line tension can be negative or
+positive, indicating that the two sides of the edge along which the line tension
+was calculated, are pushed together or pulled apart. The shear component of the line
+tension lacks such an interpretation and the magnitude of the line tension
+can of course only be positive.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="configuration.html" class="btn btn-neutral float-right" title="Using Config Files, Hidden Parameters and Plotting Behavior" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pythonTutorial.html" class="btn btn-neutral float-left" title="Using pyTFM in Python" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Andreas Bauer
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

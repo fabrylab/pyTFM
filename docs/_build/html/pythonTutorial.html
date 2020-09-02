@@ -1,0 +1,470 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using pyTFM in Python &mdash; pyTFM 1.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Typical Measures for Force Generation and Stresses in Cells" href="measures.html" />
+    <link rel="prev" title="Analyzing Cell Colonies with Clickpoints" href="tutorialAddon.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyTFM
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction to Traction Force Microscopy and Monolayer Stress Microscopy</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="tutorialAddon.html">Analyzing Cell Colonies with Clickpoints</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Using pyTFM in Python</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#calculating-deformation-fields">Calculating Deformation Fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#calculating-traction-fields">Calculating Traction Fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quantifying-the-force-generation">Quantifying the Force Generation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#measuring-stresses-in-cell-colonies">Measuring stresses in Cell Colonies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#calculating-the-line-tension">Calculating the Line Tension</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="measures.html">Typical Measures for Force Generation and Stresses in Cells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Using Config Files, Hidden Parameters and Plotting Behavior</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyTFM</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="tutorials.html">Tutorials</a> &raquo;</li>
+        
+      <li>Using pyTFM in Python</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/pythonTutorial.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="using-pytfm-in-python">
+<h1>Using pyTFM in Python<a class="headerlink" href="#using-pytfm-in-python" title="Permalink to this headline">¶</a></h1>
+<p>pyTFM makes it easy to perform Traction Force Microscopy and Monolayer Stress Microscopy in python. In this
+tutorial we will calculate strain energy, contractillity, mean normal stress and average line tension of a cell
+colony. As always we need two images of fluorescent beads: One image before cell removal and one image after cell removal.
+Additionally, since we are not using the clickpoints addon, we need to provide 3 masks:
+A mask for the area on which force generation is evaluated (encircling all deformations and forces that originate from the
+cell colony), a mask for the Finite Elements Analysis (encircling all forces that originate from the cell colony) and
+a mask of the cell boundaries. Of course, the easies way to generate these masks is to use clickpoints.</p>
+<p>In the <a class="reference external" href="https://github.com/fabrylab/example_data_for_pyTFM/archive/master.zip">example data set</a> in the subfolder
+“python_tutorial” you can find images for a single cell colony as well as suitable masks. I drew the masks
+in clickpoints and saved them as PNG files so that you can look at them with a standard image display tool.
+You can use any other format, as long as you can load them as a boolean (True and False) array to python.</p>
+<p>The “python_tutorial” folder also contains the complete code of the tutorial in a single python script “tutorial.py”.
+This script prints the quantities and saves the figures, that we are going to see in
+this tutorial. It should work right away.</p>
+<div class="section" id="calculating-deformation-fields">
+<h2>Calculating Deformation Fields<a class="headerlink" href="#calculating-deformation-fields" title="Permalink to this headline">¶</a></h2>
+<p>First, let’s import the function to calculate the deformation field as well as a function to plot it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.TFM_functions</span> <span class="kn">import</span> <span class="n">calculate_deformation</span>
+<span class="kn">from</span> <span class="nn">pyTFM.plotting</span> <span class="kn">import</span> <span class="n">show_quiver</span>
+</pre></div>
+</div>
+<p>Calculating the deformation field requires the images of the beads before and after cell removal.
+You can provide either paths to the files, or arrays ( which must have the data type int32). The deformation field
+is calculated with Particle Image Velocimetry, using a cross correlation algorithm. You need to
+find appropriate values for the window_size and overlap, that produce a smooth deformation field.
+For these images you can use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># paths to the images</span>
+<span class="n">im_path1</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/04after.tif&quot;</span> <span class="c1"># change to your location</span>
+<span class="n">im_path2</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/04before.tif&quot;</span>
+<span class="c1"># calculating the deformation</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mask_val</span><span class="p">,</span> <span class="n">mask_std</span> <span class="o">=</span> <span class="n">calculate_deformation</span><span class="p">(</span><span class="n">im_path1</span><span class="p">,</span> <span class="n">im_path2</span><span class="p">,</span> <span class="n">window_size</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">overlap</span> <span class="o">=</span> <span class="mi">60</span><span class="p">)</span>
+<span class="c1"># The unit of window size and overlap is pixels of the image of the beads</span>
+</pre></div>
+</div>
+<p>The overlap of 60 is a bit to small, especially for the FEM analysis later. If you want to be more accurate
+use an overlap of 95. This will increase the calculation time from a few seconds to roughly 5 minutes.</p>
+<p>Let’s plot the deformation field:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># plotting the deformation field</span>
+<span class="n">fig1</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">show_quiver</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">cbar_str</span><span class="o">=</span><span class="s2">&quot;deformations</span><span class="se">\n</span><span class="s2">[pixels]&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>show_quiver accepts most of the plotting parameters listed in <a class="reference internal" href="configuration.html#overviewofplottingparameters"><span class="std std-ref">Overview of Plotting Parameters</span></a>.</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>In some cases the image of the beads don’t share exactly the same field of view. You will notice this
+in the deformation field. You can use pyTFM to find and extract the common field of view of both images:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.frame_shift_correction</span> <span class="kn">import</span> <span class="n">correct_stage_drift</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="c1"># load your images; dtype must be float32; images must be grayscale (you need a 2 dimensional array)</span>
+<span class="n">image1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/04after.tif&quot;</span><span class="p">))</span>
+<span class="n">image2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/04before.tif&quot;</span><span class="p">))</span>
+
+<span class="c1"># cutting out the common field of few of image1 with image2. This also normalizes the images and applies a</span>
+<span class="c1"># subpixel accuracy shift. You can put in an additional list of images that will be cut to the same field</span>
+<span class="c1"># of view.</span>
+<span class="n">image1_cor</span><span class="p">,</span> <span class="n">image2_cor</span><span class="p">,</span> <span class="n">other_images</span> <span class="o">=</span> <span class="n">correct_stage_drift</span><span class="p">(</span><span class="n">image1</span><span class="p">,</span> <span class="n">image2</span><span class="p">,</span> <span class="n">additional_images</span><span class="o">=</span><span class="p">[])</span>
+
+<span class="c1"># save the output</span>
+<span class="n">image1_cor</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/04after_corr.tif&quot;</span><span class="p">)</span>
+<span class="n">image2_cor</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/04before_corr.tif&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The images in this tutorial are already corrected like this.</p>
+</div>
+</div>
+<div class="section" id="calculating-traction-fields">
+<h2>Calculating Traction Fields<a class="headerlink" href="#calculating-traction-fields" title="Permalink to this headline">¶</a></h2>
+<p>Next, we are going to calculate the traction forces, that were necessary to cause the deformations, that
+we have calculated in the previous section.
+This is done with the “TFM_tractions” function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.TFM_functions</span> <span class="kn">import</span> <span class="n">calculate_deformation</span><span class="p">,</span> <span class="n">TFM_tractions</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+</pre></div>
+</div>
+<p>Now we have to set the elastic parameters of the substrate (Young’s modulus, Poisson’s ratio and
+the height of the substrate). You can also set the substrate height to “infinite”. If you are not sure,
+whether your substrate thickness is large enough to neglect it, you can simply check if you get different results
+with h = “infinite”.</p>
+<p>We also need the pixel size of the image of the beads and the pixel size of the deformation field. The later
+can be calculate if you know the dimensions and pixel size of the image of the beads:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ps1</span> <span class="o">=</span> <span class="mf">0.201</span> <span class="c1"># pixel size of the image of the beads</span>
+<span class="n">im1_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1991</span><span class="p">,</span> <span class="mi">2033</span><span class="p">)</span> <span class="c1"># dimensions of the image of the beads</span>
+<span class="n">ps2</span> <span class="o">=</span> <span class="n">ps1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">im1_shape</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span> <span class="c1"># pixel size of of the deformation field</span>
+<span class="n">young</span> <span class="o">=</span> <span class="mi">49000</span> <span class="c1"># Young&#39;s modulus of the substrate in Pa</span>
+<span class="n">sigma</span> <span class="o">=</span> <span class="mf">0.49</span> <span class="c1"># Poisson&#39;s ratio of the substrate</span>
+<span class="n">h</span> <span class="o">=</span> <span class="mi">300</span> <span class="c1"># height of the substrate in µm, &quot;infinite&quot; is also accepted</span>
+</pre></div>
+</div>
+<p>Finally the traction field can be calculated by:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tx</span><span class="p">,</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">TFM_tractions</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">pixelsize1</span><span class="o">=</span><span class="n">ps1</span><span class="p">,</span> <span class="n">pixelsize2</span><span class="o">=</span><span class="n">ps2</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">,</span> <span class="n">young</span><span class="o">=</span><span class="n">young</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can plot it in the same way as we plotted the deformation field:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fig2</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">show_quiver</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="n">ty</span><span class="p">,</span> <span class="n">cbar_str</span><span class="o">=</span><span class="s2">&quot;tractions</span><span class="se">\n</span><span class="s2">[Pa]&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="quantifying-the-force-generation">
+<h2>Quantifying the Force Generation<a class="headerlink" href="#quantifying-the-force-generation" title="Permalink to this headline">¶</a></h2>
+<p>In order to quantify the force generation of the cell colony, we have to select the area, where deformations
+and tractions, that are generated by the colony are located. This selection requires a mask, which is a boolean
+array, that has the value True in the area that we want to use. I produced the appropriate mask in clickpoints and
+saved it as a grayscale image as “force_measurement.png”. After loading the mask, there are two more things to be done:
+First, we need to fill all holes in the mask in order to produce a continuous area. Second, we need to resize the
+mask to the dimensions of the deformation and traction fields:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.morphology</span> <span class="kn">import</span> <span class="n">binary_fill_holes</span>
+<span class="kn">from</span> <span class="nn">pyTFM.grid_setup_solids_py</span> <span class="kn">import</span> <span class="n">interpolation</span> <span class="c1"># a simple function to resize the mask</span>
+
+
+<span class="c1"># loading a mask, marking the are that is used for measuring the force generation</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/force_measurement.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">binary_fill_holes</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="c1"># the mask should be a single patch without holes</span>
+<span class="c1"># changing the masks dimensions to fit to the deformation and traction field:</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">interpolation</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This mask can now be used to calculate the contractillity and the strain energy:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.TFM_functions</span> <span class="kn">import</span> <span class="n">strain_energy_points</span><span class="p">,</span> <span class="n">contractillity</span>
+
+<span class="c1"># Strain energy:</span>
+<span class="c1"># First we calculate a map of strain energy</span>
+<span class="n">energy_points</span> <span class="o">=</span> <span class="n">strain_energy_points</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">tx</span><span class="p">,</span> <span class="n">ty</span><span class="p">,</span> <span class="n">ps1</span><span class="p">,</span> <span class="n">ps2</span><span class="p">)</span> <span class="c1"># J/pixel</span>
+<span class="c1"># Then we sum all energy points in the area defined by mask</span>
+<span class="n">strain_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">energy_points</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span> <span class="c1"># 1.95*10**-13 J</span>
+
+<span class="c1"># Contractillity</span>
+<span class="n">contractile_force</span><span class="p">,</span> <span class="n">proj_x</span><span class="p">,</span> <span class="n">proj_y</span><span class="p">,</span> <span class="n">center</span> <span class="o">=</span> <span class="n">contractillity</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="n">ty</span><span class="p">,</span> <span class="n">ps2</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span> <span class="c1"># 2.03*10**-6 N</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="measuring-stresses-in-cell-colonies">
+<h2>Measuring stresses in Cell Colonies<a class="headerlink" href="#measuring-stresses-in-cell-colonies" title="Permalink to this headline">¶</a></h2>
+<p>Stresses are calculated with Finite Elements Methods, modeling the colony as a 2 dimensional sheet and
+applying force opposite to the traction forces to it. We need select two areas for this:
+First, the are used for the Finite Elements Analysis. This area should contain all traction
+forces that are produced by the cell colony. Due to inaccuracies in the calculation of
+traction forces this area is typically larger then the actual cell colony. All measures for stress
+are however evaluated only on the area of the cell colony, which is the second area that we need
+to provide for this step. Once again, I produced the appropriate masks with clickpoints. We can load
+them like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># first mask: The area used for Finite Elements Methods.</span>
+<span class="c1"># should encircle all forces generated by the cell colony</span>
+<span class="n">mask_FEM</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/FEM_area.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">mask_FEM</span> <span class="o">=</span> <span class="n">binary_fill_holes</span><span class="p">(</span><span class="n">mask_FEM</span><span class="p">)</span> <span class="c1"># the mask should be a single patch without holes</span>
+<span class="c1"># changing the masks dimensions to fit to the deformation and traction field:</span>
+<span class="n">mask_FEM</span> <span class="o">=</span> <span class="n">interpolation</span><span class="p">(</span><span class="n">mask_FEM</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="c1"># second mask: The area of the cells. Average stresses and other values are calculated only</span>
+<span class="c1"># on the actual area of the cell, represented by this mask.</span>
+<span class="n">mask_cells</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/cell_borders.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">mask_cells</span> <span class="o">=</span> <span class="n">binary_fill_holes</span><span class="p">(</span><span class="n">mask_cells</span><span class="p">)</span>
+<span class="n">mask_cells</span> <span class="o">=</span> <span class="n">interpolation</span><span class="p">(</span><span class="n">mask_cells</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="n">tx</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The traction forces in the FEM area are typically slightly unbalanced, leading to a net force and torque acting on
+the cell colony. We need to correct this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.grid_setup_solids_py</span> <span class="kn">import</span> <span class="n">prepare_forces</span>
+
+<span class="c1"># converting tractions (forces per surface area) to actual forces</span>
+<span class="c1"># and correcting imbalanced forces and torques</span>
+
+<span class="c1"># tx-&gt;traction forces in x direction, ty-&gt;traction forces in y direction</span>
+<span class="c1"># ps2-&gt;pixel size of the traction field, mask_FEM-&gt; mask for FEM</span>
+<span class="n">fx</span><span class="p">,</span> <span class="n">fy</span> <span class="o">=</span> <span class="n">prepare_forces</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="n">ty</span><span class="p">,</span> <span class="n">ps2</span><span class="p">,</span> <span class="n">mask_FEM</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we are ready to perform a Finite Elements Analysis. This is split into two steps:
+First, a FEM grid is setup. The grid consists of nodes and for each node
+the connectivity to other nodes, constraints on the displacements and forces acting on the node are defined .
+Then, the FEM system is solved by calculating first the deformations and eventually the stress
+that the applied forces would cause in the FEM grid.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.grid_setup_solids_py</span> <span class="kn">import</span> <span class="n">grid_setup</span><span class="p">,</span> <span class="n">FEM_simulation</span>
+
+<span class="c1"># constructing FEM grid</span>
+<span class="n">nodes</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">loads</span><span class="p">,</span> <span class="n">mats</span> <span class="o">=</span> <span class="n">grid_setup</span><span class="p">(</span><span class="n">mask_FEM</span><span class="p">,</span> <span class="o">-</span><span class="n">fx</span><span class="p">,</span> <span class="o">-</span><span class="n">fy</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="c1"># performing FEM analysis</span>
+<span class="c1"># Verbose prints the progress of numerically solving the FEM system of equations.</span>
+<span class="n">UG_sol</span><span class="p">,</span> <span class="n">stress_tensor</span> <span class="o">=</span> <span class="n">FEM_simulation</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">loads</span><span class="p">,</span> <span class="n">mats</span><span class="p">,</span> <span class="n">mask_FEM</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c1"># UG_sol is a list of deformations for each node. We don&#39;t need it here.</span>
+</pre></div>
+</div>
+<p>The stress tensor completely defines the forces in the cell colony. We can for example extract the
+average mean normal stress and the coefficient of variation of the mean normal stress
+(quantifying how much the stress varies in the colony). We will use the mask “mask_cells” which
+marks the actual area of the cell colony for these measurements.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># mean normal stress</span>
+<span class="n">ms_map</span> <span class="o">=</span> <span class="p">((</span><span class="n">stress_tensor</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">stress_tensor</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">ps2</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**-</span><span class="mi">6</span><span class="p">)</span>
+<span class="c1"># average on the area of the cell colony.</span>
+<span class="n">ms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ms_map</span><span class="p">[</span><span class="n">mask_cells</span><span class="p">])</span> <span class="c1"># 0.0044 N/m</span>
+
+<span class="c1"># coefficient of variation</span>
+<span class="n">cv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">ms_map</span><span class="p">[</span><span class="n">mask_cells</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">ms_map</span><span class="p">[</span><span class="n">mask_cells</span><span class="p">]))</span> <span class="c1"># 0.35 no unit</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="calculating-the-line-tension">
+<h2>Calculating the Line Tension<a class="headerlink" href="#calculating-the-line-tension" title="Permalink to this headline">¶</a></h2>
+<p>A particularly interesting question is how much forces are transmitted across cell-cell boundaries.
+This is quantified by the line tension. First we need to load a mask, marking all cell borders.
+Note that this is the same mask that is used to get the area of the cell colony, only this time
+we are not going to fill any holes or resize the mask.</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># loading a mask of the cell borders</span>
+<span class="n">mask_borders</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/home/user/Software/example_data_for_pyTFM/python_tutorial/cell_borders.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The cell-cell borders are stored in an object “borders”, which among others contains a spline interpolation of
+each border, assigns each border to a cell and contains a list of borders located at the edge of the cell borders:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.grid_setup_solids_py</span> <span class="kn">import</span> <span class="n">find_borders</span>
+
+<span class="c1"># identifying borders, counting cells, performing spline interpolation to smooth the borders</span>
+<span class="n">borders</span> <span class="o">=</span> <span class="n">find_borders</span><span class="p">(</span><span class="n">mask_borders</span><span class="p">,</span> <span class="n">tx</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="n">n_cells</span> <span class="o">=</span> <span class="n">borders</span><span class="o">.</span><span class="n">n_cells</span> <span class="c1"># For example you can get the number of cells from the &quot;borders&quot; object</span>
+</pre></div>
+</div>
+<p>We can use the cell-cell borders together with the stress tensor. To calculate the line tension.
+The line tension is a force vector acting on a small slice of a cell border. We are going to
+calculate the average length of this vector (“avg_line_tension”) and the average normal
+component of the line tension (“avg_normal_line_tension”):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.stress_functions</span> <span class="kn">import</span> <span class="n">lineTension</span>
+
+<span class="c1">#calculating the line tension along the cell borders.</span>
+<span class="n">lt</span><span class="p">,</span> <span class="n">min_v</span><span class="p">,</span> <span class="n">max_v</span> <span class="o">=</span> <span class="n">lineTension</span><span class="p">(</span><span class="n">borders</span><span class="o">.</span><span class="n">lines_splines</span><span class="p">,</span> <span class="n">borders</span><span class="o">.</span><span class="n">line_lengths</span><span class="p">,</span> <span class="n">stress_tensor</span><span class="p">,</span> <span class="n">pixel_length</span><span class="o">=</span><span class="n">ps2</span><span class="p">)</span>
+<span class="c1"># lt is a nested dictionary. The first key is the id of a cell border. For each cell border</span>
+<span class="c1"># the line tension vectors (&quot;t_vecs&quot;), the normal and shear component of the line tension (&quot;t_shear&quot;) and</span>
+<span class="c1"># the normal vectors of the cell border (&quot;n_vecs&quot;) are calculated at a large number of points.</span>
+
+<span class="c1"># average norm of the line tension only borders not at colony edge are used.</span>
+<span class="n">lt_vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">lt</span><span class="p">[</span><span class="n">l_id</span><span class="p">][</span><span class="s2">&quot;t_vecs&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">l_id</span> <span class="ow">in</span> <span class="n">lt</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">l_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">borders</span><span class="o">.</span><span class="n">edge_lines</span><span class="p">])</span>
+<span class="n">avg_line_tension</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">lt_vecs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="c1"># 0.00555 N/m</span>
+
+<span class="c1"># average normal component of the line tension</span>
+<span class="n">lt_normal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">lt</span><span class="p">[</span><span class="n">l_id</span><span class="p">][</span><span class="s2">&quot;t_normal&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">l_id</span> <span class="ow">in</span> <span class="n">lt</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">l_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">borders</span><span class="o">.</span><span class="n">edge_lines</span><span class="p">])</span>
+<span class="n">avg_normal_line_tension</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">lt_normal</span><span class="p">))</span> <span class="c1"># 0.00552 N/m,</span>
+<span class="c1"># here you can see that almost all line tension acts perpendicular to the cell borders.</span>
+</pre></div>
+</div>
+<p>Finally let’s produce a plot of the line tension:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyTFM.plotting</span> <span class="kn">import</span> <span class="n">plot_continuous_boundary_stresses</span>
+
+<span class="c1"># plotting the line tension</span>
+<span class="n">fig3</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_continuous_boundary_stresses</span><span class="p">([</span><span class="n">borders</span><span class="o">.</span><span class="n">inter_shape</span><span class="p">,</span> <span class="n">borders</span><span class="o">.</span><span class="n">edge_lines</span><span class="p">,</span> <span class="n">lt</span><span class="p">,</span> <span class="n">min_v</span><span class="p">,</span> <span class="n">max_v</span><span class="p">],</span> <span class="n">cbar_style</span><span class="o">=</span><span class="s2">&quot;outside&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="measures.html" class="btn btn-neutral float-right" title="Typical Measures for Force Generation and Stresses in Cells" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tutorialAddon.html" class="btn btn-neutral float-left" title="Analyzing Cell Colonies with Clickpoints" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Andreas Bauer
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

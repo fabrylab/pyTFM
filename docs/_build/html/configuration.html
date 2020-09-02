@@ -1,0 +1,591 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using Config Files, Hidden Parameters and Plotting Behavior &mdash; pyTFM 1.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Analyzing Force Generation and Stresses in Cell-Colonies with Clickpoints" href="addon_tutorial.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyTFM
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction to Traction Force Microscopy and Monolayer Stress Microscopy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="measures.html">Typical Measures for Force Generation and Stresses in Cells</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using Config Files, Hidden Parameters and Plotting Behavior</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hidden-parameters">Hidden Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-config-files">Using Config Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#overview-of-analysis-parameters">Overview of Analysis Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#overview-of-plotting-parameters">Overview of Plotting Parameters</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyTFM</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Using Config Files, Hidden Parameters and Plotting Behavior</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/configuration.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="using-config-files-hidden-parameters-and-plotting-behavior">
+<h1>Using Config Files, Hidden Parameters and Plotting Behavior<a class="headerlink" href="#using-config-files-hidden-parameters-and-plotting-behavior" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="hidden-parameters">
+<h2>Hidden Parameters<a class="headerlink" href="#hidden-parameters" title="Permalink to this headline">¶</a></h2>
+<p>The most important parameters (Young’s modulus, Poisson’s ratio, gel height, window size and overlap for Particle
+Image Velocimetry) can be set in the clickpoints addons window. However, some parameters can only
+be set by using config files. Config files also allow you to set a wide range of plotting options, most notably:
+Color maps, the length of arrows, color bar positioning and dimensions and maximum and minimum
+displayed values for all frames. You can find a complete list of parameters in <a class="reference internal" href="#overview-of-analysis-parameters">Overview of Analysis Parameters</a>
+and <a class="reference internal" href="#overview-of-plotting-parameters">Overview of Plotting Parameters</a>.</p>
+</div>
+<div class="section" id="using-config-files">
+<h2>Using Config Files<a class="headerlink" href="#using-config-files" title="Permalink to this headline">¶</a></h2>
+<p>You can provide a config file by placing a file “config.yaml” in the same folder as your database
+(.cdb) file. YAML is a standard format for configuration files. In YAML files parameters are defined by
+a series of indented key words like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">key1</span><span class="p">:</span>
+  <span class="nt">key2</span><span class="p">:</span>
+    <span class="nt">key3</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">value</span>
+</pre></div>
+</div>
+<p>You can find a config.yaml file that reproduces all default parameters in the
+<a class="reference external" href="https://github.com/fabrylab/example_data_for_pyTFM/archive/master.zip">example data</a>.
+The config file distinguishes two classes of parameters at the first level:
+The “analysis_parameters” and the “fig_parameters”. “analysis_parameters” set all parameters that are used
+by the program not related to plotting.
+They can only be numbers or strings. For example to change the minimum object size and change the
+initial value for the Poisson’s ration, your config
+file should contain this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">analysis_parameters</span><span class="p">:</span> <span class="c1"># setting parameters for the analysis</span>
+  <span class="nt">sigma</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.4</span> <span class="c1"># changing the Poisson&#39;s ratio set at the script start up</span>
+  <span class="nt">min_obj_size</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1500</span> <span class="c1"># changing the minimal object size (cannot be changed in the addon window)</span>
+</pre></div>
+</div>
+<p>“fig_parameters” control the plotting. Most parameters can be
+specified as a single value that will apply to all plots. Alternatively you can specify a second key that
+defines a type of plot first and then a value. This value will only apply to the plot type you specified. All other
+plot types will use a default value. Possible plot types are:</p>
+<div class="line-block">
+<div class="line">“deformation”    - Quiver plot of the deformation field</div>
+<div class="line">“traction” - Quiver plot of the traction forces</div>
+<div class="line">“FEM borders” - Plot of the line tension along cell-cell borders</div>
+<div class="line">“stress map”  -  Plot of the mean normal stress</div>
+<div class="line">“energy_points”. - Plot of the strain energy density</div>
+</div>
+<p>Let’s say you want to</p>
+<div class="line-block">
+<div class="line">A): Change the color map to “jet” (all matplotlib color maps are accepted) for all plots.</div>
+<div class="line">B): Set the maximum value of the colormap only in the deformation plots to 10 pixels.</div>
+<div class="line">C): Generate a map of strain energy, when analysing cell colonies.</div>
+</div>
+<p>Then your yaml file should look like this:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fig_parameters</span><span class="p">:</span>   <span class="c1"># setting plotting parameters</span>
+
+  <span class="nt">cmap</span><span class="p">:</span> <span class="s">&quot;jet&quot;</span> <span class="c1"># changing the colormap for the deformation plot</span>
+
+  <span class="nt">vmin</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>  <span class="c1"># minimal value displayed in the colormap, none means an autmatic value for each frame</span>
+          <span class="c1"># this applies to all plot types if none is specified</span>
+  <span class="nt">vmax</span><span class="p">:</span>       <span class="c1"># maximum value displayed in the colormap</span>
+    <span class="nt">deformation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span> <span class="c1"># applies only to deformation plots. All other plots use a default value (None)</span>
+
+<span class=" -Error"> </span><span class="nt">plots</span><span class="p">:</span>  <span class="c1"># defining which plots are produced</span>
+     <span class="nt">colony</span><span class="p">:</span> <span class="c1"># you need to specify whether this is for &quot;colony&quot; or &quot;cell layer&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;deformation&quot;</span> <span class="c1"># this needs a list of values (marked by &quot;-&quot;)</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;traction&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;FEM_borders&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;stress_map&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="s">&quot;energy_points&quot;</span>
+</pre></div>
+</div>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>It is best to mark strings with quotation marks (“”). You can use None, or True or False
+without quotation marks to set None-Values or boolean values.</p>
+</div>
+</div>
+<div class="section" id="overview-of-analysis-parameters">
+<h2>Overview of Analysis Parameters<a class="headerlink" href="#overview-of-analysis-parameters" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 49%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default Value</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td colspan="4"><p><strong>Main Parameters</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>sigma</p></td>
+<td><p>0.49</p></td>
+<td><p>int,float</p></td>
+<td><p>Poisson’s ration of the substrate.</p></td>
+</tr>
+<tr class="row-even"><td><p>young</p></td>
+<td><p>49000</p></td>
+<td><p>int,float</p></td>
+<td><p>Young’s modulus of the substrate in Pa.</p></td>
+</tr>
+<tr class="row-odd"><td><p>pixelsize</p></td>
+<td><p>0.201</p></td>
+<td><p>int,float</p></td>
+<td><p>Pixel size of the images of the beads.</p></td>
+</tr>
+<tr class="row-even"><td><p>window_size</p></td>
+<td><p>20</p></td>
+<td><p>int,float</p></td>
+<td><p>Size of the windows for PIV
+(Particle Image Velocimetry) in µm.</p></td>
+</tr>
+<tr class="row-odd"><td><p>overlapp</p></td>
+<td><p>19</p></td>
+<td><p>int,float</p></td>
+<td><p>Size of the overlap for PIV in µm.</p></td>
+</tr>
+<tr class="row-even"><td><p>FEM_mode</p></td>
+<td><p>“colony”</p></td>
+<td><p>string</p></td>
+<td><p>Analyzing colonies or cell layer. This changes the
+behavior, concerning which masks are used,
+which plots are generated and what area
+is used for stress measurements.</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p><strong>Hidden Parameters</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>std_factor</p></td>
+<td><p>15</p></td>
+<td><p>int,float</p></td>
+<td><p>Additional filter for the deformation field.
+Deformations greater then.
+<span class="math notranslate nohighlight">\(\mu+\sigma \times 15\)</span>
+(<span class="math notranslate nohighlight">\(µ\)</span> and <span class="math notranslate nohighlight">\(\sigma\)</span>:
+mean  and  standard deviation of the norm of
+deformations) are replaced by the local mean
+deformation.</p></td>
+</tr>
+<tr class="row-odd"><td><p>edge_padding</p></td>
+<td><p>0.1</p></td>
+<td><p>float</p></td>
+<td><p>All masks are cut of close to the image edge, i.e. if
+they are closer then edge_padding*axis_length. For FEM
+analysis, all pixels at this edge are fixed so that
+no displacement perpendicular to the axis is allowed.</p></td>
+</tr>
+<tr class="row-even"><td><p>padding_cell_layer</p></td>
+<td><p>0.2</p></td>
+<td><p>float</p></td>
+<td><p>If you are analyzing cell layers, and additional
+region close to the image edge is ignored when
+analyzing stresses, to avoid boundary effects.
+The effectively ignored region for cell layers is
+edge_padding + padding_cell_layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p>min_obj_size</p></td>
+<td><p>1500</p></td>
+<td><p>int</p></td>
+<td><p>Minimum size of an object (cell or cell colony).
+All masks are added up and all encircled areas are
+filled to determine the object size.</p></td>
+</tr>
+<tr class="row-even"><td><p>cv_pad</p></td>
+<td><p>0</p></td>
+<td><p>int,float</p></td>
+<td><p>File names. Include the ending (e.g. “.png”)</p></td>
+</tr>
+<tr class="row-odd"><td><p>TFM_mode</p></td>
+<td><p>“finite_thickness”</p></td>
+<td><p>string</p></td>
+<td><p>Using a TFM algorithm assuming either
+finite substrate thickness (“finite_thickness”)
+for infinite sustrate thickness (“infinte_thickness”).
+Always use “finite_thickness”.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="overview-of-plotting-parameters">
+<span id="overviewofplottingparameters"></span><h2>Overview of Plotting Parameters<a class="headerlink" href="#overview-of-plotting-parameters" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 49%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default Value</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>file_names</p></td>
+<td><p>specific</p></td>
+<td><p>string</p></td>
+<td><p>File names. Include the ending (e.g. “.png”)</p></td>
+</tr>
+<tr class="row-odd"><td><p>cmap</p></td>
+<td><p>“rainbow”</p></td>
+<td><p>string</p></td>
+<td><p>Color maps. All matplotlib color maps
+are accepted.</p></td>
+</tr>
+<tr class="row-even"><td><p>vmin</p></td>
+<td><p>None</p></td>
+<td><p>float, int, None</p></td>
+<td><p>Minimal value of the color bar. None
+for automatic selection.</p></td>
+</tr>
+<tr class="row-odd"><td><p>vmax</p></td>
+<td><p>None</p></td>
+<td><p>float, int, None</p></td>
+<td><p>Maximal value of the color bar. None
+for automatic selection.</p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p><strong>Color bar Parameters</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>cbar_style</p></td>
+<td><p>“clickpoints”</p></td>
+<td><p>“clickpoints” or
+“outside”</p></td>
+<td><p>Specifies whether the color bar is plotted
+inside or outside of the image.
+Plotting the color bar outside will lead
+to misaligned images in clickpoints.</p></td>
+</tr>
+<tr class="row-even"><td><p>cbar_axes_fraction</p></td>
+<td><p>0.2</p></td>
+<td><p>float &lt;1</p></td>
+<td><p>Height of the color bar when using cbar_style
+“outside”. This number signifies the fraction
+of the length of the original image axis.</p></td>
+</tr>
+<tr class="row-odd"><td><p>cbar_width</p></td>
+<td><p>“2%”</p></td>
+<td><p>string</p></td>
+<td><p>Width of the color bar when using cbar_style
+“clickpoints”. Has to be a string
+signifying the percentage of
+of the original image axis.</p></td>
+</tr>
+<tr class="row-even"><td><p>cbar_height</p></td>
+<td><p>“50%”</p></td>
+<td><p>string</p></td>
+<td><p>Height of the color bar when using cbar_style
+“clickpoints”. Has to be a string
+signifying the percentage of
+of the original image axis.</p></td>
+</tr>
+<tr class="row-odd"><td><p>cbar_borderpad</p></td>
+<td><p>6</p></td>
+<td><p>int</p></td>
+<td><p>Distance between the color bar and
+the right image edge.</p></td>
+</tr>
+<tr class="row-even"><td><p>cbar_str</p></td>
+<td><p>specific</p></td>
+<td><p>string</p></td>
+<td><p>Title of the color bar.
+Use quotation marks (“”) in the config file.</p></td>
+</tr>
+<tr class="row-odd"><td><p>cbar_title_pad</p></td>
+<td><p>10</p></td>
+<td><p>int</p></td>
+<td><p>Distance between the color bar and the
+color bar title.</p></td>
+</tr>
+<tr class="row-even"><td><p>cbar_tick_label_size</p></td>
+<td><p>15</p></td>
+<td><p>int</p></td>
+<td><p>Size of the color bar tick labels.</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p><strong>Arrows in Deformation and Traction Fields</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>filter_factor</p></td>
+<td><p>1</p></td>
+<td><p>float,int &gt; 0</p></td>
+<td><p>Factor that defines how many arrows are
+filtered out for plotting (traction and
+deformation fields). A high filter_factor
+means less arrows are plotted.</p></td>
+</tr>
+<tr class="row-odd"><td><p>scale_ratio</p></td>
+<td><p>0.2</p></td>
+<td><p>float (0,1]</p></td>
+<td><p>Length of the arrows (deformation and
+traction fields). Arrows are scaled so that the
+longest arrow has the length scale_ratio * longest
+image axis.</p></td>
+</tr>
+<tr class="row-even"><td><p>width</p></td>
+<td><p>0.002</p></td>
+<td><p>float</p></td>
+<td><p>Width of the arrow shaft (traction and
+deformation fields).</p></td>
+</tr>
+<tr class="row-odd"><td><p>headlength</p></td>
+<td><p>3</p></td>
+<td><p>float,int</p></td>
+<td><p>Length of the arrow heads (traction and
+deformation fields).</p></td>
+</tr>
+<tr class="row-even"><td><p>headwidth</p></td>
+<td><p>3</p></td>
+<td><p>float,int</p></td>
+<td><p>Width of the arrow head (traction and
+deformation fields)</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p><strong>Plotting the Line Tensions</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>background_color</p></td>
+<td><p>“#330033”</p></td>
+<td><p>string, tuple</p></td>
+<td><p>Color of the background. Can be any color
+format accepted by matplotlib. You can use
+“cmap_0” to use the color of zero in the
+colormap used for the plot.</p></td>
+</tr>
+<tr class="row-odd"><td><p>plot_t_vecs</p></td>
+<td><p>False</p></td>
+<td><p>bool</p></td>
+<td><p>Plotting the line tension vectors.</p></td>
+</tr>
+<tr class="row-even"><td><p>plot_n_arrows</p></td>
+<td><p>False</p></td>
+<td><p>bool</p></td>
+<td><p>Plotting the normal vectors of the
+cell boundary lines.</p></td>
+</tr>
+<tr class="row-odd"><td><p>linewidth</p></td>
+<td><p>4</p></td>
+<td><p>int, float</p></td>
+<td><p>Width of the lines representing the
+cell boundary lines.</p></td>
+</tr>
+<tr class="row-even"><td><p>border_arrow_filter</p></td>
+<td><p>1</p></td>
+<td><p>int</p></td>
+<td><p>Filter defining how many arrows are
+plotted along the cell boundary lines.
+Only every n-th arrow is plotted, where
+n is the border_arrow_filter.</p></td>
+</tr>
+<tr class="row-odd"><td><p>boundary_resolution</p></td>
+<td><p>6</p></td>
+<td><p>int</p></td>
+<td><p>Smoothness of the lines representing the
+cell boundary lines. A high boundary_resolution
+means less smooth plotting. Very low values will cost
+a considerable amount of computation time.</p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p><strong>Choosing which Plots are generated</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>plots
+colony</p></td>
+<td><p>-“deformation”
+-“traction”
+-“FEM_borders”
+-“stress map”</p></td>
+<td><p>list</p></td>
+<td rowspan="2"><p>List of plots that are produced in “colony” or
+“cell layer” mode.</p></td>
+</tr>
+<tr class="row-even"><td><p>plots
+cell layer</p></td>
+<td><p>-“deformation”
+-“traction”
+-“FEM_borders”
+-“stress map”
+-“energy points”</p></td>
+<td><p>list</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="addon_tutorial.html" class="btn btn-neutral float-left" title="Analyzing Force Generation and Stresses in Cell-Colonies with Clickpoints" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Andreas Bauer
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
