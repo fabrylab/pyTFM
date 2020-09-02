@@ -1,0 +1,10 @@
+MANIFEST.in
+README.md
+setup.py
+UNKNOWN.egg-info/PKG-INFO
+UNKNOWN.egg-info/SOURCES.txt
+UNKNOWN.egg-info/dependency_links.txt
+UNKNOWN.egg-info/top_level.txt
+pyTFM/__clickpoints_addon__.txt
+pyTFM/TFM_addon/Data.txt
+pyTFM/TFM_addon/TFM_addon.py
