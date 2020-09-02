@@ -79,8 +79,8 @@ Then your yaml file should look like this:
           - "energy_points"
 
 .. hint::
-    It is best to mark strings with quotation marks (""). You can use None, or True or False
-    without quotation marks to set None-Values or boolean values.
+    It is best to mark strings with quotation marks (""). You can use None, True or False
+    without quotation marks to set None or boolean values.
 
 
 Overview of Analysis Parameters
