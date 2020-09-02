@@ -445,6 +445,7 @@ def calc_on_area(frame, res_dict, parameter_dict, label, masks, mask_types=None,
             _label2 = default_parameters["mask_properties"][mtype]["label"]
         else:
             _label2 = label2
+        _label2 = _label2.strip()
         if sumtype == "abs":
             mask_int = interpolation(mask, dims=x.shape, min_cell_size=100)
             res_dict[frame]["%s %s" % (label, _label2)].append(
@@ -662,16 +663,18 @@ def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, d
         # calculate contractillity only in "colony" mode
         if parameter_dict["FEM_mode"] == "colony":
             contractile_force, proj_x, proj_y, center = contractillity(t_x, t_y, ps_new, mask_int)
-            res_dict[frame]["contractility" + default_parameters["mask_properties"][mtype]["label"]].append(
-                [obj_id, contractile_force, warn])
-
-        res_dict[frame]["area_force_measurement"].append([obj_id, mask_area, warn])
+            #  + default_parameters["mask_properties"][mtype]["label"]
+            res_dict[frame]["contractility"].append([obj_id, contractile_force, warn])
+        # calculating the area of this mask
+        label = "area_Tractions" + parameter_dict["mask_properties"][mtype]["label"]
+        res_dict[frame][label].append([obj_id, mask_area, warn])
 
         # calculate contractile energy if deformations are provided
         if isinstance(u, np.ndarray):
             check_shape(u, t_x)
             contr_energy = np.sum(energy_points[mask_int])  # sum of contractile energy on on mask
-            res_dict[frame]["strain energy" + default_parameters["mask_properties"][mtype]["label"]].append(
+            #+ default_parameters["mask_properties"][mtype]["label"]
+            res_dict[frame]["strain energy"].append(
                 [obj_id, contr_energy, warn])
         print("strain energy=", round_flexible(contr_energy), "contractility=", round_flexible(contractile_force))
 
@@ -950,15 +953,15 @@ if __name__ == "__main__":
 
     ## setting up necessary paramteres
     # db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
-    db = clickpoints.DataFile("/home/andy/test_data_pyTFM/KOshift/database_borders_test.cdb", "r")
+    db = clickpoints.DataFile("/home/andy/Software/example_data_for_pyTFM/clickpoints_tutorial/WT/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict = defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
 
     # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
     #                                            db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict,
-                                               frames="07",
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict=res_dict,
+                                               frames=all_frames,
                                                db_info=db_info, masks=None)
     #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict, frames="1",
     #                                           db_info=db_info, masks=masks)

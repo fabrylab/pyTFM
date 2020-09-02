@@ -43,7 +43,8 @@ The first step to analyze the data is to create a clickpoints database, in which
 concerning their type (whether it's an image of the cells or an image of the beads before or after cell removal)
 and concerning the field of view they belong to.
 **We are going to start with the wildtype data set**. To open a database simple right click on an image and
-select "open with" --> "clickpoints". The option to open with clickpoints might also be visible directly after you right clicked.
+select "open with" --> "clickpoints". The option to open with clickpoints might also be visible directly after you
+right clicked.
 
 .. figure:: images/open_with_clickpoints.png
     :width: 750
@@ -85,11 +86,11 @@ naming scheme for your images, you **can leave the identifiers as they are**.
 
 .. note:: **Details on identifying images**
 
-    The "'after' image identifier" identifies images of beads after cell removal, the "'before' image identifier"
-    identifies images of beads before cell removal and the "cell image identifier" identifies images that
-    show the cells or cell membranes. Finally, there is a separate regular expression, the
-    "frame identifier" that identifies the field of view each image belongs to. This must point to a
-    number (e.g. "02" or "2" and so on) in the image filename. This number must be specially marked by brackets "()".
+    The fields "'after' image identifier" and "'before' image identifier" are used to identify images of
+    the substrate after and before relaxation. The field "cell image identifier" is used to identify images that
+    show the cells or cell membranes. Finally, the
+    "frame identifier" is used to identify the field of view each image belongs to. This must point to a
+    unique part of the image filename, which is not limited to numbers. The part must be specifically enclosed by brackets "()".
     Note that the extension (".png",".tiff", ".jpeg" ...) must not be included in the identifiers.
 
     Regular expressions are the standard way to find patterns in texts. For example, it allows you to
@@ -104,6 +105,7 @@ naming scheme for your images, you **can leave the identifiers as they are**.
    ^after             all files with "after" at the beginning of the filename
    after$             all files with "after" at the end of the filename
    \*                 all files
+                      blank space also finds all files
    ^(\d{1-4}) 	      up to 4 numbers at beginning of the filename
    (\d{1-4}) 	      up to 4 consecutive numbers anywhere in the filename
    (\d{1-4})$ 	      up to 4 numbers at end of the filename
@@ -131,7 +133,7 @@ window now.
 
 .. TODO: mention correct Drift
 
-.. TODO: paramters seting and recomondation
+.. TODO: parameters setting and recommendation
 
 Correction of Stage Drift
 ------------------------------
@@ -177,29 +179,31 @@ ratio"), the height of the substrate ("gel height") and the pixel size ("pixel s
 parameters for the calculation of the deformation field. The deformation field is calculated with particle image
 velocimetry. This method essentially cuts out square shaped patches from the image of
 the beads before cell removal, places them on the image of beads after cell removal
-and checks how well they fit together. The vector form the original position of the patch and the
-position where the patch fits best to the image of beads after cell removal is the displacement vector.
-This is done for many positions to generate a complete displacement field.
+and checks how well they fit together. The vector from the original position of the patch to the
+position where the patch fits best in the image of beads after cell removal is the displacement vector.
+This is done for many positions to generate the complete displacement field.
 
 You can control two things: the size of the patch that is cut out of the image of the beads
 after cell removal (with the parameter "PIV window size") and the resolution of the
 resulting displacement field (with the parameter "PIV overlap"). A window size that is to large will blur
 the displacement field while a window size that is to small will introduce noise in the displacement field.
-As a rule of thumb the window size should be roughly 7 times the bead diameter, you should however try a few
+As a rule of thumb the window size should be roughly 7 times the bead diameter - you should however try a few
 values and check which window size yields a smooth yet accurate deformation field.
 
 .. Note::
-    You can measure the beads diameter directly in clickpoints using another addon: The Measure Tool
+    You can measure the beads diameter directly in clickpoints using another addon: The "Measure Tool".
+    It can be opened just like pyTFM from the addon browser
 
 The "PIV overlap" mainly controls the resolution of the resulting displacement field and must be
 smaller than the "PIV window size" but at least half of the "PIV window size". You need
 a high resolution for analyzing stress. In this step the area of cells should at least contain 1000
-pixels. However, if you are not calculating stresses, you can save a lot of calculation time by choosing a
-"PIV overlap" closer to half of the "PIV window size". Especially, when you are trying out different window sizes,
-you can set the overlap to the smallest allowed value, which is half of the window size.
+pixels. There will be a warning printed to the console and the output text file if this is not the case.
+However, if you are not calculating stresses, you can save a lot of calculation time by choosing a
+"PIV overlap" closer to half of the "PIV window size". This is especially useful when you are for example trying
+out different window sizes or explore the influence of the gel height.
 
-For this tutorial you can keep all parameters at their default value. If you are in a hurry, you could set the
-"PIV window size" to 15 µm.
+For this tutorial you can keep all parameters at their default value. If you are in a hurry you could set the
+"PIV window size" as low as 15 µm, and still obtain reasonable results.
 
 Calculating Traction and Deformation Fields
 --------------------------------------------
@@ -221,34 +225,38 @@ key on your keyboard. Traction and deformation for the first frame in the wildty
     
     Deformation and traction fields.
 
-If you do not see the display tool and mask names ("membrane", "force measures", "FEM area") on the right press F2.
+If you do not see the display tool and mask names ("Cell Boundary", "Tractions") on the right press F2.
 
 
 Quantifying Force Generation
 -------------------------------
 
-Force generation is quantified with the strain energy and the contractillity. You have to select an area on
-which these measures are to be calculated. You can do this by drawing a mask in clickpoints. In the top right
-of the clickpoints window you can see a set of tools to draw mask and three preset types of masks. If you
+Force generation of the cell colony is quantified with the strain energy and the contractility.
+To avoid influence of nearby cells or noise, you have to select all tractions that are
+generated specifically by the cells that you are analyzing.
+You can do this by drawing a mask in clickpoints. In the top right
+of the clickpoints window you should see a set of tools to draw mask and two preset types of masks. If you
 don't see these tools, press F2.
 
 .. hint:: **Tips for masks in clickpoints.**
     Select a mask and use the brush tool |brush| to draw it. You can
     increase and decrease the size of the brush with the "+" and "-" keys. If you want to
     erase a part of a mask use the eraser tool |rubber|. Additionally you can fill holes in your mask with
-    the bucket tool |bucket|. Mask types cannot overlap, which means that you erase one mask type when you
-    paint over it with another type. Sometimes you will have a hard time seeing things are covered with
+    the bucket tool |bucket|. Mask types cannot overlap, which means that one mask type is erased when you
+    paint over it with another mask type. Sometimes you will have a hard time seeing things that are covered by
     a mask. Press "i" and "o" to decrease and increase the transparency of the mask.
 
     .. |brush| image:: images/brush.png
     .. |rubber| image:: images/rubber.png
     .. |bucket| image:: images/bucket.png
 
-The mask type used to calculate strain energy and contractillity is called "force measures". Select this mask and
-draw a circle around all deformations and forces that you think belong to the cell colony. The area you encircle
-is typically large than the cell colony itself. You don't need to fill the area you have encircle. This is done
-automatically. However, if you see the "no mask found in frame .." warning message in the console, you should
-first make sure that there is no gap in the circle that you drew. I drew the mask like this:
+The mask type used to calculate strain energy and contractility is called "Tractions". Select this mask and
+draw a circle around all tractions that you think originate from the cell colony. Typically, the area you encircle
+is large than the cell colony itself. It's not a big deal if your selection is a bit to big, but you should make sure
+not to include tractions that do not originate from the cell colony.
+You don't need to fill the area you have encircle; This is done automatically. However, if you see the
+"no mask found in frame .." warning message in the console, you should first make sure that there is no gap
+in the circle that you drew. I drew the mask like this:
 
 
 .. figure:: images/mask_force_measures.png
@@ -258,48 +266,30 @@ first make sure that there is no gap in the circle that you drew. I drew the mas
     
     Mask for quantification of force generation.
 
-
-It's no big deal if your selection is a bit to big, but you should make sure not to include deformations and
-force that do not originate from the cell colony.
-
-You could now press start again, and the program would generate a text file with contractillity and strain energy
+You could now press start again, and the program would generate a text file listing the contractility and strain energy
 for all frames. In order to be a bit more organized and get all results in one text file, we will first prepare
 to analyze stresses in the cell sheet at the same time.
 
 
-Measuring Stresses
--------------------------------
+Measuring Stresses, the Cell-Cell Force Transfer, counting Cells and measuring the Colony Area
+-----------------------------------------------------------------------------------------------
 
-The stress is calculated by modelling the cell colony as a 2 dimensional sheet and applying the traction
+Cellular stresses are calculated by modelling the cell colony as a 2 dimensional sheet and applying the traction
 forces that we have just calculated to it. Due to inaccuracies in the traction force calculation, namely
-that some forces are predicted to originate from outside of the cell sheet, it has proven most accurate to
-use an area slightly larger than the cell colony, so that it includes all forces that you think originate form the
-cell colony. To select this area, go to the clickpoints main window and switch layers with the "Page Up" or
-"Page Down" key until you reach the plot displaying the traction forces. Select the mask "FEM_area" and
-encircle all forces originating from the cell colony. I drew the mask like this:
+that some forces are predicted to originate from outside of the cell sheet, the cell colony is modeled as a an area
+slightly extending beyond the actual cell colony edge. We have shown that stresses are calculated with
+the highest accuracy if this area covers all cell-generated tractions but does not extend significantly
+further than that. When in doubt, it is better to choose the area larger rather then smaller.
 
-
-.. figure:: images/FEM_area.png
-    :width: 600
-    :alt: Mask for the stress calculation with FEM-Method
-    :name: FEM_area
-    
-    Mask for the stress calculation with the FEM-Method
-
-Drawing the mask larger than the area where traction forces are present will lead to an underestimation
-of stresses, the effect is however quite small for any reasonable mask sizes.
-
-
-Measuring the Line Tension, counting Cells and measuring the Colony Area
----------------------------------------------------------------------------------------------
-
-Finally, we want to measure forces that are transmitted across cell-cell boundaries. This requires you
-to mark the cell membranes. You will also get the number of cells
-in each colony and the area of the cell colony from this selection. Both can be used
-to normalize stresses and forces.
+pyTFM uses the area that you just marked with the mask "Tractions" to model the cell colony.
+Stresses and cell-cell force transfer (quantified by the line tension) are however evaluated strictly
+on the inside of the cell colony. Thus you have to the edge of the cell colony to compute
+average stresses. To quantify the line tension, you have to also mark the internal cell-cell boundaries. Both is
+done with the Mask "Cell Boundary"; the program automatically distinguishes between internal cell-cell boundaries and
+the colony edge.
 
 In the main window of clickpoints switch to the image showing the cell membrane using the the "Page Up" or
-"Page Down" key, select the mask "membrane" and mark all cell membranes.
+"Page Down" key, select the mask "Cell Boundary" and mark all cell membranes.
 
 .. hint:: Press F2 and use the controls (see below) in the bottom right to adjust the contrast of the image.
     This might help you to see the membrane staining better.
@@ -311,8 +301,7 @@ In the main window of clickpoints switch to the image showing the cell membrane 
 
 
 Use a thin brush and make sure that there are no unintentional gaps. Also mark the outer edge of the colony.
-This edges is not included in the calculation of line tensions but is necessary to calculate the correct
-area and cell count of the colony. I drew the mask like this:
+I drew the mask like this:
 
 
 .. figure:: images/membrane.png
@@ -322,9 +311,23 @@ area and cell count of the colony. I drew the mask like this:
     
     Mask of cell membranes.
 
+
+.. hint:: If there are a large number of cell boundaries, you can try the automatic segmentation tool of pyTFM.
+    Press the segmentation button in the main window. The slider next to "segment membrane" allows you to
+    control the segmentation sensitivity. The mask displayed in the clickpoints window will automatically be updated
+    when you select a new value. You can apply this segmentation threshold to all frames by pressing the
+    "segment membrane" button. Note however that this segmentation algorithm is rather primitive; the results may be
+    poor, strongly depend on the quality of your images and will usually need some manual revision.
+
+    .. figure:: images/segmentation.png
+        :width: 450
+        :alt: segmentation window.
+        :name: segmentation
+
+
 Once you have drawn all masks in all frames you are ready to start the calculation. Go to the pyTFM addon window,
 tick the check boxes for "stress analysis" and "force generation", make sure you have set "apply to" to "all
-frames", untick the "deformation" and traction forces" boxes and press start. The calculation should take about 5 minutes.
+frames", untick the "deformation" and traction forces" boxes and press start. The calculation should take up to 5 minutes.
 
 After the calculation is complete two new plots will be added to the database. The first will show the
 mean normal stress in the cell colony and the second will show the line tension along all cell-cell borders.
@@ -356,7 +359,7 @@ If such a file already exists, the text file is named out0.txt, out1.txt and so 
 header containing important parameters of the calculation (:numref:`out`). This is followed by a section containing all
 results. Each line has 4 to 6 tab-delimited columns, containing the frame, the id of the object in the frame (if you
 analyze multiple cells or cell colonies in this frame), the name of the quantity, the value of the quantity
-and optionally the unit of the quantity and a warning.
+and optionally the unit of the quantity and also optionally a warning.
 
 .. figure:: images/out.png
     :width: 750
@@ -373,7 +376,7 @@ Plotting the Results
 ---------------------------------
 Repeat the same analysis for the KO data set. Once you have the output text files for both data sets you could go
 ahead and use any tool of your choosing to read the files and plot the important quantities. Of course the best
-tool to do so is python, where pyTFM provides specialized functions to read and plot data.
+tool to do so is python: pyTFM provides its own python functions to read and plot data.
 
 First lets import all functions that we need:
 
@@ -381,63 +384,65 @@ First lets import all functions that we need:
 
     from pyTFM.data_analysis import *
 
-Next we read the output files from wildtype and KO data sets. This is done in two steps: First the
+Next, we read the output files from wildtype and KO data sets. This is done in two steps: First the
 text files are read into a dictionary where they are sorted for the frames, object ids and the type
-of the quantity. Then this dictionary is reduced to a dictionary where each key is the name of a
+of the quantity. Then frames and objects are pooled to a dictionary where each key is the name of a
 quantity and the value is a list of the measured values.
 Note that our output text file for the last step should be called "out0.txt" if you followed the tutorial 
-exactely.
+exactly.
 
 .. code-block:: python
 
     # reading the Wildtype data set. Use your own output text file here
-    file_WT = r"/home/user/Software/pyTFM/example_analysis/WT/out0.txt"
+    file_WT = r"/home/user/Software/example_data_for_pyTFM/clickpoints_tutorial/WT/out.txt"
     # reading the parameters and the results, sorted for frames and object ids
-    parameter_dict_WT,res_dict_WT = read_output_file(file_WT)
-    # pooling all frames together.
-    n_frames_WT,values_dict_WT, frame_list_WT = prepare_values(res_dict_WT)
+    parameter_dict_WT, res_dict_WT = read_output_file(file_WT)
+    # pooling all frames and objects together.
+    n_frames_WT, values_dict_WT, frame_list_WT = prepare_values(res_dict_WT)
     # reading the KO data set. Use your own output text file here
-    file_KO = r"/home/user/Software/pyTFM/example_analysis/KO/out0.txt"
-    parameter_dict_KO,res_dict_KO=read_output_file(file_KO)
-    n_frames_KO,values_dict_KO, frame_list_KO=prepare_values(res_dict_KO)
+    file_KO = r"/home/user/Software/example_data_for_pyTFM/clickpoints_tutorial/KO/out.txt"
+    parameter_dict_KO, res_dict_KO = read_output_file(file_KO)
+    n_frames_KO, values_dict_KO, frame_list_KO = prepare_values(res_dict_KO)
 
 We are going to use the dictionaries with pooled values (values_dict_WT and values_dict_KO) for plotting.
-First let's do some normalization: We can guess that a larger colony generates more forces. If we assume
-the relation is somewhat linear it is useful to normalize measures of the force generation with
-the area of the colony:
+First, let's do some normalization: We can guess that a larger colony generates more forces. If we assume
+this relation is somewhat linear it is useful to normalize measures of the force generation with
+the surface area of the colony:
 
 .. code-block:: python
 
     # normalizing the strain energy
-    values_dict_WT["strain energy per area"] = values_dict_WT["strain energy on colony"]/values_dict_WT["area of colony"]
-    values_dict_KO["strain energy per area"] = values_dict_KO["strain energy on colony"]/values_dict_WT["area of colony"]
-    # normalizing the contractillity
-    values_dict_WT["contractillity per area"] = values_dict_WT["contractillity on colony"]/values_dict_WT["area of colony"]
-    values_dict_KO["contractillity per area"] = values_dict_KO["contractillity on colony"]/values_dict_WT["area of colony"]
+    values_dict_WT["strain energy per area"] = values_dict_WT["strain energy"]/values_dict_WT["area Cell Area"]
+    values_dict_KO["strain energy per area"] = values_dict_KO["strain energy"]/values_dict_WT["area Cell Area"]
+    # normalizing the contractility
+    values_dict_WT["contractility per area"] = values_dict_WT["contractility"]/values_dict_WT["area Cell Area"]
+    values_dict_KO["contractility per area"] = values_dict_KO["contractility"]/values_dict_WT["area Cell Area"]
 
-Note that this only works if force generation and area were calculated successfully for all colonies.
+Note that this only works if force generation and area were calculated for all colonies - this requires that
+you outline the colony with the mask "Cell Boundary".
 
-Now we can perform a t-test to check if there are any significant differences between KO and WT. We will do
-this for all value pairs at once and later display only the most important ones value pairs.
+Now we can perform a t-test to identify any significant differences between KO and WT. We will do
+this for all quantity pairs at once and later display only the most important quantities.
 Unfortunately, due to the the fact that we analyzed only two colonies
-per data set you will find no significant diffrence in this case.
+per data set you will find no significant differences in this case.
 
 .. code-block:: python
+
 
     # t-test for all value pairs
     t_test_dict = t_test(values_dict_WT,values_dict_KO)
 
-Let's produce some plots. First, we are going to compare some key measures with box plots. The function
+Let's produce some plots. First, we are going to compare some key quantities with box plots. The function
 "box_plots" expects two dictionaries with values, a list ("labels") with two elements, which identifies
-these dictionary and a list ("types") of measures that you want to plot. Additionally you can provide
+these dictionary and a list ("types") of quantities that you want to plot. Additionally, you can provide
 a dictionary containing statistical test results and specify your own axis labels and axis limits:
 
 .. code-block:: python
 
     lables = ["WT", "KO"] # designations for the two dictionaries that are provided to the box_plots functions
-    types = ["contractillity per area", "strain energy per area"] # name of the measures that are plotted
-    ylabels = ["contractillity per colony area [N/m²]", "strain energy per colony area [J/m²]"] # custom axes labels
-    # producing a two box plots comparing the strain energy and the contractillity in WT and KO
+    types = ["contractility per area", "strain energy per area"] # name of the quantities that are plotted
+    ylabels = ["contractility per colony area [N/m²]", "strain energy per colony area [J/m²]"] # custom axes labels
+    # producing a two box plots comparing the strain energy and the contractility in WT and KO
     fig_force = box_plots(values_dict_WT, values_dict_KO, lables, t_test_dict=t_test_dict, types=types,
                low_ylim=0, ylabels=ylabels, plot_legend=True)
 
@@ -446,36 +451,37 @@ We can do the same for the mean normal stress and line tension:
 .. code-block:: python
 
     lables = ["WT", "KO"] # designations for the two dictionaries that are provided to the box_plots functions
-    types = ["mean normal stress on colony", "average magnitude line tension"] # name of the measures that are plotted
+    types = ["mean normal stress Cell Area", "average magnitude line tension"] # name of the quantities that are plotted
     ylabels = ["mean normal stress [N/m]", "line tension [N/m]"] #
     fig_stress = box_plots(values_dict_WT, values_dict_KO, lables, t_test_dict=t_test_dict, types=types,
               low_ylim=0, ylabels=ylabels, plot_legend=True)
 
-Another interesting way of studying force generation is to look at the relation between strain energy (beeing
-a measure for total force generation) and contractillity (beeing a measure for the coordinated force generation)
+Another interesting way of studying force generation is to look at the relation between strain energy
+(a measure for total force generation) and contractility (measure for the coordinated force generation)
 This can be done as follows:
 
 .. code-block:: python
 
     lables = ["WT", "KO"] # designations for the two dictionaries that are provided to the box_plots functions
     # name of the measures that are plotted. Must be length 2 for this case.
-    types = ["contractillity per area", "strain energy per area"]
+    types = ["contractility per area", "strain energy per area"]
     # plotting value of types[0] vs value of types[1]
     fig_force2 = compare_two_values(values_dict_WT, values_dict_KO, types, lables,
-             xlabel="contractillity per colony area [N/m²]", ylabel="strain energy per colony area [J/m²]")
+             xlabel="contractility per colony area [N/m²]", ylabel="strain energy per colony area [J/m²]")
 
 Finally, let's save the figures.
 
 .. code-block:: python
 
     # define and output folder for your figures
-    folder_plots = r"/home/user/Software/pyTFM/example_analysis/plots/"
+    folder_plots = r"/home/andy/Software/example_data_for_pyTFM/clickpoints_tutorial/plots/"
     # create the folder, if it doesn't already exist
     createFolder(folder_plots)
     # saving the three figures that were created beforehand
     fig_force.savefig(os.path.join(folder_plots, "forces1.png")) # boxplot comparing measures for force generation
-    fig_stress.savefig(os.path.join(folder_plots, "fig_stress.png")) # boxplot comapring normal stress and line tension
-    fig_force2.savefig(os.path.join(folder_plots, "forces2.png")) # plot of strain energy vs contractillity
+    fig_stress.savefig(os.path.join(folder_plots, "fig_stress.png")) # boxplot comparing normal stress and line tension
+    fig_force2.savefig(os.path.join(folder_plots, "forces2.png")) # plot of strain energy vs contractility
+
 
 
 .. TODO: make detailed list of functions, warnings, and result values

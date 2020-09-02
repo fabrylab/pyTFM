@@ -853,7 +853,7 @@ class Worker(QtCore.QThread):
 def setup_mask_wrapper(window, db, db_info, parameter_dict, delete_all=False, warn_popup=True):
     other_masks = check_existing_masks(db, parameter_dict)
     del_str = "all previous masks" if delete_all else "the masks " + str(other_masks)[1:-1]
-    if (len(other_masks) > 0 or delete_all):
+    if len(other_masks) > 0 and not delete_all:
         if warn_popup:
             choice = QtWidgets.QMessageBox.question(window, 'continue',
                                                     "This will delete %s. Do you want to continue?" % del_str,

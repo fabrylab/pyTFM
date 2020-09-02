@@ -60,7 +60,7 @@ def hide_ticks(ax, interval):
 
 def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_vecs=False, plot_n_arrows=False,
                                       figsize=(10, 7),
-                                      scale_ratio=0.2, border_arrow_filter=1, cbar_str="line stress in N/µm", vmin=None,
+                                      scale_ratio=0.2, border_arrow_filter=1, cbar_str="line tension in N/m", vmin=None,
                                       vmax=None,
                                       cbar_width="2%", cbar_height="50%", cbar_axes_fraction=0.2,
                                       cbar_tick_label_size=20,
@@ -89,7 +89,7 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
     :return:
     '''
 
-    if not isinstance(plot_values[0], (list, tuple)):
+    if not isinstance(plot_values[0], (list)):
         plot_values = [plot_values]
 
     min_v = np.min([pv[3] for pv in plot_values])  # minimum over all objects
@@ -427,7 +427,7 @@ def show_map_clickpoints(values, figsize=(6.4, 4.8), cbar_str="", ax=None
     im = ax.imshow(values_show, cmap=cmap, vmin=vmin, vmax=vmax)
     if plot_cbar:
         add_colorbar(vmin, vmax, cmap, ax=ax, cbar_style=cbar_style, cbar_width=cbar_width, cbar_height=cbar_height,
-                     cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size, cbarr_str=cbar_str,
+                     cbar_borderpad=cbar_borderpad, v=cbar_tick_label_size, cbar_str=cbar_str,
                      cbar_axes_fraction=cbar_axes_fraction, cbar_title_pad=cbar_title_pad)
 
     return fig, ax

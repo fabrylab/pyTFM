@@ -37,12 +37,12 @@ default_parameters = {
                        "color": "#1322ff", "index": 1, "label": "cell type 1", "name": "cell type1"},
         "cell type2": {"use": ["defo", "forces", "area_layer", "FEM_layer", "stress_layer"], "FEM_mode": ["cell layer"],
                        "color": "#ebff05", "index": 3, "label": "cell type 2", "name": "cell type2"},
-        "Cell Boundary": {"use": ["area_colony", "borders", "FEM_layer", "stress_colony", "forces"],
-                     "FEM_mode": ["cell layer", "colony"], "color": "#30ff0c", "index": 2, "label": "",
+        "Cell Boundary": {"use": ["area_colony", "borders", "FEM_layer", "stress_colony",], # "forces"
+                     "FEM_mode": ["cell layer", "colony"], "color": "#30ff0c", "index": 2, "label": "Cell Area",
                      "name": "Cell Boundary"},
         "Tractions": {"use": ["defo", "forces", "FEM_colony"], "FEM_mode": ["colony"], "color": "#ff0b23",
                            "index": 1,
-                           "label": "", "name": "Tractions"}}
+                           "label": " Traction Area", "name": "Tractions"}}
 }
 # "FEM_area": {"use": ["FEM_colony"], "FEM_mode": ["colony"], "color": "#30ff0c", "index": 2, "label": " of FEM area",
 #                     "name": "FEM_area"}}

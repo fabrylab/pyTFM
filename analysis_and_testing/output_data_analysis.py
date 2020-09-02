@@ -223,3 +223,5 @@ types=["average normal stress per contractile energy","contractillity per contra
 ylabels=[ty+"\n"+units[ty] for ty in types]
 fig=box_plots(values_dict1,values_dict2,lables,t_test_dict=t_test_dict,types=types,ylabels=ylabels,low_ylim=0)
 fig.savefig(os.path.join(folder_plots,"some_normailzations.png"))
+
+#TODO: consider to generate dictionary object--> frames
