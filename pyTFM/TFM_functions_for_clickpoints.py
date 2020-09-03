@@ -993,3 +993,4 @@ if __name__ == "__main__":
         # calculating the deformation field and adding to data base
 '''
 #TDOD: deal with oroblems when database is moved around/ folders are renamed --> make option with this directory
+#TODO insert tables as images for read the docs

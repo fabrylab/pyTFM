@@ -38,3 +38,5 @@ analysis_and_testing/__pycache__/
 .idea/
 
 pyTFM/test.py
+
+UNKNOWN.egg-info/
