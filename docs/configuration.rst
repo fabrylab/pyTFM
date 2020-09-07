@@ -243,6 +243,11 @@ Overview of Plotting Parameters
      - 3
      - float,int
      - Width of the arrow head (traction and deformation fields)
+
+
+.. list-table::
+   :widths: 25 25 25 50
+   :header-rows: 1
    * - **Plotting the Line Tensions**
      -
      -
