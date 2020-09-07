@@ -245,6 +245,7 @@ Overview of Plotting Parameters
      - float,int
      - Width of the arrow head (traction and deformation fields)
 
++++
 
 .. list-table::
    :widths: 25 25 25 50
