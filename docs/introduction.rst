@@ -5,7 +5,7 @@ Introduction to Traction Force Microscopy and Monolayer Stress Microscopy
 
 Traction Force Microscopy and Monolayer Stress Microscopy are methods to measure the force generation and
 internal forces of cells and cell colonies.
-.. formul "force transfer"/ "internal forces"
+
 
 A typical experiment starts by seeding cells on a substrate containing small fluorescence labeled beads. The cells adhere
 to the substrate, start generating forces and consequently cause deformations in the substrate. These deformations can be
