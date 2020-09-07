@@ -8,6 +8,7 @@ The most important parameters (Young's modulus, Poisson's ratio, gel height, win
 Image Velocimetry) can be set in the clickpoints addons window. However, some parameters can only
 be set by using config files. Config files also allow you to set a wide range of plotting options, most notably:
 Color maps, the length of arrows, color bar positioning and dimensions and maximum and minimum
+Color maps, the length of arrows, color bar positioning and dimensions and maximum and minimum
 displayed values for all frames. You can find a complete list of parameters in `Overview of Analysis Parameters`_
 and `Overview of Plotting Parameters`_.
 
