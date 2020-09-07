@@ -86,6 +86,14 @@ Then your yaml file should look like this:
 Overview of Analysis Parameters
 ---------------------------------
 
+<table>
+    <tr>
+        <td>Foo</td>
+    </tr>
+</table>
+
+
+
 
 +---------------------+--------------------+--------------------+----------------------------------------------------------+
 |Parameter            |    Default Value   |   Type             |          Meaning                                         |
