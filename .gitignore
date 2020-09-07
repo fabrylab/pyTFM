@@ -40,3 +40,9 @@ analysis_and_testing/__pycache__/
 pyTFM/test.py
 
 UNKNOWN.egg-info/
+
+docs/_build/doctrees/
+
+docs/_build/html/_images/
+
+docs/_build/html/

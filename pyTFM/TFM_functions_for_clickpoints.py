@@ -953,18 +953,18 @@ if __name__ == "__main__":
 
     ## setting up necessary paramteres
     # db=clickpoints.DataFile("/home/user/Desktop/Monolayers_new_images/monolayers_new_images/KO_DC1_tomatoshift/database.cdb","r")
-    db = clickpoints.DataFile("/home/andy/Software/example_data_for_pyTFM/clickpoints_tutorial/WT/database.cdb", "r")
+    db = clickpoints.DataFile("/home/andy/test_data_pyTFM/KOshift/database.cdb", "r")
     parameter_dict = default_parameters
     res_dict = defaultdict(lambda: defaultdict(list))
     db_info, all_frames = get_db_info_for_analysis(db)
 
     # db_info, masks, res_dict = apply_to_frames(db, parameter_dict, deformation, res_dict, frames="12",
     #                                            db_info=db_info, masks=None)
-    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict=res_dict,
-                                               frames=all_frames,
+    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, general_properties, res_dict=res_dict,
+   #                                            frames=all_frames,
+    #                                           db_info=db_info, masks=None)
+    db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict, frames="01",
                                                db_info=db_info, masks=None)
-    #db_info, masks, res_dict = apply_to_frames(db, parameter_dict, FEM_full_analysis, res_dict=res_dict, frames="1",
-    #                                           db_info=db_info, masks=masks)
 
     # parameter_dict["filter_type"]=None
 # default_fig_parameters["file_names"]["traction"] = "t_none.png"

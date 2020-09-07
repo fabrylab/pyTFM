@@ -122,36 +122,10 @@ Overview of Analysis Parameters
      - "colony"
      - string
      - Analyzing colonies or cell layer. This changes the behavior, concerning which masks are used, which plots are generated and what area is used for stress measurements.
-   * - **Hidden Parameters**
+   * - **Main Parameters**
      -
      -
      -
-   * - std_factor
-     - 15
-     - int,float
-     - Additional filter for the deformation field. Deformations greater then (:math:`µ` and :math:`\sigma`: mean and standard deviation of the norm of deformations) are replaced by the local mean deformation.
-   * - edge_padding
-     - 0.1
-     - float
-     - All masks are cut of close to the image edge, i.e. if they are closer then edge_padding*axis_length. For FEM analysis, all pixels at this edge are fixed so that no displacement perpendicular to the axis is allowed.
-   * - padding_cell_layer
-     - 0.2
-     - float
-     - If you are analyzing cell layers, and additional region close to the image edge is ignored when analyzing stresses, to avoid boundary effects. The effectively ignored region for cell layers is edge_padding + padding_cell_layer.
-   * - min_obj_size
-     - 1500
-     - int
-     - Minimum size of an object (cell or cell colony). All masks are added up and all encircled areas are filled to determine the object size.
-   * - cv_pad
-     - 0
-     - int,float
-     - File names. Include the ending (e.g. ".png")
-   * - TFM_mode
-     - "finite_thickness"
-     - string
-     - Using a TFM algorithm assuming either finite substrate thickness ("finite_thickness") for infinite substrate thickness ("infinte_thickness"). Always use "finite_thickness".
-
-
 
 
 
