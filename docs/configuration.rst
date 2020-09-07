@@ -158,23 +158,6 @@ Overview of Analysis Parameters
 
 
 
-.. list-table:: Title
-   :widths: 25 25 25 50
-   :header-rows: 1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
