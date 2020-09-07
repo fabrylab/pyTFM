@@ -249,6 +249,7 @@ Overview of Plotting Parameters
 .. list-table::
    :widths: 25 25 25 50
    :header-rows: 1
+
    * - **Plotting the Line Tensions**
      -
      -
