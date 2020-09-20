@@ -260,7 +260,7 @@ Overview of Plotting Parameters
 |                     |                    |                    |                                                          |
 |                     |                    |                    | to misaligned images in clickpoints.                     |
 +---------------------+--------------------+--------------------+----------------------------------------------------------+
-| cbar_axes_fraction  |    0.2             | float <1           | Height of the color bar when using cbar_style            |
+| cbar_axes_fraction  |    0.2             | float < 1          | Height of the color bar when using cbar_style            |
 |                     |                    |                    |                                                          |
 |                     |                    |                    | "outside". This number signifies the fraction            |
 |                     |                    |                    |                                                          |

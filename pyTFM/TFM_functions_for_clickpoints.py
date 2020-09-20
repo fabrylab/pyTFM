@@ -800,7 +800,7 @@ def FEM_analysis_borders(frame, res_dict, db, db_info, parameter_dict, stress_te
     lines_interpol, min_v, max_v = lineTension(lines_splines, line_lengths,
                                                stress_tensor, pixel_length=ps_new,
                                                interpol_factor=1)
-    plot_values = (borders.inter_shape, borders.edge_lines, lines_interpol, min_v, max_v)
+    plot_values = [borders.inter_shape, borders.edge_lines, lines_interpol, min_v, max_v]
 
     # norm of the line tension vector
     line_tension_norm = mean_stress_vector_norm(lines_interpol, borders, norm_level="points", vtype="t_vecs",
