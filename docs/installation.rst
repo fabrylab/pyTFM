@@ -43,7 +43,7 @@ in the terminal.
 .. hint::
     Execute the command "clickpoints register" from the terminal
     to add clickpoints to the "open width" menu for image files. You can find detailed
-    information the usage of clickpoints
+    information for the usage of clickpoints
     `here <https://clickpoints.readthedocs.io/en/latest/installation.html>`_.
 
 
