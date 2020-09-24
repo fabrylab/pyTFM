@@ -3,10 +3,6 @@ Installation
 
 It is recommended to use this package with the `Anaconda Distribution <https://www.anaconda.com/distribution/>`_.
 
-This package includes an addon for the image display and annotation tool clickpoints. You can find detailed
-information about installation and usage of clickpoints
-`here <https://clickpoints.readthedocs.io/en/latest/installation.html>`_.
-
 .. improve
 
 pyTFM can be installed in several ways. The most straight forward way is to download the package from
@@ -17,7 +13,7 @@ to go to "pyTFM-master/pyTFM-master". In this folder you should see a file calle
     ``pip install -e .``
 
 Pip is included in the Anaconda Distribution and should be available as a command line program out of the box.
-The -e setting will enable you to edit package files, and the "." siginifes that the "setup.py" file is
+The -e setting will enable you to edit package files, and the "." signifes that the "setup.py" file is
 located in the folder that you are currently in.
 
 .. formul
@@ -31,8 +27,26 @@ Now you can install pyTFM directly with the command
 
     ``pip install git+https://github.com/fabrylab/pyTFM.git``
 
+
 This will download the script file into your Anaconda subdirectory, for example to
 "anaconda3/lib/python3.7/site-packages/pyTFM"
+This package includes an addon for the image display and annotation tool clickpoints.
+Clickpoints is installed automatically if you follow the steps outline below. However, if
+you want to access clickpoints via the "open with" program option for image files, you have
+to use the command:
+
+    ``clickpoints register``
+
+in the terminal.
+
+
+.. hint::
+    Execute the command "clickpoints register" from the terminal
+    to add clickpoints to the "open width" menu for image files. You can find detailed
+    information the usage of clickpoints
+    `here <https://clickpoints.readthedocs.io/en/latest/installation.html>`_.
+
+
 
 
 Dependencies
