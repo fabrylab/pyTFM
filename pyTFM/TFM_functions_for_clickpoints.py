@@ -666,7 +666,7 @@ def get_contractillity_contractile_energy(frame, parameter_dict, res_dict, db, d
             #  + default_parameters["mask_properties"][mtype]["label"]
             res_dict[frame]["contractility"].append([obj_id, contractile_force, warn])
         # calculating the area of this mask
-        label = "area_Tractions" + parameter_dict["mask_properties"][mtype]["label"]
+        label = "area" + parameter_dict["mask_properties"][mtype]["label"]
         res_dict[frame][label].append([obj_id, mask_area, warn])
 
         # calculate contractile energy if deformations are provided
@@ -813,7 +813,7 @@ def FEM_analysis_borders(frame, res_dict, db, db_info, parameter_dict, stress_te
                                               exclude_colony_edge=True)
 
     res_dict[frame]["average magnitude line tension"].append([obj_id, line_tension_norm[1], warn])
-    res_dict[frame]["std line tension"].append([obj_id, line_tension_norm[2], ""])
+    res_dict[frame]["std magnitude line tension"].append([obj_id, line_tension_norm[2], ""])
     res_dict[frame]["average normal line tension"].append([obj_id, line_tension_n[1], warn])
     res_dict[frame]["std normal line tension"].append([obj_id, line_tension_n[2], ""])
     res_dict[frame]["average shear line tension"].append([obj_id, line_tension_sh[1], warn])
@@ -860,7 +860,7 @@ def FEM_full_analysis(frame, parameter_dict, res_dict, db, db_info=None, masks=N
                                                                                db_info=db_info, **kwargs)
         # FEM solution
         UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area)
-        np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor)
+        np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor / (ps_new * 10^-6))
 
         # analyzing stresses and stress distribution
         mean_normal_stress = FEM_analysis_average_stresses(frame, res_dict, parameter_dict, db, db_info, stress_tensor,

@@ -260,6 +260,7 @@ def coefficient_of_variation(mask, x, border_pad=0):
 
 
 def all_stress_measures(st, px_size=1):
+
     sig_x = st[:, :, 0, 0]  # normal stress in x direction
     sig_y = st[:, :, 1, 1]  # normal stress in x direction
     tau_xy = st[:, :, 0, 1]  # shear stress
