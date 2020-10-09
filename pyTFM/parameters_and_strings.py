@@ -263,36 +263,49 @@ calculation_messages["simple_shift_correction"] = "correct frame shift on frames
 
 # units of the returned stress and energy measures:
 units = defaultdict(lambda: "")
-units["avarege line tension"] = "N/m"
-units["avarege cell force"] = "N"
-units["avarege cell pressure"] = "N/m"
-units["avarege cell shear"] = "N/m"
-units["std line tension"] = "N/m"
-units["std cell force"] = "N"
-units["std cell pressure"] = "N/m"
-units["std cell shear"] = "N/m"
-units["contractillity on cell colony"] = "N"
-units["contractile energy on cell colony"] = "J"
-units["contractillity on cell type 1"] = "N"
-units["contractile energy on cell type 1"] = "J"
-units["contractillity on cell type 2"] = "N"
-units["contractile energy cell type 2"] = "J"
-units["avarage normal stress colony"] = "N/m"
-units["avarage shear stress colony"] = "N/m"
-units["avarage normal stress on cell type 1"] = "N/m"
-units["avarage shear stress on cell type 1"] = "N/m"
-units["avarage normal stress on cell type 2"] = "N/m"
-units["avarage shear stress on cell type 2"] = "N/m"
-units["area"] = "m2"
-units["area of colony"] = "m2"
-units["colony n_cells"] = ""
+#
 units["sum deformations"] = "pixels"
-units["sum traction forces"] = "N/m2"
-units["sum deformations on cell type 1 "] = "pixels"
-units["sum traction forces on cell type 1"] = "N/m2"
-units["sum deformations on cell type 2"] = "pixels"
-units["sum traction forces on cell type 2"] = "N/m2"
-units["sum deformations on cell colony"] = "pixels"
+units["sum deformations image"] = "pixels"
+units["sum deformations Traction Area"] = "pixels"
+units["sum traction forces Traction Area"] = "" # this is a weird unit
+
+# areas and cell number
+units["area"] = "m2"
+units["area Cell Area"] = "m2"
+units["area Traction Area"] = "m2"
+units["cell numbe"] = ""
+units["center of object"] = ""
+
+# traction force measures
+units["contractility"] = "N"
+units["strain energy"] = "J"
+
+
+# stresses
+units["mean normal stress Cell Area"] = "N/m"
+units["max normal stress Cell Area"] = "N/m"
+units["max shear stress Cell Area"] = "N/m"
+units["cv mean normal stress Cell Area"] = ""
+units["cv max normal stress Cell Area"] = ""
+units["cv max shear stress Cell Area"] = ""
+
+# line tension
+units["average magnitude line tension"] = "N/m"
+units["average normal line tension"] = "N/m"
+units["average shear line tension"] = "N/m"
+units["std magnitude line tension"] = ""
+units["std normal line tension"] = ""
+units["std shear line tension"] = ""
+
+# derivatives of the line tension
+units["average cell force"] = "N/m"
+units["average cell pressure"] = "N/m"
+units["average cell shear"] = "N/m"
+units["std cell force"] = ""
+units["std cell pressure"] = ""
+units["std cell shear"] = ""
+
+
 
 
 def convert_config_input(x, type):
