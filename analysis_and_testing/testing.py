@@ -55,8 +55,6 @@ db_info, masks, res_dict = apply_to_frames(db, parameter_dict, get_contractillit
 
 
 
-
-
 ## testing filling the whole area with masks
 db = clickpoints.DataFile("/home/andy/Desktop/KOshift/database5.cdb","r")
 db.deleteMasks()
