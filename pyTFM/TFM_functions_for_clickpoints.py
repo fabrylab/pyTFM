@@ -1,4 +1,4 @@
-### function integrating Traktion force microscopy into a clcikpoints database
+﻿### function integrating Traktion force microscopy into a clcikpoints database
 
 import os
 import warnings
@@ -860,7 +860,7 @@ def FEM_full_analysis(frame, parameter_dict, res_dict, db, db_info=None, masks=N
                                                                                db_info=db_info, **kwargs)
         # FEM solution
         UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_area)
-        np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor / (ps_new * 10^-6))
+        np.save(os.path.join(db_info["path"], frame + "stress_tensor.npy"), stress_tensor / (ps_new * 10**-6))
 
         # analyzing stresses and stress distribution
         mean_normal_stress = FEM_analysis_average_stresses(frame, res_dict, parameter_dict, db, db_info, stress_tensor,
