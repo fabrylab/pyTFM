@@ -8,7 +8,7 @@ from pyTFM.utilities_TFM import make_iterable, squeeze_list, convert_none_str, t
 
 # default parameters for the analysis
 default_parameters = {
-    "sigma": 0.49,  # poisson ratio of the substrate
+    "sigma": 0.49,  # poisson ratio
     "young": 49000,  # young's modulus
     "pixelsize": 0.201,  # pixel size of the image with beads in  µm/pixel
     "window_size": 20,  # window size for particle image velocimetry in µm
@@ -19,8 +19,6 @@ default_parameters = {
     "padding_cell_layer": 0.2,
     # additional region ignored for stress analysis in "cell layer" mode. Average stresses and line
     # tension is only calculated on the area that is "edge_padding"+"padding_cell_layer" away from the image edge
-    "sigma_cells":0.5, # Poisson's ratio of the Cell Sheet in the Monolayer Stress Microscopy. This parameter has littel
-    # influence on the reuslting stresses and should therefore not be changed.
     "TFM_mode": "finite_thickness",  # mode of traction force microscopy ("finite_thickness" or "infinite_thcikness")
     "FEM_mode": "colony",  # mode for FEM type. Either perform FEM on a single colony (mode: "colony") or on the whole
     # filed of view (mode: "cell layer"). In "cell layer you select two areas and calculate stress and

@@ -1,4 +1,4 @@
-### function integrating Traktion force microscopy into a clcikpoints database
+﻿### function integrating Traktion force microscopy into a clcikpoints database
 
 import os
 import warnings
@@ -748,11 +748,11 @@ def FEM_grid_setup(frame, parameter_dict, mask_grid, db_info=None, warn="", **kw
         f_y_c1 = f_y - np.nanmean(f_y)
         f_x_c2, f_y_c2, p = correct_torque(f_x_c1, f_y_c1, mask_area)
         # get_torque1(f_y,f_x,mask_area)
-        nodes, elements, loads, mats = grid_setup(mask_area, -f_x_c2, -f_y_c2, 1, sigma=parameter_dict["sigma_cells"],
+        nodes, elements, loads, mats = grid_setup(mask_area, -f_x_c2, -f_y_c2, 1, sigma=parameter_dict["sigma"],
                                                   edge_factor=parameter_dict["edge_padding"])  # note the negative signe
 
     if parameter_dict["FEM_mode"] == "cell layer":
-        nodes, elements, loads, mats = grid_setup(mask_area, -f_x, -f_y, 1, sigma=parameter_dict["sigma_cells"],
+        nodes, elements, loads, mats = grid_setup(mask_area, -f_x, -f_y, 1, sigma=parameter_dict["sigma"],
                                                   edge_factor=parameter_dict["edge_padding"])  # note the negative signe
 
     return nodes, elements, loads, mats, mask_area, warn, ps_new

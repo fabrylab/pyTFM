@@ -139,6 +139,10 @@ Overview of Analysis Parameters
      - 0.2
      - float
      - If you are analyzing cell layers, and additional region close to the image edge is ignored when analyzing stresses, to avoid boundary effects. The effectively ignored region for cell layers is edge_padding + padding_cell_layer.
+   * - sigma_cells
+     - 0.5
+     - float
+     - Poisson's ratio of the cell sheet in the MSM algortihm. This parameter should have negligible influence on the resulting stresses.
    * - min_obj_size
      - 1500
      - int

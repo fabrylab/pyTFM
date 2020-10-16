@@ -212,8 +212,11 @@ the cell colony. We need to correct this:
 Now we are ready to perform a Finite Elements Analysis. This is split into two steps:
 First, the FEM grid is setup. The grid is build up of nodes. For each node
 the connectivity to other nodes (stored in "elements"), constraints on the displacements (stored in "nodes")
-and forces acting (stored in "loads") on the node are defined. The applied forces are simply obtianed from
-the underlying tractions with a negative sign.
+and forces acting (stored in "loads") as well as elastic properties (Youngs's modulus and Poisson's ratio stored in mats
+) on the node are defined. Note that the Young's modulus of the material has no influence whatsoever on the resulting
+stresses and that the Poisson's ratio has only a small influence. Consequently, both Young's modulus and
+Poisson's ratio can be left at their default value (1 Pa and 0.5 respectively). The applied forces are simply obtained
+from the underlying tractions with a negative sign.
 Next, the FEM system is solved by calculating the deformations, followed by the strain and, based on the strain-stress
 relation of a linearly elastic 2-dimensional material.
 
@@ -222,7 +225,7 @@ relation of a linearly elastic 2-dimensional material.
     from pyTFM.grid_setup_solids_py import grid_setup, FEM_simulation
 
     # constructing the FEM grid
-    nodes, elements, loads, mats = grid_setup(mask_FEM, -fx, -fy)
+    nodes, elements, loads, mats = grid_setup(mask_FEM, -fx, -fy, sigma=0.5)
     # performing the FEM analysis
     # verbose prints the progress of numerically solving the FEM system of equations.
     UG_sol, stress_tensor = FEM_simulation(nodes, elements, loads, mats, mask_FEM, verbose=True)
