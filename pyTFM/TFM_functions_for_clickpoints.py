@@ -1,4 +1,4 @@
-﻿### function integrating Traktion force microscopy into a clcikpoints database
+### function integrating Traktion force microscopy into a clcikpoints database
 
 import os
 import warnings
@@ -536,7 +536,7 @@ def simple_shift_correction(frame, parameter_dict, res_dict, db, db_info=None, *
                                                         additional_images=[])
     if n_frames == 3:
         b_save, a_save, [m_save], drift = correct_stage_drift(image_before, image_after,
-                                                              additional_images=image_membrane)
+                                                              additional_images=[image_membrane])
 
     print("\nframe %s: found drift of %s" % (frame, str(np.round(drift, 3))))
     b_save.save(im_b_path)
