@@ -2,7 +2,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import openpiv.filters
-import openpiv.process
+try:
+    from openpiv.process import extended_search_area_piv
+except:
+    from openpiv.pyprocess import extended_search_area_piv
+
 import openpiv.scaling
 import openpiv.tools
 import openpiv.validation
@@ -25,8 +29,8 @@ def ffttc_traction(u, v, pixelsize1, pixelsize2, young, sigma=0.49, filter="gaus
     :param u:deformation field in x direction in pixel of the deformation image
     :param v:deformation field in y direction in pixel of the deformation image
     :param young: youngs modulus in Pa
-    :param pixelsize1: pixelsize of the original image, needed because u and v is given as displacement of these pixels
-    :param pixelsize2: pixelsize of the deformation image
+    :param pixelsize1: pixelsize in m/pixel of the original image, needed because u and v is given as displacement of these pixels
+    :param pixelsize2: pixelsize of m/pixel the deformation image
     :param sigma: posson ratio of the gel
     :param bf_image: give the brightfield image as an array before cells where removed
     :param filter: str, values: "mean","gaussian","median". Diffrent smoothing methods for the traction field
@@ -365,7 +369,7 @@ def calculate_deformation(im1, im2, window_size=64, overlap=32, std_factor=20):
     elif isinstance(im2, np.ndarray):
         frame_b = im2
 
-    u, v, sig2noise = openpiv.process.extended_search_area_piv(frame_a, frame_b, window_size=window_size,
+    u, v, sig2noise = extended_search_area_piv(frame_a, frame_b, window_size=window_size,
                                                                overlap=overlap,
                                                                dt=1, subpixel_method="gaussian",
                                                                search_area_size=window_size,
@@ -468,8 +472,8 @@ def contractillity(tx, ty, pixelsize, mask):
 
 ##
 def strain_energy_points(u, v, tx, ty, pixelsize1, pixelsize2):
-    pixelsize2 *= 10 ** -6  # conversion to m
     pixelsize1 *= 10 ** -6
+    pixelsize2 *= 10 ** -6  # conversion to m
     # u is given in pixels/minutes where a pixel is from the original image (pixelsize1)
     # tx is given in forces/pixels**2 where a pixel is from the deformation/traction field (pixelsize2)
     energy_points = 0.5 * (pixelsize2 ** 2) * (tx * u * pixelsize1 + ty * v * pixelsize1)
