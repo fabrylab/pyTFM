@@ -759,6 +759,13 @@ def prepare_forces(tx, ty, ps, mask):
     f_x_c2, f_y_c2, p = correct_torque(f_x_c1, f_y_c1, mask)
     return f_x_c2, f_y_c2
 
+def correct_forces(f_x,f_y, mask_area):
+    f_x[~mask_area] = np.nan  # setting all values outside of mask area to zero
+    f_y[~mask_area] = np.nan
+    f_x_c1 = f_x - np.nanmean(f_x)  # normalizing traction force to sum up to zero (no displacement)
+    f_y_c1 = f_y - np.nanmean(f_y)
+    f_x_c2, f_y_c2, p = correct_torque(f_x_c1, f_y_c1, mask_area)
+    return f_x_c2, f_y_c2, p
 
 def correct_torque(fx, fy, mask_area):
     com = regionprops(mask_area.astype(int))[0].centroid  # finding center of mass
@@ -1061,17 +1068,17 @@ def custom_solver(mat, rhs, mask_area, nodes, IBC, verbose=False):
 
     c_x, c_y = np.meshgrid(range(mask_area.shape[1]), range(mask_area.shape[0]))  # arrays with all x and y coordinates
     r = np.zeros((mask_area.shape[0], mask_area.shape[1], 2))  # array with all positional vectors
-    r[:, :, 0] = c_x  # note maybe its also enough to chose any point as refernece point
+    r[:, :, 0] = c_x  # Note: maybe its also enough to chose any point as reference point
     r[:, :, 1] = c_y
-    nodes_xy_ordered, x_points, y_points = find_eq_position(nodes, IBC,
-                                                            len_disp)  # solidspy function that is used to construct the loads vector (rhs)
+    # solidspy function that is used to construct the loads vector (rhs)
+    nodes_xy_ordered, x_points, y_points = find_eq_position(nodes, IBC, len_disp)
     r = r[nodes_xy_ordered[:, 1], nodes_xy_ordered[:, 0], :]  # ordering r in the same order as rhs
     r = r - np.array(com)
 
     zero_disp_x[x_points] = 1
     zero_disp_y[y_points] = 1
 
-    # torque=sum(r1*f2-r2*f1)
+    # torque=sum(r1*f2-r2*f1)   # TDOD: this is actually zero rotation
     zero_torque[x_points] = r[x_points, 1]  # -r2 factor
     zero_torque[y_points] = -r[y_points, 0]  # r1 factor
     add_matrix = np.vstack([zero_disp_x, zero_disp_y, zero_torque])
@@ -1083,7 +1090,7 @@ def custom_solver(mat, rhs, mask_area, nodes, IBC, verbose=False):
         # convert additional conditions to sparse matrix
         mat = scipy.sparse.vstack([mat, csr_matrix(add_matrix)], format="csr")
         u_sol, error = \
-        np.array(lsqr(mat, rhs, atol=10 ** -12, btol=10 ** -12, iter_lim=60000, show=verbose, conlim=10 ** 12))[
+        np.array(lsqr(mat, rhs, atol=10 ** -12, btol=10 ** -12, iter_lim=200000, show=verbose, conlim=10 ** 12))[
             [0, 3]]  # sparse least squares solver
     elif type(mat) is np.ndarray:
         # adding to matrix

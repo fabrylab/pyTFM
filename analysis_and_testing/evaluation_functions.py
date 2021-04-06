@@ -5,6 +5,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 import copy
+from scipy.ndimage import zoom
 import clickpoints
 from contextlib import suppress
 from pyTFM.utilities_TFM import round_flexible, gaussian_with_nans, make_display_mask, createFolder
@@ -29,6 +30,24 @@ from pyTFM.grid_setup_solids_py import check_unbalanced_forces
 import cv2
 from scipy.ndimage.morphology import distance_transform_edt
 from itertools import product
+
+fields_empty = {key:None for key in["u_b", "v_b", "fx_b", "fy_b", "fx_f", "fy_f", "stress_tensor_f", "stress_tensor_b", "mask_fm", "mask_fem",
+         "mask"]}
+def load_data(in_folder, pixel_size):
+    name_add = "" # "_large
+
+    mask_traction = np.load(os.path.join(in_folder, "traction_mask.npy"))
+    mask_traction = binary_fill_holes(mask_traction)
+    mask_cell_border = np.load(os.path.join(in_folder, "cell_border_mask.npy"))
+    mask_cell_border = binary_fill_holes(mask_cell_border)
+    fx = np.load(os.path.join(in_folder, "fx%s.npy"%name_add))
+    fy = np.load(os.path.join(in_folder, "fy%s.npy"%name_add))
+    tx = fx / ((pixel_size * 10 ** -6) ** 2)
+    ty = fy / ((pixel_size * 10 ** -6) ** 2)
+    u = np.load(os.path.join(in_folder, "u%s.npy"%name_add))
+    v = np.load(os.path.join(in_folder, "v%s.npy"%name_add))
+
+    return mask_traction, mask_cell_border, fx, fy, tx, ty, u, v
 
 
 def traction_wrapper(u, v, pixelsize, h, young, mask=None, sigma=0.49, filter="gaussian", fs=None, correct_forces=True):
@@ -232,23 +251,20 @@ def standard_measures(mask, pixelsize_tract=1, pixelsize_og=1, mean_normal_list=
     # return mean_normal_stress,mean_shear,cont_energy,contractile_force
 
 
-def contractility_strain_energy_exp(u, v, fx, fy, masks,pixelsize=1):
-
+def contractility_strain_energy_exp(u, v, fx, fy, masks, pixelsize1, pixelsize2):
+    # pixelsize1: orgiginal pixel size (deformations are given in pixel with this size)
+    # pixelsize2: pixel size of the traction field
     strain_energies = []
     contractilities = []
     for i,m in enumerate(masks):
 
         m = m.astype(bool)
-        ep = strain_energy_points(u, v, fx, fy, pixelsize, pixelsize)  # contractile energy at any point
+        ep = strain_energy_points(u, v, fx, fy, pixelsize1, pixelsize2)  # contractile energy at any point
         cenergy = np.sum(ep[m])
         strain_energies.append(cenergy)
-        contractile_force, proj_x, proj_y, center = contractillity(fx, fy, pixelsize, m)
+        contractile_force, proj_x, proj_y, center = contractillity(fx, fy, pixelsize2, m)
         contractilities.append(contractile_force)
-        #print(center)
-        #if i < 6:
-        #    fig, ax = show_quiver(fx, fy, filter=[0,12])
-        #    ax.imshow(m, alpha=0.4, cmap="jet")
-        #    ax.text(1, 0, str(contractile_force))
+
 
     return np.array(contractilities), np.array(strain_energies)
 
@@ -429,7 +445,14 @@ def def_test():
         save_def_test(fx_b, fy_b, fx_f, fy_f, out_folder, iteration=str(int(i * 10)))
 
 
-from scipy.ndimage import zoom
+
+
+def try_np_load(file):
+    try:
+        x = np.load(file)
+    except FileNotFoundError:
+        x = None
+    return x
 
 
 def expand_mask(mask, i, m_shape, method="binary_dilation"):
@@ -445,11 +468,32 @@ def expand_mask(mask, i, m_shape, method="binary_dilation"):
         zoom_out = setup_geometry(im_shape=m_shape, shape_size=i, shape="rectangle")
     return zoom_out
 
+def read_header(file):
+    with open(file) as f:
+        l0 = f.readline()
+        l0_split = l0.replace("#", "").strip().split(" ")
+        header = {l0_split[0]:float(l0_split[1]),l0_split[2]:float(l0_split[3]), l0_split[4]:l0_split[5]}
+    return header
 
-def exp_border(exp_range=[], fx=None, fy=None, mask=None, young=1, out_folder="", method="binary_dilation",verbose=False):
+def convert_exp_range(border_ex_range, method, pixelsize):
+    # converts list of expansion instruction to µm values based on the pixelsize
+    # and the method of expansion
+    if method == "binary_dilation":
+        range_mu = np.array(border_ex_range) * pixelsize
+    if method == "manual":
+        # in "manual" a rectangle with the specified edge length is set in the middle of the image
+        # we need to correct for zero radius value
+        # and we need to devide the values by 2 to get radius
+        range_mu = np.array(border_ex_range) * pixelsize/2
+        range_mu = range_mu - range_mu[0]
+    return range_mu
 
-    tensor_folder = createFolder(os.path.join(out_folder, "stress_tensors"))
-    mask_folder = createFolder(os.path.join(out_folder, "masks"))
+
+def exp_border(exp_range=None, fx=None, fy=None, mask=None, young=1, out_folder="", method="binary_dilation", pixelsize =None,verbose=False):
+    tensor_folder = os.path.join(out_folder, "stress_tensors")
+    mask_folder = os.path.join(out_folder, "masks")
+    os.makedirs(tensor_folder, exist_ok=True)
+    os.makedirs(mask_folder, exist_ok=True)
     stress_tensors = []
     mask_exp_list = []
     mask = mask.astype(int)
@@ -462,27 +506,25 @@ def exp_border(exp_range=[], fx=None, fy=None, mask=None, young=1, out_folder=""
         fx_f2 = fx_f - np.nanmean(fx_f)  # normalizing traction force to sum up to zero (no displacement)
         fy_f2 = fy_f - np.nanmean(fy_f)
         fx_f2, fy_f2, p = correct_torque(fx_f2, fy_f2, mask.astype(bool))  # correct forces
-        #if np.any(np.isnan(fx_f2[mask_exp.astype(bool)])):
-        #    print("####")
-        #    print("####", np.any(np.isnan(fy_f2[mask_exp.astype(bool)])))
-
 
         UG_sol, stress_tensor_f = stress_wrapper(mask_exp.astype(bool), fx_f2, fy_f2, young, sigma=0.5,verbose=verbose)
-        np.save(os.path.join(tensor_folder, "stress_tensor_f%s.npy" % str(i)), stress_tensor_f)
-        np.save(os.path.join(mask_folder, "%s.npy" % str(i)), mask_exp)
+        stress_tensor_f /= pixelsize # conversion to N/m
+        np.save(os.path.join(tensor_folder, "stress_tensor_f%d.npy" % i), stress_tensor_f)
+        np.save(os.path.join(mask_folder, "%d.npy" % i), mask_exp)
         stress_tensors.append(stress_tensor_f)
         mask_exp_list.append(mask_exp)
     mean_normal_list = [(st[:, :, 0, 0] + st[:, :, 1, 1]) / 2 for st in stress_tensors]
+
     return stress_tensors, mean_normal_list, mask_exp_list
 
-
-def load_exp_border(exp_range=[], out_folder=None, filename_factor=1):
+def load_exp_border(exp_range=[], out_folder=""):
+    tensor_folder = os.path.join(out_folder, "stress_tensors")
+    mask_folder = os.path.join(out_folder, "masks")
     stress_tensors = []
     mask_exp_list = []
     for i in tqdm(exp_range):
-        stress_tensor_f = np.load(
-            os.path.join(out_folder, "stress_tensors/stress_tensor_f%s.npy" % str(i * filename_factor)))
-        mask_exp = np.load(os.path.join(out_folder, "masks/%s.npy" % str(i * filename_factor)))
+        stress_tensor_f = np.load(os.path.join(tensor_folder, "stress_tensor_f%d.npy" % i))
+        mask_exp = np.load(os.path.join(mask_folder, "%d.npy" % i))
         stress_tensors.append(stress_tensor_f)
         mask_exp_list.append(mask_exp)
     mean_normal_list = [(st[:, :, 0, 0] + st[:, :, 1, 1]) / 2 for st in stress_tensors]

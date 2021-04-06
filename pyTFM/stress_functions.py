@@ -259,6 +259,8 @@ def coefficient_of_variation(mask, x, border_pad=0):
         np.nanmean(x[mask_cp]))  # absoulte value of mean is an alternative deffinition
 
 
+
+
 def all_stress_measures(st, px_size=1):
 
     sig_x = st[:, :, 0, 0]  # normal stress in x direction

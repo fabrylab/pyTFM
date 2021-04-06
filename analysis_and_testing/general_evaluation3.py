@@ -13,7 +13,7 @@ def exp_border_real_data():
     h = 100
     pixelsize = 1
     #  retrieving clickpoints mask and traction forces
-    folder="/home/user/Desktop/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/KOshift/"
+    folder="/home/user/Desktop/biophysDS/abauer/backup_from_harddrive/data_traction_force_microscopy/WT_vs_KO_images/KOshift/"
     db = clickpoints.DataFile(os.path.join(folder,"database.cdb"), "r")
     mask = db.getMask(frame=2).data == 3
     db.db.close()
