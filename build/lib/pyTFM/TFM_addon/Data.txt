@@ -1,4 +1,0 @@
-[addon]
-name=pyTFM
-file=TFM_addon.py
-icon=fa.compress
