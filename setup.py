@@ -6,7 +6,7 @@ import platform
 
 
 
-install_requires=['numpy' ,'cython','openpiv',
+install_requires=['numpy' ,'cython','openpiv == 0.23.4',
 		      'scipy', 'scikit-image', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy','clickpoints >= 1.9.6', "natsort"]
 
 version='1.2' # adding a version file automatically
