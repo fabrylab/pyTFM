@@ -375,7 +375,9 @@ Plotting the Results
 ---------------------------------
 Repeat the same analysis for the KO data set. Once you have the output text files for both data sets you could go
 ahead and use any tool of your choosing to read the files and plot the important quantities. Of course the best
-tool to do so is python: pyTFM provides its own python functions to read and plot data.
+tool to do so is python: pyTFM provides its own python functions to read and plot data. The following code is also
+contained in the file "clickpoints_tutorial/data_analysis.py". This file can be executed with python, however you must
+first edit the file paths for in- and output.
 
 First lets import all functions that we need:
 
@@ -473,7 +475,7 @@ Finally, let's save the figures.
 .. code-block:: python
 
     # define and output folder for your figures
-    folder_plots = r"/home/andy/Software/example_data_for_pyTFM/clickpoints_tutorial/plots/"
+    folder_plots = r"/home/user/Software/example_data_for_pyTFM/clickpoints_tutorial/plots/"
     # create the folder, if it doesn't already exist
     createFolder(folder_plots)
     # saving the three figures that were created beforehand
