@@ -146,8 +146,7 @@ The images of the cells will be cropped in the same way as the images of the bea
 
 First, go to the main pyTFM addon window and select "all frames" or "current frame" in the "apply to" option,
 depending on which frames you want to apply the drift correction to. Then press the "correct drift" button. You will see
-the drift in pixels in x and y direction printed to the console (:numref:`drift`, bottom). The
-images in the tutorial data set are already corrected, meaning that the drift should be zero.
+the drift in pixels in x and y direction printed to the console (:numref:`drift`, bottom).
 
 .. figure:: images/drift.png
     :width: 650
