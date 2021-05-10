@@ -519,7 +519,7 @@ class FileSelectWindow(QtWidgets.QWidget):
         config_path = os.path.join(self.folders["folder_out"], "config.yaml")
         # trying to read config:
         if os.path.exists(config_path):
-            print("found exsisting config at", config_path)
+            print("found exsisting config at ", config_path)
             self.main_window.config_path = config_path
             self.main_window.parameter_dict = load_config(config_path, self.main_window.parameter_dict)
 
@@ -542,20 +542,18 @@ class FileSelectWindow(QtWidgets.QWidget):
         # save database to target
         if not new_filename == old_filename:
             # copying original database to temporary file:
-            shutil.copy(old_filename, old_filename + "_tmp")
-
-            self.main_window.db.deletePaths()  # removes existing paths
+            # shutil.copy(old_filename, old_filename + "_tmp")
+           # self.main_window.db.deletePaths()  # removes existing paths
             print("saved database to " + new_filename)
             self.main_window.cp.window.SaveDatabase(srcpath=new_filename)
 
             # restore paths in older database file
-            if os.path.exists(old_filename + "-shm"):
-                os.remove(old_filename + "-shm")
-            if os.path.exists(old_filename + "-wal"):
-                os.remove(old_filename + "-wal")
+           # if os.path.exists(old_filename + "-shm"):
+           #     os.remove(old_filename + "-shm")
+           # if os.path.exists(old_filename + "-wal"):
+           #     os.remove(old_filename + "-wal")
             # os.remove(old_filename)
-            # shutil.copy(old_filename + "_tmp", old_filename)
-            shutil.move(old_filename + "_tmp", old_filename)
+           # shutil.move(old_filename + "_tmp", old_filename)
 
 
 class Addon(clickpoints.Addon):

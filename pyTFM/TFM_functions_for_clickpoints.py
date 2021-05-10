@@ -530,7 +530,7 @@ def simple_shift_correction(frame, parameter_dict, res_dict, db, db_info=None, *
     im_a_path = find_full_im_path(im_a, db_info["path"])
     im_b_path = find_full_im_path(im_b, db_info["path"])
 
-    # performig drift correction
+    # performing drift correction
     if n_frames == 2:
         b_save, a_save, [], drift = correct_stage_drift(image_before, image_after,
                                                         additional_images=[])

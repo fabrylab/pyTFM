@@ -10,6 +10,7 @@ from PIL import Image
 from pyTFM.utilities_TFM import createFolder, get_group
 from scipy.ndimage.interpolation import shift
 from skimage.feature import register_translation
+from skimage.registration import phase_cross_correlation
 
 
 def normalizing(img):
@@ -103,21 +104,7 @@ def cut_images(folder, files_dict, names=["after_shift.tif", "before_shift.tif",
             img_a = np.asarray(Image.open(img_files["after"]))
             imb_b_BF = np.asarray(Image.open(img_files["bf"]))
 
-            shift_values = register_translation(img_b, img_a, upsample_factor=100)
-            shift_y = shift_values[0][0]
-            shift_x = shift_values[0][1]
-
-            # using interpolation to shift subpixel precision
-            img_shift_b = shift(img_b, shift=(-shift_y, -shift_x), order=5)
-            img_shift_bf = shift(imb_b_BF, shift=(-shift_y, -shift_x), order=5)
-
-            b = normalizing(croping_after_shift(img_shift_b, shift_x, shift_y))
-            a = normalizing(croping_after_shift(img_a, shift_x, shift_y))
-            bf = normalizing(croping_after_shift(img_shift_bf, shift_x, shift_y))
-
-            b_save = Image.fromarray(b * 255)
-            a_save = Image.fromarray(a * 255)
-            bf_save = Image.fromarray(bf * 255)
+            b, a [bf], (shift_x, shift_y) = correct_stage_drift(img_b, img_a, additional_images=[imb_b_BF])
 
             b_save.save(os.path.join(new_folder, frame + "after_shift.tif"))
             a_save.save(os.path.join(new_folder, frame + "before_shift.tif"))
@@ -132,32 +119,11 @@ def cut_images(folder, files_dict, names=["after_shift.tif", "before_shift.tif",
 # identified as a directory that contains one folder for the images before cell removal and one folder with images after
 # the cell removal.
 
-
-def correct_frame_shift(folder):
-    '''
-    frame shift correction with default settings
-    :return:
-    '''
-    # identifier for the folder with images after cell removal:
-    after_folder_identifier = re.compile("after", re.IGNORECASE)
-    # identifier for the folder with images before cell removal:
-    before_folder_identifier = re.compile("before", re.IGNORECASE)
-
-    after_file_identifier = re.compile("(\d{0,3})_{0,1}fluo", re.IGNORECASE)
-    before_file_identifier = re.compile("(\d{0,3})_{0,1}fluo", re.IGNORECASE)
-    bf_file_identifier = re.compile("(\d{0,3})_{0,1}BF_before", re.IGNORECASE)
-    # putting identifiers in one list
-    identifier_list = [after_folder_identifier, before_folder_identifier, after_file_identifier, before_file_identifier,
-                       bf_file_identifier]
-
-    names = ["after_shift.tif", "before_shift.tif", "bf_before_shift.tif"]
-    files_dict = find_files_for_shifting(folder, identifier_list)
-    cut_images(folder, files_dict, names)
-
-
 def correct_stage_drift(image1, image2, additional_images=[]):
+
     # find shift with image registration
-    shift_values = register_translation(image1, image2, upsample_factor=100)
+    shift_values = phase_cross_correlation(image1, image2, upsample_factor=100)
+
     shift_y = shift_values[0][0]
     shift_x = shift_values[0][1]
 
