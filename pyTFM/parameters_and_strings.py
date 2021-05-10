@@ -12,7 +12,7 @@ default_parameters = {
     "young": 49000,  # young's modulus
     "pixelsize": 0.201,  # pixel size of the image with beads in  µm/pixel
     "window_size": 20,  # window size for particle image velocimetry in µm
-    "overlap": 19,  # overlap  size for particle image velocimetry in µm. This should be at least window_size/2.
+    "overlap": 18,  # overlap  size for particle image velocimetry in µm. This should be at least window_size/2.
     "std_factor": 15,  # additional filter for extreme values in deformation field
     "h": 300,  # height of the substrate in µm
     "edge_padding": 0.1,  # fraction of the image close to the borders that is ignored for any analyzed value
