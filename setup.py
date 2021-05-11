@@ -18,19 +18,6 @@ with open(file_path,"w") as f:
 local_openpiv = os.path.join(os.getcwd(),"local_dependencies","OpenPIV-0.20.8-cp37-cp37m-win_amd64.whl")
 print('\033[92m'+"Identified operating system: ",platform.system() + '\033[0m')
 
-try:
-	if platform.system()=="Windows":
-		print('\033[92m' + "installing openpiv from local wheel" + '\033[0m')
-		print(local_openpiv)
-		if os.system("pip install "+ local_openpiv)!=0: # checking if exit code 0 (successfull)
-			raise Exception
-		install_requires.remove('openpiv')
-except Exception as e:
-	print('\033[91m' + "Failed to install openpiv from local files")
-	print("Error:", e)
-	print("trying to install open piv from pip" + '\033[0m')
-
-
 setup(
     name='pyTFM',
     packages=['pyTFM'],
