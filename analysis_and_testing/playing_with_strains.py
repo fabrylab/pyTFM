@@ -19,7 +19,7 @@ from itertools import chain
 import os
 
 sys.path.insert(0, '/home/user/Software/tracktion_force_microscopy/tracktion_force_microscopy/analysis_and_testing/')
-from simulating_deformation import *
+from analysis_and_testing.simulating_deformation import *
 import cv2
 from scipy.ndimage.morphology import distance_transform_edt
 from itertools import product
@@ -91,8 +91,9 @@ def stress_tensor_from_deformation(mask, circ_size=60, type="uniform"):
     return u, v, mask.astype(bool)
 
 
-def strain_from_deformation(u, v, mask):
-    mask = mask.astype(bool)
+def strain_from_deformation(u, v, mask=None):
+
+
     du_x = np.gradient(u, axis=1)
     dv_y = np.gradient(v, axis=0)
     dv_x = np.gradient(v, axis=1)
@@ -106,7 +107,10 @@ def strain_from_deformation(u, v, mask):
     strain_tensor[:, :, 0, 1] = e_yx
     strain_tensor[:, :, 1, 0] = e_xy
     strain_tensor[:, :, 1, 1] = e_yy
-    strain_tensor[~binary_erosion(mask, iterations=1), :, :] = 0
+    if mask is not None:
+        mask = mask.astype(bool)
+        strain_tensor[~binary_erosion(mask, iterations=1), :, :] = 0
+
     return strain_tensor
 
 
