@@ -347,8 +347,8 @@ def calculate_deformation(im1, im2, window_size=64, overlap=32, std_factor=20):
     Side note: returns -v because original v is negative if compared to coordinates of images (y-axis is inverted).
 
 
-    :param file1: after iamge
-    :param file2: before image
+    :param im1: after iamge
+    :param im2: before image
     :param window_size: integer, size of interrogation windows for PIV
     :param overlap: integer, overlap of interrogation windows for PIV
     :param std_factor: filterng extreme outliers beyond mean (deformation) + std_factor*standard deviation (deforamtion)
