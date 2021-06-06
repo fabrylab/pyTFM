@@ -7,7 +7,7 @@ import platform
 
 
 install_requires=['numpy' ,'cython','openpiv == 0.22.0', 'pyyaml', 
-		      'scipy', 'scikit-image', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy','clickpoints >= 1.9.6', "natsort"]
+		      'scipy', 'scikit-image >= 0.18.1', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy','clickpoints >= 1.9.6', "natsort"]
 
 version='1.3' # adding a version file automatically
 file_path = os.path.join(os.getcwd(),os.path.join("pyTFM","_version.py"))
