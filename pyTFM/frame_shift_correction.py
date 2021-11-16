@@ -111,15 +111,23 @@ def cut_images(folder, files_dict, names=["after_shift.tif", "before_shift.tif",
             bf_save.save(os.path.join(new_folder, frame + "bf_before_shift.tif"))
 
 
-# correcting frame shift between images of beads before and after cell removal.
 
-# the correction is done by finding the shift between two images using image registration. Then the images are cropped
-# to the common field of view. If this script finds further images of the cells, it wil also cropp them to this field
-# of view. The output is saved to the input folder. For each "experiment" a new folder is created. An experiment is
-# identified as a directory that contains one folder for the images before cell removal and one folder with images after
-# the cell removal.
 
 def correct_stage_drift(image1, image2, additional_images=[]):
+    '''
+    # correcting frame shift between images of beads before and after cell removal.
+
+    # the correction is done by finding the shift between two images using image registration. Then the images are cropped
+    # to the common field of view. If this script finds further images of the cells, it wil also cropp them to this field
+    # of view. The output is saved to the input folder. For each "experiment" a new folder is created. An experiment is
+    # identified as a directory that contains one folder for the images before cell removal and one folder with images after
+    # the cell removal.
+
+    :param image1:
+    :param image2:
+    :param additional_images:
+    :return:
+    '''
 
     # find shift with image registration
     shift_values = phase_cross_correlation(image1, image2, upsample_factor=100)
@@ -145,3 +153,45 @@ def correct_stage_drift(image1, image2, additional_images=[]):
         additional_images_save.append(add_image_save)
 
     return b_save, a_save, additional_images_save, (shift_x, shift_y)
+
+
+def correct_stage_drift_stack(reference, image_stack):
+
+    '''
+    :param reference: np.ndarray; single grey scale images
+    :param image_stack: np.ndarray, list array or list of images e.g. from a time series
+    :return: images, ref, alligned and croped reference and images from the image stack
+    '''
+
+
+    images = image_stack.copy()
+
+    # calcualte all drifts with respet to reference image
+    shifts = []
+    for im in images:
+        shifts.append(phase_cross_correlation(reference, im, upsample_factor=100)[0])
+    shifts = np.array(shifts)
+
+    # apply shift to each image in stack
+    for i, single_shift in enumerate(shifts):
+        images[i] = shift(images[i], shift=(single_shift[0], single_shift[1]), order=5)
+
+    # find the common_field_of_view
+    horizontal_max = shifts[shifts[:, 1] > 0, 1]
+    right_shift = np.max(horizontal_max) if len(horizontal_max) > 0 else 0
+    horizontal_min = shifts[shifts[:, 1] < 0, 1]
+    left_shift = np.min(horizontal_min) if len(horizontal_min) > 0 else 0
+
+    vertical_max = shifts[shifts[:, 0] > 0, 0]
+    upper_shift = np.max(vertical_max) if len(vertical_max) > 0 else 0
+    vertical_min = shifts[shifts[:, 0] < 0, 0]
+    lower_shift = np.min(vertical_min) if len(vertical_min) > 0 else 0
+
+    common_margins = [(int(np.ceil(upper_shift)), int(reference.shape[0] + lower_shift)),
+                      (int(np.ceil(right_shift)), int(reference.shape[1] + left_shift))]
+
+    # crop images and reference accordingly
+    images = images[:, common_margins[0][0]:common_margins[0][1], common_margins[1][0]: common_margins[1][1]]
+    reference = reference[common_margins[0][0]:common_margins[0][1], common_margins[1][0]: common_margins[1][1]]
+
+    return images, reference
