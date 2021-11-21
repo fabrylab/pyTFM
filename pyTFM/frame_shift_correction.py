@@ -155,7 +155,7 @@ def correct_stage_drift(image1, image2, additional_images=[]):
     return b_save, a_save, additional_images_save, (shift_x, shift_y)
 
 
-def correct_stage_drift_stack(reference, image_stack):
+def correct_stage_drift_stack(image_stack, reference):
 
     '''
     :param reference: np.ndarray; single grey scale images
