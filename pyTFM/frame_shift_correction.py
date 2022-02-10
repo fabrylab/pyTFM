@@ -9,10 +9,6 @@ import numpy as np
 from PIL import Image
 from pyTFM.utilities_TFM import createFolder, get_group
 from scipy.ndimage.interpolation import shift
-try:  # skimage < v0.19.0
-    from skimage.feature import register_translation
-except ImportError:
-    from skimage.registration import register_transtlation
 from skimage.registration import phase_cross_correlation
 
 
