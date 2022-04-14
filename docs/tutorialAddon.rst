@@ -106,9 +106,9 @@ naming scheme for your images, you **can leave the identifiers as they are**.
    after$             all files with "after" at the end of the filename
    \*                 all files
                       blank space also finds all files
-   ^(\d{1,4}) 	      up to 4 numbers at beginning of the filename
-   (\d{1,4}) 	      up to 4 consecutive numbers anywhere in the filename
-   (\d{1,4})$ 	      up to 4 numbers at end of the filename
+   ^(\\d{1,4}) 	      up to 4 numbers at beginning of the filename
+   (\\d{1,4}) 	      up to 4 consecutive numbers anywhere in the filename
+   (\\d{1,4})$ 	      up to 4 numbers at end of the filename
    ==============    ==============================================================
 
 
