@@ -26,14 +26,14 @@ def show_points(ps, mask):
 
 
 def identify_cells(mask_area, mask_boundaries, points):
-    '''
+    """
     function to identfy cells. Each cell is is a dictionary entry with a list of ids, reffering to
     points.
     :param mask:
     :param area:
     :param mask_boundaries:
     :return:
-    '''
+    """
 
     cells = {}  # dictionary containg a list of point idsthat sourround each cell
     cells_area = {}  # dictionary containg a all pixels belonging to that cell as boolean aray
@@ -75,7 +75,7 @@ def identify_cells(mask_area, mask_boundaries, points):
 
 
 def spline_interpolation(line, points, k=3, endpoints=None):
-    '''
+    """
     function takes points from a line and uses spline interpolation to create a smooth representation.
 
     :param line: list point ids that define a line. Must be incorrect order
@@ -83,7 +83,7 @@ def spline_interpolation(line, points, k=3, endpoints=None):
     :param endpoints: additional pair of endpoints in yx order, to include in the spline interpolation
     :return: tck, array defining the spline, with knot position, parameter values and order
             points_new, new position of the points on the line according to spline interploation in x y coorinates !!!
-    '''
+    """
 
     x = points[line, 1]  # list x and y coordinate for points on line
     y = points[line, 0]
@@ -120,7 +120,7 @@ def spline_interpolation(line, points, k=3, endpoints=None):
 
 
 def arrange_lines_from_endpoints(cells_lines, lines_endpoints_com):
-    '''
+    """
     rearranging the order of lines in the line_id list for one one cell. The endpoints for all lines for ne cell are
     extracted and then puzzled together. Each endpoint must occure in two lines.
 
@@ -128,7 +128,7 @@ def arrange_lines_from_endpoints(cells_lines, lines_endpoints_com):
     :param lines_endpoints_com: dictionary line_id:[endpoint1,endpoint2] , each endoinpt is an array with x and y coordinates
     :return: cells_lines_new: updated cells_lines dictionary
 
-    '''
+    """
     cells_lines_new = {}
 
     for cell_id, line_ids in cells_lines.items():
@@ -157,12 +157,12 @@ def arrange_lines_from_endpoints(cells_lines, lines_endpoints_com):
 
 
 def find_edge_lines(cells_lines):
-    '''
+    """
     Finding all lines (cell borders) at the edge of a cell colony. Simply checks if
     a line is associated to only one cell.
     :param cells_lines: dictionary with cell_id:[associated line_ids]
     :return: edge_lines: lsit of line ids at the edge of the cell colony
-    '''
+    """
     all_lines = np.array(list(chain.from_iterable(cells_lines.values())))  # unpacking all line ids
     counts = Counter(all_lines)  # counting occurences
     edge_lines = [line for line, count in counts.items() if
@@ -171,12 +171,12 @@ def find_edge_lines(cells_lines):
 
 
 def center_of_mass_cells(cells_points, points):
-    '''
+    """
     calulating the "center of mass" of a cell using only the points at the edge of the cell
     :param cells_points:
     :param points:
     :return:
-    '''
+    """
     cells_com = {}
     for cell_id, hull_points in cells_points.items():
         cells_com[cell_id] = np.mean(points[hull_points], axis=0)
@@ -185,14 +185,14 @@ def center_of_mass_cells(cells_points, points):
 
 
 def remove_circular_line(allLines_points, lines_endpoints_com, lines_points, lines_endpoints):
-    '''
+    """
     finds lines that are circular by checking if the first and second endpoint are identical. The lines are
     delted from all input dictionaries
     :param lines_endpoints_com:
     :param lines_points:
     :param lines_endpoints:
     :return:
-    '''
+    """
     # finding all lines where first and second endpoint is identical
     circular = [l_id for l_id, endpoints in lines_endpoints_com.items() if
                 np.linalg.norm(endpoints[0] - endpoints[1]) == 0]
@@ -336,11 +336,11 @@ class Cells_and_Lines:
             self.lines_spline_points[line_id] = points_new
 
     def cut_to_FEM_grid(self, FEM_mask):
-        '''
+        """
         removing any points that lie outside the FEM Grid
         :param FEM_mask:
         :return:
-        '''
+        """
         self.lines_outside = []
         # spline points is already interpolated to shape of self.mask_area
         for l_id, line_points in list(self.lines_spline_points.items()):
@@ -374,10 +374,10 @@ class Cells_and_Lines:
                 with suppress(ValueError, AttributeError): self.dead_end_lines.remove(l_id)
 
     def return_n_array(self, fill_nan=True):
-        '''
+        """
         writes (normal) vectors in a two dimensional array according to their position from spline interpolation
         :return:
-        '''
+        """
         if fill_nan:
             n_array = np.zeros((self.mask_boundaries.shape[0], self.mask_boundaries.shape[1], 2)) + np.nan
         else:
@@ -387,14 +387,14 @@ class Cells_and_Lines:
         return n_array
 
     def vizualize_lines_and_cells(self, sample_factor=1, plot_n_vectors=False):
-        '''
+        """
         plotting the id of lines for each point, after spline interpolation,
         lines at the edge have a different color
         plotting the id of cells
         plotting_normal_vectors, as predcited by intial spline interpolation
         :param cells_points: factor to reduce line_id labels that are plotted, must be <= 1
         :return:
-        '''
+        """
 
         offset = 0.005  # ofset for point id text
         fig = plt.figure()
@@ -495,14 +495,14 @@ class Cells_and_Lines2(Cells_and_Lines):
 
 
 def prepare_mask_FEM(mask, shape):
-    '''
+    """
     this function usese skeletonize to transform the cellboundraies to one pixel width. Loose ends are trimmed by
     converison to a graph and then deleting all nodes with only one neighbour.
     :param mask:
     :param min_cell_size: minimal sze of cells in pixles, any hole below that will be filled up. If none, then
         some estimated value is used
     :return: mask of type bool
-    '''
+    """
     mask = remove_small_objects(mask.astype(bool), 200).astype(bool)  # removing other small bits
     # interpolating the area to the size of future FEM-grd
     mask_int = interpolation(binary_fill_holes(mask), shape)
@@ -590,13 +590,13 @@ def interpolation_single_point(point, shape_target, shape_origin):
 
 
 def alligne_objects(mask1, mask2):
-    '''
+    """
     function to cut the object from mask2 and set it in an array of mask1.shape, so that the center of the bounding
     box of the object in mask1 and the new array are the same
     :param mask1: array deetermining the output shape and center of the binding box f the output object
     :param mask2: array from which an object is cut out
     :return: mas2_alligne: output array
-    '''
+    """
     rectangle1 = find_objects(mask1, 1)
     lengths1 = [rectangle1[0][0].stop - rectangle1[0][0].start,
                 rectangle1[0][1].stop - rectangle1[0][1].start]  # ä side lengths of hte recangle that was cut out
@@ -672,7 +672,7 @@ def FEM_simulation(nodes, elements, loads, mats, mask_area, verbose=False, **kwa
 
 
 def grid_setup(mask_area, f_x, f_y, E=1, sigma=0.5, edge_factor=0):
-    '''
+    """
     setup of nodes, elements, loads and mats(elastic material properties) lists for solids pys finite elements analysis. Every pixel of
     the provided mask is used as a node. Values from f_x,f_y at these pixels are used as loads. Mats is just
     [E, sigma].
@@ -682,7 +682,7 @@ def grid_setup(mask_area, f_x, f_y, E=1, sigma=0.5, edge_factor=0):
     :param E:
     :param sigma:
     :return:
-    '''
+    """
 
     coords = np.array(np.where(mask_area))  # retrieving all coordintates from the  points  in the mask
 
@@ -858,12 +858,12 @@ def check_unbalanced_forces(fx, fy, mask=None, raise_error=False):
 
 
 def make_field(nodes, values, dims):
-    '''
+    """
     function to write e.g. loads or deformation data to array
     :param nodes:
     :param values:
     :return:
-    '''
+    """
     nodes = nodes.astype(int)
     fx = np.zeros(dims)
     fy = np.zeros(dims)
@@ -873,14 +873,14 @@ def make_field(nodes, values, dims):
 
 
 def make_solids_py_values_list(nodes, fx, fy, mask, shape=1):
-    '''
+    """
     function to create a list of values, eg deformation as needed by solidspy
 
     :param nodes:
     :param fx:
     :param fy:
     :return:
-    '''
+    """
     nodes = nodes.astype(int)
     mask = mask.astype(bool)
     if shape == 1:
@@ -930,7 +930,7 @@ def get_torque2(nodes, loads):
 
 
 def calculate_rotation(a1, a2, mask):
-    '''
+    """
 
 
 
@@ -938,7 +938,7 @@ def calculate_rotation(a1, a2, mask):
     :param dx:eithr array with dx values or nodes
     :param dy:
     :return:
-    '''
+    """
     mask = mask.astype(bool)
     if a1.shape[1] == 5 and a1.shape[0] != a1.shape[1]:  # this would recognize a nodes array
         dx, dy = make_field(a1.astype(int), a2, mask.shape)  # an construct a field from it
@@ -969,11 +969,11 @@ def rot_displacement(p, r, r_n):
 
 
 def correct_rotation(def_x, def_y, mask):
-    '''
+    """
     function to apply rigid body translation and rotation to a deformation field, to minimize rotation
     and translation
     :return:
-    '''
+    """
     mask = mask.astype(bool)
     trans = np.array([np.mean(def_x[mask]), np.mean(def_y[mask])])  # translation
     def_xc1 = def_x - trans[0]  # correction of translation

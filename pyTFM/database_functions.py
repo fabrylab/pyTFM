@@ -42,7 +42,7 @@ def guess_TFM_mode(db_info, parameter_dict):
 
 
 def setup_database_for_tfm(folder, name):
-    '''
+    """
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
     the file name.
     :param folder: Folder where images are searched.
@@ -57,7 +57,7 @@ def setup_database_for_tfm(folder, name):
     :param frame_key: reguar expression that defines how the frame number is searched. You must
     mark the group that contains the frame with parenthesis "()".
     :return:
-    '''
+    """
 
     # creating a new cdb database, will override an existing one.
     db = clickpoints.DataFile(os.path.join(folder, name), "w")
@@ -72,7 +72,7 @@ def setup_database_for_tfm(folder, name):
 
 
 def setup_database_internal(db, keys_dict, folders_dict):
-    '''
+    """
     Sorting images into a clickpoints database. Frames are identified by leading numbers. Layers are identified by
     the file name.
     :param folder: Folder where images are searched.
@@ -87,7 +87,7 @@ def setup_database_internal(db, keys_dict, folders_dict):
     :param frame_key: regular expression that defines how the frame number is searched. You must
     mark the group that contains the frame with parenthesis "()".
     :return:
-    '''
+    """
 
     # regex patterns to sort files into layers. If any of these matches, the file will  be sorted into a layer.
     # keys: name of the layer, values: list of regex patterns
@@ -262,11 +262,11 @@ def fill_patches_for_cell_layer(frame, parameter_dict, res_dict, db, db_info=Non
 
 def filter_incorrect_files(frames, frame_sort_index, expected=3):
 
-    '''
+    """
     throws a waring when there more or less then three images per frame are found.
     :param frames:
     :return:
-    '''
+    """
     frames_cp = frames.copy()
     deleted_sort_indices = []
     for sort_index, layers in frames.items():

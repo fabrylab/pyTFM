@@ -105,10 +105,10 @@ def normalize_values(values_dict, norm, add_name, exclude=["area", "cells"]):
 
 
 def filter_nans(values_dict1, values_dict2, name):
-    '''
+    """
     filters nans and warns if nans encountered. Also checks if either of the values is empty.
     :return:
-    '''
+    """
     v1 = values_dict1[name]
     v2 = values_dict2[name]
     # warning if and stoping if array is empty
@@ -401,20 +401,21 @@ def compare_two_values(values_dict1, values_dict2, types, lables, xlabel, ylabel
 
 
 def edge_erosion(stress_tensor, n=7):
-    '''
+    """
     returns stress tensor with nans replacing n pixels at the cell edge
     :param stress_tensor:
     :param n: ignoring n pixels form the edge of the cell area
     :return:
-    '''
+    """
     cell_area = stress_tensor[:, :, 0, 0] != 0
     cell_area = binary_erosion(cell_area, iterations=n)
     stress_tensor[~cell_area] = np.nan
     return stress_tensor
 
 
-def cv_folder(folder, exclude, n=6):
-    '''
+def cv_folder(folder, exclude, n=6, output_type="txt"):
+
+    """
     reads stress tensors from a folder and calculates the coefficient of variation of the mean normal stress. frames listed
     in exclude will be excluded.
     :param folder: folder with the stress tensors
@@ -422,28 +423,38 @@ def cv_folder(folder, exclude, n=6):
     :param exclude:  list of frames. Must be the exact string at the begin of the stress tensor filename. E.g ["05","12"]
 
     :return
-    '''
-    files = [os.path.join(folder, f) for f in os.listdir(folder) if "stress_tensor.npy" in f]
+    """
+    files = [f for f in os.listdir(folder) if "stress_tensor"  in f and output_type in f]
+    files = [f for f in files if not any([f.startswith(e) for e in exclude])]
+    files = [os.path.join(folder, f) for f in files]
     cvs = []
     for f in files:
-        if not any([os.path.split(f)[1].startswith(e) for e in exclude]):  # checking if frame is in exclude list
-            stress_tensor = np.load(f)
+            if output_type == "txt":
+                file_group = [f[:-7] + x for x in ["_xx.txt",  "_xy.txt", "_yx.txt", "_yy.txt"]]
+                stress_tensor = np.array([[np.loadtxt(file_group[0]), np.loadtxt(file_group[1])], [np.loadtxt(file_group[2]) ,np.loadtxt(file_group[3])]])
+                for f_ in file_group:
+                    files.remove(f_)
+            if output_type == "npy":
+                file_group = [f[:-7] + x for x in ["_xx.npy", "_xy.npy", "_yx.npy", "_yy.npy"]]
+                stress_tensor = np.array([[np.load(file_group[0]), np.load(file_group[1])], [np.load(file_group[2]) ,np.load(file_group[3])]])
+                for f_ in file_group:
+                    files.remove(f_)
             stress_tensor = edge_erosion(stress_tensor, n=n)  # erosion of the edges
             mean_normal_stress = (stress_tensor[:, :, 0, 0] + stress_tensor[:, :, 1, 1]) / 2  # mean normal stress
             cvs.append(
                 np.nanstd(mean_normal_stress) / np.nanmean(mean_normal_stress))  # standard deviation of a single colony
     return np.array(cvs)
-
+'''
 
 def add_mean_normal_stress_cv(values_dict1, exclude, folder, n=6):
-    '''
+    """
     adds the coefficeint of variation to the results dictionary
     :param values_dict1: dictionary, where to which the values are added
     :param folder: folder of the output. This Folder needs to contain the stress tensor files
     :param n: ignore n pixels form the colony edge for the calculation
     :param exclude:  list of frames. Must be the exact string at the begin of the stress tensor filename. E.g ["05","12"]
     :return:
-    '''
+    """
     values_dict1["coefficient of variation mean normal stress"] = cv_folder(folder, exclude, n=n)
 
 

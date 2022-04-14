@@ -532,13 +532,13 @@ class FileSelectWindow(QtWidgets.QWidget):
         self.main_window.cp.reloadMaskTypes()
 
     def save_data_base(self, new_filename, old_filename):
-        '''
+        """
         saving the clickpoints database to another locations.
         This is somewhat complicated by issues when there are paths defined in the database.
         :param new_filename:
         :param old_filename:
         :return:
-        '''
+        """
         # save database to target
         if not new_filename == old_filename:
             # copying original database to temporary file:

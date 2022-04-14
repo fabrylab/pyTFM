@@ -19,9 +19,10 @@ default_parameters = {
     "padding_cell_layer": 0.2,
     # additional region ignored for stress analysis in "cell layer" mode. Average stresses and line
     # tension is only calculated on the area that is "edge_padding"+"padding_cell_layer" away from the image edge
-    "sigma_cells":0.5, # Poisson's ratio of the Cell Sheet in the Monolayer Stress Microscopy. This parameter has little
+    "sigma_cells": 0.5,
+    # Poisson's ratio of the Cell Sheet in the Monolayer Stress Microscopy. This parameter has little
     # influence on the resulting stresses and should therefore not be changed.
-    "TFM_mode": "finite_thickness",  # mode of traction force microscopy ("finite_thickness" or "infinite_thcikness")
+    "TFM_mode": "finite_thickness",  # mode of traction force microscopy ("finite_thickness" or "infinite_thickness")
     "FEM_mode": "colony",  # mode for FEM type. Either perform FEM on a single colony (mode: "colony") or on the whole
     # filed of view (mode: "cell layer"). In "cell layer you select two areas and calculate stress and
     # contractile energy on them. In "colony" you select the area of a colony and draw cell borders. These
@@ -39,25 +40,15 @@ default_parameters = {
                        "color": "#1322ff", "index": 1, "label": "cell type 1", "name": "cell type1"},
         "cell type2": {"use": ["defo", "forces", "area_layer", "FEM_layer", "stress_layer"], "FEM_mode": ["cell layer"],
                        "color": "#ebff05", "index": 3, "label": "cell type 2", "name": "cell type2"},
-        "Cell Boundary": {"use": ["area_colony", "borders", "FEM_layer", "stress_colony",], # "forces"
-                     "FEM_mode": ["cell layer", "colony"], "color": "#30ff0c", "index": 2, "label": "Cell Area",
-                     "name": "Cell Boundary"},
+        "Cell Boundary": {"use": ["area_colony", "borders", "FEM_layer", "stress_colony", ],  # "forces"
+                          "FEM_mode": ["cell layer", "colony"], "color": "#30ff0c", "index": 2, "label": "Cell Area",
+                          "name": "Cell Boundary"},
         "Tractions": {"use": ["defo", "forces", "FEM_colony"], "FEM_mode": ["colony"], "color": "#ff0b23",
-                           "index": 1,
-                           "label": " Traction Area", "name": "Tractions"}}
+                      "index": 1,
+                      "label": " Traction Area", "name": "Tractions"}},
+    # File type in which the fields (deformation, traction, stress tensor) are saved. "npy" or "txt"
+    "output type": "txt"
 }
-# "FEM_area": {"use": ["FEM_colony"], "FEM_mode": ["colony"], "color": "#30ff0c", "index": 2, "label": " of FEM area",
-#                     "name": "FEM_area"}}
-
-#force measures
-
-    # use: calculations this mask is used in
-# FEM_mode: mode the mask is used in
-# color: color of the mask in clickpoints
-# index: index of the mask in clickpoints; FEM_mode and index mst be a unique pair.
-# name: name of the mask in the clickpoints database
-# label: string used for the output file
-
 
 # plotting parameters
 # available plots are ["deformation","traction","FEM_borders","stress_map","energy_points"]
@@ -77,30 +68,31 @@ default_fig_parameters = {
     "plot_t_vecs": False,  # plotting the stress vectors on the cell border stresses image
     "plot_n_arrows": False,  # plotting normal vectors on the cell border stresses image
     "linewidth": 4,  # line width when plotting the cell border stresses
-    "border_arrow_filter": 1,  # plot only every n'th arrow for on the cell border stresses image
+    "border_arrow_filter": 1,  # plot only every nth arrow for on the cell border stresses image
     "outer_cb_color": "grey",  # color of the line plotting the cell colony edge
-    "outer_cb_style": "-",  # linestyle of the line plotting the cell colony edge. "--" for dashed line
+    "outer_cb_style": "-",  # line style of the line plotting the cell colony edge. "--" for dashed line
     "boundary_resolution": 6,  # resolution when plotting the line tension. Highest is 1. Increase for lower resolution,
     # label of the color bar,
-    "cbar_style": "clickpoints",  # if "clickpoints" the color bar is plottetd inside of the figure
+    "cbar_style": "clickpoints",  # if "clickpoints" the color bar is plotted inside the figure
     "plot_style": "clickpoints",
     "filter_factor": 1,  # this factor defines how many arrows are shown in deformation and traction images.
     # low number results in  many arrows, high number results in few arrows
     "background_color": "#330033",
-    # set a color for background values. "cmap_0" fill read the zero color of the colormap. "white" would make the background white...
-    # this doesn't effect images of deformation and traction
+    # set a color for background values. "cmap_0" fill read the zero color of the colormap.
+    # "white" would make the background white. This doesn't affect images of deformation and traction
     "cbar_tick_label_size": 15,  # size of the tick labels on the color bar
     "cbar_axes_fraction": 0.2,
-    # fraction of the axes in horrizontal direction, that the colorbar takes up, when colorbar is plotted outside
-    # of the graph
+    # fraction of the axes in horizontal direction, that the colorbar takes up, when colorbar is plotted outside
+    #  the graph
     "plot_cbar": True,
     "cbar_str": {"deformation": "deformation\n[pixel]", "traction": "traction\n[Pa]",
                  "FEM_borders": "line tension\n[N/m]",
                  "stress_map": "avg. normal stress\nin N/m", "energy_points": "strain energy\nJ/pixel\n"
                  },
     "resolution": 200,  # dpi when saving plots
-    "file_names": {"deformation": "deformation.png", "traction": "traction.png"  # filenames under wich plots are saved
-        , "FEM_borders": "border_stress.png", "stress_map": "mean_normal_stress.png",
+    # filenames under which plots are saved
+    "file_names": {"deformation": "deformation.png", "traction": "traction.png",
+                   "FEM_borders": "border_stress.png", "stress_map": "mean_normal_stress.png",
                    "energy_points": "energy_distribution.png"},
     # defining which plots are produced
     "plots": {"cell layer": ["deformation", "traction", "FEM_borders", "energy_points", "stress_map"],
@@ -136,7 +128,7 @@ def set_fig_parameters(shape, fig_shape, fig_parameters, figtype):
                 fp[key] = value[figtype]
         if not isinstance(value, (dict, defaultdict)):
             fp[key] = value
-    # filtering: 1.minimal length of arrow, 2. draw only every n'th arrow (in x and y direction)
+    # filtering: 1.minimal length of arrow, 2. draw only every nth arrow (in x and y direction)
     fp["filter"] = [0, int(int(np.ceil(shape[0] / 50)) * fp["filter_factor"])]
     # figsize, so that saving the figure with dpi=dpi, gives an image of the shape fig_shape[0]
     # used to match the other images in the database
@@ -145,7 +137,7 @@ def set_fig_parameters(shape, fig_shape, fig_parameters, figtype):
 
 
 def get_masks_by_key(default_parameters, key, prop, return_key=True):
-    '''extracting lists of mask with certain properties'''
+    """extracting lists of mask with certain properties"""
     if return_key:
         return [m for m, mdict in default_parameters["mask_properties"].items() if prop in mdict[key]]
     else:
@@ -186,10 +178,10 @@ tooltips["overlap"] = "Set the overlap between correlation windows for the calcu
                       "field with PIV. This parameters controls the resolution of the deformation field and should " \
                       "be over 95% of the window size when calculating cellular stresses. However, if you are " \
                       "just testing out parameters you can save a lot of calculation time by " \
-                    "reducing the overlap."
+                      "reducing the overlap."
 tooltips["h"] = "Set the height of the substrate. You can type in 'infinite', if the substrate is very thick. " \
                 "The assumption of infinite substrate height should should generally be valid above 300 µm. " \
-                "As a simple test, you can varey the height and see if the strain energy is influenced. " \
+                "As a simple test, you can vary the height and see if the strain energy is influenced. " \
                 "If this is not the case the substrate height can be assumed as infinite."
 
 tooltips["collect_button"] = "Generate a database with the selected images."
@@ -218,7 +210,7 @@ tooltips["segmentation_area"] = "Mark the entire image as cell type1 or cell typ
                                 "frames. The area marked as 'Cell Boundary' will be conserved. " \
                                 "This only works in 'cell layer' mode."
 tooltips["segmentation_membrane"] = "Mark the Cell Boundaries. Use the slider to select an appropriate threshold " \
-                                "and press the button to apply the threshold to all frames."
+                                    "and press the button to apply the threshold to all frames."
 tooltips["mark entire image"] = "Cover the entire image with a mask. Note that a stretch at the " \
                                 "image border will always be omitted for the analysis."
 tooltips["select mask segmentation"] = "Select the mask type with which to cover the entire image."
@@ -240,7 +232,7 @@ for key, text in tooltips.items():
                     break
                 # replacing blank space
                 if text[il] == " ":
-                    text = text[:il] + "\n" + text[il+1:]
+                    text = text[:il] + "\n" + text[il + 1:]
                     break
                 if text[ir] == " ":
                     text = text[:ir] + "\n" + text[ir + 1:]
@@ -249,10 +241,6 @@ for key, text in tooltips.items():
         tooltips[key] = text
     except Exception as e:
         raise e
-
-
-
-
 
 # some message to be printed
 calculation_messages = defaultdict(lambda: "%s")
@@ -269,19 +257,18 @@ units = defaultdict(lambda: "")
 units["sum deformations"] = "pixels"
 units["sum deformations image"] = "pixels"
 units["sum deformations Traction Area"] = "pixels"
-units["sum traction forces Traction Area"] = "" # this is a weird unit
+units["sum traction forces Traction Area"] = ""  # this is a weird unit
 
 # areas and cell number
 units["area"] = "m2"
 units["area Cell Area"] = "m2"
 units["area Traction Area"] = "m2"
-units["cell numbe"] = ""
+units["cell number"] = ""
 units["center of object"] = ""
 
 # traction force measures
 units["contractility"] = "N"
 units["strain energy"] = "J"
-
 
 # stresses
 units["mean normal stress Cell Area"] = "N/m"
@@ -308,8 +295,6 @@ units["std cell pressure"] = ""
 units["std cell shear"] = ""
 
 
-
-
 def convert_config_input(x, type):
     x = convert_none_str(x)
     if type == "background_color":
@@ -326,7 +311,7 @@ def convert_config_input(x, type):
 default_layer_names = ["images_after", "images_before", "membranes"]
 
 default_search_keys = {"after": "\d{1,4}after", "before": "\d{1,4}before",
-                    "cells": "\d{1,4}bf_before",
-                    "frames": "^(\d{1,4})"}
+                       "cells": "\d{1,4}bf_before",
+                       "frames": "^(\d{1,4})"}
 
 # could make options to read external config files in the addon and in normal applications.)

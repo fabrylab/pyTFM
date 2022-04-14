@@ -58,16 +58,15 @@ def convert_str_none(string):
 
 
 def make_rank_list(values):
-
-    '''
+    """
     produce a list containing the corresponding rank of input values. Ties
     get the same rank. This is used for obtaining the correct sort indices
     (frames in the cdb database) for the list of frames.
     Sorting is performed by the natsort package, wich should recognize signs and scientific notation
-    '''
+    """
 
     unique_values = set(values)
-    unique_values = natsort.natsorted(unique_values,alg=natsort.REAL)
+    unique_values = natsort.natsorted(unique_values, alg=natsort.REAL)
     unique_values_dict = {value: rank for rank, value in enumerate(unique_values)}  # value:rank of the frame
     rank_list = [unique_values_dict[value] for value in values]
     return rank_list, unique_values_dict
@@ -82,13 +81,13 @@ def invert_dictionary(d):
 
 
 def round_flexible(n, digits=2):
-    '''
+    """
     returns a number rounded to 2 positions after its firs segnificant position
     7.1242*10**-7 --> 7.12*10**-7
     7.1242*10**9 --> 7.12*10**9  and so on
     :param n: float
     :return:
-    '''
+    """
     if not (isinstance(n, float) or isinstance(n, int)) or n == 0 or np.isnan(n) or np.isinf(n):
         return n
     else:
@@ -97,13 +96,13 @@ def round_flexible(n, digits=2):
 
 
 def round_flexible_str(n, digits=2, sci_limit=3):
-    '''
+    """
     returns a number rounded to 2 positions after its firs segnificant position
     7.1242*10**-7 --> 7.12*10**-7
     7.1242*10**9 --> 7.12*10**9  and so on
     :param n: float
     :return:
-    '''
+    """
     if not (isinstance(n, float) or isinstance(n, int)) or n == 0 or np.isnan(n) or np.isinf(n):
         return n
     else:
@@ -141,14 +140,14 @@ def split_path_with_os(folder):
 
 
 def gaussian_with_nans(arr1, sigma="auto"):
-    '''
+    """
     applies a gaussian to an array with nans, so that nan values are ignored.
     :param arr1:
     :param sigma: either a string or a float. Sigma as a string: "auto" or "auto-n",n will be applied as a factor
     to determine sigma based on the largest array-axis. Sigma as a float: will directly be used as a sigma for the
     gaussian filter// doesn't depend on axis lengths.
     :return:
-    '''
+    """
     if isinstance(sigma, str):
         if "auto" in sigma:
             try:
@@ -173,11 +172,11 @@ def gaussian_with_nans(arr1, sigma="auto"):
 
 
 def make_display_mask(mask):
-    '''
+    """
     converts a boolean mask to a mask with 1 and np.nans
     :param mask: np.ndarray with dtype bool or int or suitable float
     :return:
-    '''
+    """
     mask_show = copy.deepcopy(mask).astype(bool)
     mask_show[~mask_show] = np.nan
 
@@ -185,12 +184,12 @@ def make_display_mask(mask):
 
 
 def find_prefix(n):
-    '''
+    """
     finds an apropriate prefix (nano, giga, milli..) and returns the rounded number
     before the prefex and the prefix as a string
     :param n: float
     :return:
-    '''
+    """
     dicct = {-12: "p", -9: "n", -6: "µ", -3: "m", 0: "", 3: "k", 6: "M", 9: "G"}
     exponent = (int(np.floor(np.log10(np.abs(n)) / 3)) * 3)
     # limit to maximal coverd symbols
@@ -203,11 +202,11 @@ def find_prefix(n):
 
 
 def convert_to_int(a):
-    '''
+    """
     converts a string to integer. this function is necessary to account for - signe at the beggining in weird formatting
     :param a: string representing an integer
     :return:
-    '''
+    """
 
     try:
         n = int(a[0])  # checks if minus signe is present
@@ -232,9 +231,9 @@ def squeeze_list(l):
 
 
 def createFolder(directory):
-    '''
+    """
     function to create directories if they dont already exist
-    '''
+    """
     try:
         if not os.path.exists(directory):
             nd = os.makedirs(directory)
@@ -290,17 +289,17 @@ def make_random_discrete_color_range(size):
 # function to convert none object from re.search to empty string
 
 def get_group(s=None, group_number=1):
-    '''
+    """
     This function is used to return empty strings ("") froma re.search object if the object
-    is empty. Also it reads out a list of group objects at ones and can read all existing 
-    groups. Note that group 0 is per default the entire input string, thus not interesting 
+    is empty. Also it reads out a list of group objects at ones and can read all existing
+    groups. Note that group 0 is per default the entire input string, thus not interesting
     for us. Also can retrieve all groups
     parameters:
     s- a re.search object
     group_number- integer, specifies which group of the re.search should be returned
     returns:
     string of the group of the re.search object
-    '''
+    """
 
     if s is None:  # if no match was found
         return ''
@@ -327,12 +326,12 @@ def get_group(s=None, group_number=1):
 
 
 def find_non_nan_region(padded_track):
-    '''
+    """
     parameters:
     padded_track: Nan-padded Track e.g. from getTracksNanpadded from a clickpointsdata base.
     returns: mask for the non Nan region of the track
 
-    '''
+    """
     bound1, bound2 = np.where(~np.isnan(padded_track))[0][0], np.where(~np.isnan(padded_track))[0][
         -1]  # find last and first non nan value
     non_nan_padded_track = np.zeros((len(padded_track),))
@@ -342,11 +341,11 @@ def find_non_nan_region(padded_track):
 
 
 def is_int(s):
-    '''
+    """
     checks if string can be converted to int
     :param s:
     :return:
-    '''
+    """
     try:
         int(s)
         return True
@@ -355,14 +354,14 @@ def is_int(s):
 
 
 def except_error(func, error, print_error=True, return_v=False, **kwargs):  # take functino and qkwarks
-    '''
+    """
     wraper to handle errors and return false if the exception is encountered
     :param func:
     :param error:
     :param kwargs:
     :param return_values:
     :return:
-    '''
+    """
 
     try:
         values = func(**kwargs)
@@ -374,11 +373,11 @@ def except_error(func, error, print_error=True, return_v=False, **kwargs):  # ta
 
 
 def try_float_convert(s):
-    '''
+    """
     checks if string can be converted to int
     :param s:
     :return:
-    '''
+    """
     try:
         return float(s)
     except ValueError:

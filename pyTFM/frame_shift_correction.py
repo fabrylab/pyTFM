@@ -113,7 +113,7 @@ def cut_images(folder, files_dict, names=["after_shift.tif", "before_shift.tif",
 
 
 def correct_stage_drift(image1, image2, additional_images=[]):
-    '''
+    """
     # correcting frame shift between images of beads before and after cell removal.
 
     # the correction is done by finding the shift between two images using image registration. Then the images are cropped
@@ -126,7 +126,7 @@ def correct_stage_drift(image1, image2, additional_images=[]):
     :param image2:
     :param additional_images:
     :return:
-    '''
+    """
 
     # find shift with image registration
     shift_values = phase_cross_correlation(image1, image2, upsample_factor=100)
@@ -156,11 +156,11 @@ def correct_stage_drift(image1, image2, additional_images=[]):
 
 def correct_stage_drift_stack(image_stack, reference):
 
-    '''
+    """
     :param reference: np.ndarray; single grey scale images
     :param image_stack: np.ndarray, list array or list of images e.g. from a time series
     :return: images, ref, alligned and croped reference and images from the image stack
-    '''
+    """
 
 
     images = image_stack.copy()

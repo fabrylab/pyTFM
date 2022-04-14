@@ -38,14 +38,14 @@ def remove_endpoints_wrapper(graph, points):
 
 
 def check_connectivity(graph, ep):
-    '''
+    """
     checking if removing a node from a graph changes the connectivity of the neighbouring nodes.
     in other words: are the neighbouring nodes still connected to one another even if I remove the original node.
     The neighouring points must be connected via maximally one other node. (more would represent ana actual hole in the
     sceletonized mask)
     This classifies loose ends and points that can be removed.
     :return:
-    '''
+    """
     # this works for points 1,2 or nneighbours
     # identifying an endpoint by checking if removing this point changes the connectivity of its neighbouring nodes
     # i.e. if i break a connection between two points by removing ep
@@ -63,14 +63,14 @@ def check_connectivity(graph, ep):
 
 
 def remove_endpoints(graph, ep, removed=[]):
-    '''
+    """
     recursive function to remove dead ends in a graph starting from point ep. Ep has one neighbour.
     Function stops if it hits a point with 3 neigbours or the removal of a point would cause the appearence of two more
     loose lines.
     :param graph: graph as a dictionary
     :param ep: start point
     :return:
-    '''
+    """
     connectivity = check_connectivity(graph, ep)
     if connectivity:
         nps = graph[ep]
@@ -85,12 +85,12 @@ def remove_endpoints(graph, ep, removed=[]):
 
 
 def remove_point_from_graph(graph, point):
-    '''
+    """
     removes a point and all connections to this point from a graph
     :param graph:
     :param point:
     :return:
-    '''
+    """
     nps = graph[point]  # neighbouring points/nddes
     graph.pop(point)  # removing the node of the graph
     for p in nps:  # removing all connections to this node
@@ -98,26 +98,26 @@ def remove_point_from_graph(graph, point):
 
 
 def find_endpoints(graph):
-    '''
+    """
     identifies "loose ends":
      goes through all points and checks if removing them would introduce a line break.
     this is just as fast as checking for the number  of neighbours and then checking the distance of these neighbours
     :param graph:
     :return:
-    '''
+    """
     eps = [ep for ep in graph.keys() if check_connectivity(graph, ep)]
     return np.array(eps)
 
 
 def find_dead_end_lines(graph, non_dead_end_points, max_id):
-    '''
+    """
     finds dead end line segments from their start to the point where they hit a none dead end line.
     The point in the none dead edn line is included
     :param graph:
     :param non_dead_end_points:
     :param points:
     :return:
-    '''
+    """
 
     eps_id = find_endpoints(graph)  # keys of endpoints, this fast and efficient
     dead_end_lines = {}
@@ -152,7 +152,7 @@ def find_lines_simple(graph):
 
 def find_path(graph, start, end, path=[]):
 
-    '''
+    """
     recursive function
     finds a path (not necessarily the shortest one) through a graph from start to an end node (not necessarily the closest one).
 
@@ -161,7 +161,7 @@ def find_path(graph, start, end, path=[]):
     :param end: list, list of endpoints. when any endpoint is reach the path search is stopped
     :param path: list, all nodes visited on the way from start to the first endpoint
     :return:
-    '''
+    """
     path = path + [start]
     if start in end:
         return path
@@ -177,7 +177,7 @@ def find_path(graph, start, end, path=[]):
 
 def find_path_to_endpoint(graph, start, path=[], first=False):
 
-    '''
+    """
     recursive function
     finds a path to a (not specific) point with only one neighbour
 
@@ -186,7 +186,7 @@ def find_path_to_endpoint(graph, start, path=[], first=False):
     :param end: list, list of endpoints. when any endpoint is reach the path search is stopped
     :param path: list, all nodes visited on the way from start to the first endpoint
     :return:
-    '''
+    """
     path = path + [start]
     if len(graph[start]) < 2 and not first:  # stop if we reached a point with only one neighbour
         return path
@@ -201,7 +201,7 @@ def find_path_to_endpoint(graph, start, path=[], first=False):
 
 
 def find_line_segement_recursive(graph, start, path=[], left_right=0):
-    '''
+    """
     ---> would sometimes cause stack overflow/recursion error
     recursive function
     finds path from a point going from the first or second neigbour until
@@ -211,7 +211,7 @@ def find_line_segement_recursive(graph, start, path=[], left_right=0):
     :param path: path as list of nodes
     :param left_right: define which neighbour from start to explore (0 or 1
     :return:
-    '''
+    """
     if len(graph[start]) > 2:  # stop if intersection (point with 3 neighbours is reached
         return path  # returns the function before next recursion
     ## other wise there is some otherlapp
@@ -230,7 +230,7 @@ def find_line_segement_recursive(graph, start, path=[], left_right=0):
 
 
 def find_line_segement(graph, start, path=None, left_right=0):
-    '''
+    """
     ---> would sometimes cause stack overflow/recursion error
     recursive function
     finds path from a point going from the first or second neigbour until
@@ -240,7 +240,7 @@ def find_line_segement(graph, start, path=None, left_right=0):
     :param path: path as list of nodes
     :param left_right: define which neighbour from start to explore (0 or 1
     :return:
-    '''
+    """
 
     # first point
     path = []
@@ -271,13 +271,13 @@ def find_line_segement(graph, start, path=None, left_right=0):
 
 
 def mask_to_graph(mask, d=np.sqrt(2)):
-    '''
+    """
     converts a binary mask to a  graph (dictionary of neighbours)
     Neighbours are identified by cKDTree method
     :param mask:
     :param d: maximal allowed distance
     :return:
-    '''
+    """
     graph = defaultdict(list)
     points = np.array(np.where(mask)).T
     point_tree = cKDTree(points)  # look up table for nearest neigbours ??
@@ -289,14 +289,14 @@ def mask_to_graph(mask, d=np.sqrt(2)):
 
 
 def identify_line_segments(graph, points):  #
-    '''
+    """
         function to identify all line segments (representing individual cell boundaries. Segments are returned as a dictionary
         with an id as key and a list of points (referring to the points array) that are included in the line. The
         points are in correct order already
     :param graph:
     :param points:
     :return: dictionary with orderd points  in the line
-    '''
+    """
 
     lines_dict = {}
     n = 0  # counter in while loop
@@ -334,12 +334,12 @@ def identify_line_segments(graph, points):  #
 
 
 def find_path_circular(graph, start):
-    '''
+    """
     function to find the order in a circular graph , of one
     :param graph:
     :param start:
     :return:
-    '''
+    """
     graph2 = copy.deepcopy(graph)
     end = graph2[start][0]  # one of the neigbouring points
     graph2[end].remove(start)  # removing connection between them
@@ -385,7 +385,7 @@ def plot_graph(graph, points, mask, number_nodes=False):
 
 
 def find_neighbor_lines(graph, start_ps, other_endpoint, own_points, end_points, visited=[], neighbours=[]):
-    '''
+    """
     recursive function to find neighbouring line. Explores the graph around the endpoint of a line. Notes the id of
     the line if it hits another line. Doesnt explore any points beyond the endpoints of lines.
     it reaches an intersection (point with three neighbours)
@@ -398,7 +398,7 @@ def find_neighbor_lines(graph, start_ps, other_endpoint, own_points, end_points,
 
     :return: visited: list of visited nodes
     :return: neighbours
-    '''
+    """
     visited = visited + start_ps  # update visited list  ## start must already be a list
 
     next_ps = [graph[s] for s in start_ps]  ## next points
@@ -433,7 +433,7 @@ def find_neighbor_lines(graph, start_ps, other_endpoint, own_points, end_points,
 
 
 def find_exact_line_endpoints(lines_points, points, graph):
-    '''
+    """
     function to find the exact meeting points of lines.
     First find the next closes points on neighbouring lines by exploring the graph. Then calcualtes a
     new endpoint as center of mass of these neighbouring points. Results are stored in a seperate dictionaryl to be
@@ -442,7 +442,7 @@ def find_exact_line_endpoints(lines_points, points, graph):
     :param points: array of point coordinates
     :param graph: dictionary with connectivity of points
     :return: lines_endpoints_com: dictionary with the line_id:[new endpoint at start, new_endpoint at end]
-    '''
+    """
 
     end_points = [[ps[0], ps[-1]] for ps in lines_points.values()]  # all end points in lines
     end_points = [p for ps in end_points for p in ps]

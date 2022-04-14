@@ -1,7 +1,7 @@
-'''
+"""
 plotting and other accesory functions for the Monolayer stress Microscopy
 
-'''
+"""
 from contextlib import suppress
 
 import matplotlib
@@ -18,11 +18,11 @@ from tqdm import tqdm
 
 
 def make_discrete_colorbar():
-    '''
+    """
     function to make a three pieced colormap, only used for represetatinof loads in labt atlk example.
     :param values:
     :return:
-    '''
+    """
 
     cmap = plt.cm.jet  # define the colormap
     # extract all colors from the .jet map
@@ -69,7 +69,7 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
                                       boundary_resolution=3, cbar_title_pad=1, outer_cb_color="grey",
                                       outer_cb_style="-",
                                       **kwargs):
-    '''
+    """
     plotting the line stresses (total transmitted force of cell boundaries), colored by their absolute values
     as continous lines.
     :param shape:
@@ -87,7 +87,7 @@ def plot_continuous_boundary_stresses(plot_values, mask_boundaries=None, plot_t_
     :param vmin:  overwrites max_v and min_v if provided
     :param vmax:  overwrites max_v and min_v if provided
     :return:
-    '''
+    """
 
     if not isinstance(plot_values[0], (list)):
         plot_values = [plot_values]
@@ -197,13 +197,13 @@ def check_normal_vectors(mask, coords, n):
 
 
 def check_normal_vectors_graph(mask, n, points):
-    '''
+    """
     n is dictionary point_id:normal vector
     :param mask:
     :param n:
     :param points:
     :return:
-    '''
+    """
     plt.figure()
     plt.imshow(mask, origin="lower", cmap="viridis")
 
@@ -212,13 +212,13 @@ def check_normal_vectors_graph(mask, n, points):
 
 
 def check_normal_vectors_array(mask, n_array, origin="lower"):
-    '''
+    """
     n is a 3d array.axis 0 and 1 represetn xy coordinates and axis 2 is the normal vector
     :param mask:
     :param n:
     :param points:
     :return:
-    '''
+    """
     plt.figure()
     plt.imshow(mask, origin=origin, cmap="viridis")
     coords = np.where(~np.logical_and(n_array[:, :, 0] == 0, n_array[:, :, 1] == 0))
@@ -228,13 +228,13 @@ def check_normal_vectors_array(mask, n_array, origin="lower"):
 
 
 def plot_stress_vectors(mask, arrows_array, origin="lower"):
-    '''
+    """
     n is a 3d array.axis 0 and 1 represetn xy coordinates and axis 2 is the normal vector
     :param mask:
     :param n:
     :param points:
     :return:
-    '''
+    """
     mask = mask.astype("bool")
     plt.figure()
     abs_im = np.linalg.norm(arrows_array, axis=2)
@@ -345,7 +345,7 @@ def show_quiver(fx, fy, filter=[0, 1], scale_ratio=0.2, headwidth=None, headleng
 
 
 def show_edgeline(mask, ax, color="#696969", alpha=0.5, n=6, plot_inner_line=False):
-    '''
+    """
     colors a region close to the edge of mask.
     :param values: boolean mask
     :param ax: matplotlib axis object
@@ -353,7 +353,7 @@ def show_edgeline(mask, ax, color="#696969", alpha=0.5, n=6, plot_inner_line=Fal
     :param alpha: imshow alpha
     :param n: pixels distance from the ask edge
     :return:
-    '''
+    """
     colony_area = mask != 0
     edge_area = np.logical_and(colony_area, ~binary_erosion(colony_area, iterations=n))
     edge_show = np.zeros(edge_area.shape)
@@ -434,10 +434,10 @@ def show_map_clickpoints(values, figsize=(6.4, 4.8), cbar_str="", ax=None
 
 
 def plot_map(ar1, cbar_str="", origin="upper", title="", mask=0, v_range=0, mask_overlay=0):
-    '''
+    """
     imshow of an array with a color bar
     :return:
-    '''
+    """
 
     ar = copy.deepcopy(ar1)
     if isinstance(mask, np.ndarray):
@@ -685,7 +685,7 @@ def find_areas(start_line, lines, i, com_all, invert_direction=False):
 
 def plot_arrows(nodes, x, y, cbar_str=[], scale_ratio=0.05, grid_lines=False, dims=None, origin="lower", title="",
                 mask=0, filter=0, overlay_mask=0):
-    '''
+    """
 
     :param nodes:
     :param x:
@@ -699,7 +699,7 @@ def plot_arrows(nodes, x, y, cbar_str=[], scale_ratio=0.05, grid_lines=False, di
     :param mask:
     :param filter: list of pararmeters to filter dispplayed values:[minimal abs value, spacing between arrows]
     :return:
-    '''
+    """
 
     if not dims:
         l = np.sqrt(len(nodes)).astype(int)
@@ -804,14 +804,14 @@ def find_maxima(ar1,ar2,radius=5,shape="circle"):
 
 
 def filter_values(ar1, ar2, abs_filter=0, f_dist=3, filter_method="regular", radius=5):
-    '''
+    """
     function to filter out values from an array for better display
     :param ar1:
     :param ar2:
     :param ar:
     :param f_dist: distance betweeen filtered values
     :return:
-    '''
+    """
 
 
     if filter_method == "regular":
