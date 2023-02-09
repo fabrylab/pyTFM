@@ -1,3 +1,7 @@
+[![Python package](https://github.com/martinschatz-cz/pyTFM/actions/workflows/python-package.yml/badge.svg?event=push)](https://github.com/martinschatz-cz/pyTFM/actions/workflows/python-package.yml)
+
+[![Python 3.7](https://img.shields.io/badge/python-3.7-green.svg)]() [![Python 3.8](https://img.shields.io/badge/python-3.8-red.svg)]() [![Python 3.9](https://img.shields.io/badge/python-3.9-red.svg)]()
+
 ## Readme
 
 pyTFM is a python package that allows you to analyze force generation and stresses in cell colonies and confluent cell layers growing on a 2 dimensional surface. This package implements the procedures of [Traction Force Microscopy](https://www.ncbi.nlm.nih.gov/pubmed/11832345) and [Monolayer Stress Microscopy](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0055172). In addition to the standard measures for stress and force generation, it
