@@ -5,3 +5,20 @@ also includes the line tension, a measure for the force transfer exclusively acr
 pyTFM includes an addon for the image annotation tool [clickpoints](https://clickpoints.readthedocs.io/en/latest/) allowing you to quickly analyze and vizualize large datasets.
 
 Please refer to the [Documentation](https://pytfm.readthedocs.io/en/latest/) of pyTFM for detailed instructions on installation and usage.
+
+## Conda enviroment creation
+You need to create python 3.7 enviroment.
+```
+conda create --name pyTFM python=3.7
+conda activate pyTFM
+```
+
+pyTFM package install
+```
+pip install git+https://github.com/fabrylab/pyTFM.git
+```
+
+If you want to use jupyterlab with black packge
+```
+conda install jupyterlab jupyterlab_code_formatter black isort -c conda-forge
+```
