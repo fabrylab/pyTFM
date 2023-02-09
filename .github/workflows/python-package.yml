@@ -38,4 +38,4 @@ jobs:
     # Install pytest (you can use some other testing utility)
     - name: Test with pytest
       run: |
-        pytest pyTFM/pyTFM/test_pyTFM.py
+        pytest test_pyTFM.py
