@@ -29,6 +29,13 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    # Display the Python version being used
+    - name: Display Python version
+      run: python -c "import sys; print(sys.version)"
+    # Install the package using the setup.py
+    - name: Install package
+      run: python setup.py install
+    # Install pytest (you can use some other testing utility)
     - name: Test with pytest
       run: |
-        pytest test_pyTFM.py
+        pytest pyTFM/pyTFM/test_pyTFM.py
