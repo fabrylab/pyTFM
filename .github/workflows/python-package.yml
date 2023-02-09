@@ -34,7 +34,7 @@ jobs:
       run: python -c "import sys; print(sys.version)"
     # Install the package using the setup.py
     - name: Install package
-      run: python setup.py install
+      run: pip install git+https://github.com/fabrylab/pyTFM.git
     # Install pytest (you can use some other testing utility)
     - name: Test with pytest
       run: |
