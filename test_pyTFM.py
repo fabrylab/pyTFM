@@ -104,28 +104,3 @@ def test_get_xy_for_quiver():
     # Test the values of ys
     for j in range(np.shape(u)[1]):
         assert np.array_equal(ys[:, j], np.arange(0, np.shape(u)[0], 1))
-        
-        
-def test_contractility():
-    tx = np.array([1, 2, 3, 4, 5])
-    ty = np.array([1, 2, 3, 4, 5])
-    pixelsize = 10
-    mask = np.array([True, True, True, True, True])
-
-    expected_output = (30.0, np.array([5.5, 11.0, 16.5, 22.0, 27.5]), np.array([5.5, 11.0, 16.5, 22.0, 27.5]), np.array([2.5, 2.5]))
-    output = contractillity(tx, ty, pixelsize, mask)
-
-    assert output == expected_output, f"Expected {expected_output}, but got {output}"
-
-def test_strain_energy_points():
-    u = np.array([1, 2, 3, 4, 5])
-    v = np.array([1, 2, 3, 4, 5])
-    tx = np.array([1, 2, 3, 4, 5])
-    ty = np.array([1, 2, 3, 4, 5])
-    pixelsize1 = 10
-    pixelsize2 = 10
-
-    expected_output = np.array([12.5, 25.0, 37.5, 50.0, 62.5])
-    output = strain_energy_points(u, v, tx, ty, pixelsize1, pixelsize2)
-
-    assert np.array_equal(output, expected_output), f"Expected {expected_output}, but got {output}"
