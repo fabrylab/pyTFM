@@ -22,7 +22,9 @@ pyTFM package install
 pip install git+https://github.com/fabrylab/pyTFM.git
 ```
 
-If you want to use jupyterlab with black packge
+If you want to use jupyterlab
 ```
-conda install jupyterlab jupyterlab_code_formatter black isort -c conda-forge
+pip install jupyterlab
+jupyter-lab
 ```
+Sometimes it is necessary to reinstall pyTFM again through the JupyterLab because of scikit-image package.
