@@ -1,6 +1,6 @@
 [![Python package](https://github.com/martinschatz-cz/pyTFM/actions/workflows/python-package.yml/badge.svg?event=push)](https://github.com/martinschatz-cz/pyTFM/actions/workflows/python-package.yml)
 
-[![Python 3.7](https://img.shields.io/badge/python-3.7-green.svg)]() [![Python 3.8](https://img.shields.io/badge/python-3.8-red.svg)]() [![Python 3.9](https://img.shields.io/badge/python-3.9-red.svg)]()
+[![Python 3.6](https://img.shields.io/badge/python-3.6-green.svg)]() [![Python 3.7](https://img.shields.io/badge/python-3.7-green.svg)]() [![Python 3.8](https://img.shields.io/badge/python-3.8-red.svg)]() [![Python 3.9](https://img.shields.io/badge/python-3.9-red.svg)]()
 
 ## Readme
 
