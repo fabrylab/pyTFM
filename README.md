@@ -11,11 +11,13 @@ pyTFM includes an addon for the image annotation tool [clickpoints](https://clic
 Please refer to the [Documentation](https://pytfm.readthedocs.io/en/latest/) of pyTFM for detailed instructions on installation and usage.
 
 ## Conda enviroment creation
-You need to create python 3.7 enviroment.
+You need to create python 3.6 enviroment. 
 ```
-conda create --name pyTFM python=3.7
+conda create --name pyTFM python=3.6
 conda activate pyTFM
 ```
+
+Note: python 3.7 works too, but clickpoints need python 3.6.
 
 pyTFM package install
 ```
