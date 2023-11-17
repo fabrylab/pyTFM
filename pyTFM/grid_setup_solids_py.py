@@ -2,6 +2,7 @@ from collections import Counter
 from contextlib import suppress
 from itertools import chain
 
+import solidspy
 import solidspy.assemutil as ass
 import solidspy.postprocesor as pos
 import solidspy.solutil as sol
@@ -645,12 +646,27 @@ def cut_mask_from_edge_wrapper(cut_factor, mask, parameter_dict, cut=True, warn=
 
 
 def FEM_simulation(nodes, elements, loads, mats, mask_area, verbose=False, **kwargs):
-    DME, IBC, neq = ass.DME(nodes, elements)  # boundary conditions asembly??
+    from packaging import version
+    if version.parse(solidspy.__version__) > version.parse("1.1.0"):
+        cond = nodes[:, -2:]
+        nodes = nodes[:, :-2]
+    else:
+        cond = nodes
+
+    try:
+        DME, IBC, neq = ass.DME(cond, elements)  # boundary conditions asembly??
+    except ValueError:
+        cond = nodes[:, -2:]
+        nodes = nodes[:, :-2]
+        DME, IBC, neq = ass.DME(cond, elements)  # boundary conditions asembly??
+
     print("Number of elements: {}".format(elements.shape[0]))
     print("Number of equations: {}".format(neq))
 
     # System assembly
     KG = ass.assembler(elements, mats, nodes, neq, DME, sparse=True)
+    if isinstance(KG, tuple) or version.parse(solidspy.__version__) > version.parse("1.1.0"):
+        KG = KG[0]
     RHSG = ass.loadasem(loads, IBC, neq)
 
     if np.sum(IBC == -1) < 3:  # 1 or zero fixed nodes/ pure neumann-boundary-condition system needs further constraints
