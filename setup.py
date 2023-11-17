@@ -4,7 +4,7 @@ from setuptools import setup
 import os
 import platform
 
-install_requires = ['numpy', 'cython', 'openpiv == 0.22.0', 'pyyaml',
+install_requires = ['numpy', 'cython', 'openpiv', 'pyyaml',
                     'scipy', 'scikit-image >= 0.18.1', 'matplotlib >= 2.1.2', 'tqdm', 'solidspy',
                     'clickpoints >= 1.9.6', "natsort"]
 
