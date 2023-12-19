@@ -8,7 +8,7 @@ from collections import defaultdict
 import numpy as np
 from PIL import Image
 from pyTFM.utilities_TFM import createFolder, get_group
-from scipy.ndimage.interpolation import shift
+from scipy.ndimage import shift
 from skimage.registration import phase_cross_correlation
 
 

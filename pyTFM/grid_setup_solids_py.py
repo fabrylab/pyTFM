@@ -10,11 +10,11 @@ from pyTFM.stress_functions import *
 from pyTFM.utilities_TFM import make_random_discrete_color_range, join_dictionary
 from scipy.interpolate import splprep, splev
 from scipy.ndimage import binary_closing as binary_clo
-from scipy.ndimage.measurements import find_objects
-from scipy.ndimage.morphology import binary_fill_holes
+from scipy.ndimage import find_objects
+from scipy.ndimage import binary_fill_holes
 from scipy.optimize import least_squares
 from scipy.signal import convolve2d
-from scipy.sparse.csr import csr_matrix
+from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import lsqr
 from skimage.measure import regionprops
 from skimage.morphology import skeletonize, remove_small_holes, remove_small_objects, label, binary_dilation

@@ -160,7 +160,7 @@ def add_colorbar(vmin, vmax, cmap="rainbow", ax=None, cbar_style="not-clickpoint
                  cbar_height="50%", cbar_borderpad=0.1, cbar_tick_label_size=15, cbar_str="",
                  cbar_axes_fraction=0.2, shrink=0.8, aspect=20, cbar_title_pad=1, **kwargs):
     norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
-    sm = plt.cm.ScalarMappable(cmap=matplotlib.cm.get_cmap(cmap), norm=norm)
+    sm = plt.cm.ScalarMappable(cmap=matplotlib.colormaps.get_cmap(cmap), norm=norm)
     sm.set_array([])  # bug fix for lower matplotlib version
     if cbar_style == "clickpoints":  # colorbar inside of the plot
         cbaxes = inset_axes(ax, width=cbar_width, height=cbar_height, loc=5, borderpad=cbar_borderpad * 30)
@@ -170,7 +170,7 @@ def add_colorbar(vmin, vmax, cmap="rainbow", ax=None, cbar_style="not-clickpoint
         cbaxes.tick_params(colors="white", labelsize=cbar_tick_label_size)
     else:  # colorbar outide of the plot
         cb0 = plt.colorbar(sm, aspect=aspect, shrink=shrink, fraction=cbar_axes_fraction,
-                           pad=cbar_borderpad)  # just exploiting the axis generation by a plt.colorbar
+                           pad=cbar_borderpad, ax=plt.gca())  # just exploiting the axis generation by a plt.colorbar
         cb0.outline.set_visible(False)
         cb0.ax.tick_params(labelsize=cbar_tick_label_size)
         with suppress(TypeError, AttributeError):

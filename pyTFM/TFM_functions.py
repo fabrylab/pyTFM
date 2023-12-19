@@ -11,8 +11,8 @@ import openpiv.validation
 from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyTFM.utilities_TFM import suppress_warnings
-from scipy.ndimage.filters import median_filter, gaussian_filter
-from scipy.ndimage.filters import uniform_filter
+from scipy.ndimage import median_filter, gaussian_filter
+from scipy.ndimage import uniform_filter
 
 
 def ffttc_traction(u, v, pixelsize1, pixelsize2, young, sigma=0.49, spatial_filter="gaussian", fs=None):

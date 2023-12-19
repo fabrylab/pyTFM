@@ -6,7 +6,7 @@ from collections import defaultdict
 import natsort
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 
 
 class suppress_warnings():
